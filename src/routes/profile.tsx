@@ -13,7 +13,6 @@ import {
 	Clock,
 	Pencil,
 	Plus,
-	RotateCcw,
 	XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -57,38 +56,12 @@ function ProfilePage() {
 
 function ProfileBody() {
 	const me = useQuery(api.users.me, {});
-	const topUp = useMutation(api.wallet.topUp);
-	const reset = useMutation(api.wallet.reset);
 	const updateHandle = useMutation(api.users.updateHandle);
 	const [handleDraft, setHandleDraft] = useState<string | null>(null);
 	const [savingHandle, setSavingHandle] = useState(false);
 
 	if (me === undefined) return <ProfileSkeleton />;
 	if (me === null) return <ProfileSkeleton />;
-
-	const handleTopUp = async (amount: number) => {
-		try {
-			const next = await topUp({ amount });
-			toast.success(`Topped up ${CURRENCY_SYMBOL}${amount}`, {
-				description: `New balance: ${CURRENCY_SYMBOL}${Math.round(next).toLocaleString()}`,
-			});
-		} catch (err) {
-			toast.error("Top-up failed", {
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	const handleReset = async () => {
-		try {
-			const next = await reset();
-			toast.info(`Wallet reset to ${CURRENCY_SYMBOL}${next.toLocaleString()}`);
-		} catch (err) {
-			toast.error("Reset failed", {
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
 
 	const saveHandle = async () => {
 		if (handleDraft == null) return;
@@ -148,48 +121,18 @@ function ProfileBody() {
 				</CardContent>
 			</Card>
 
-			<section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-				<Card>
-					<CardHeader>
-						<CardTitle>Wallet</CardTitle>
-						<CardDescription>
-							Charlesmarket runs on play-money. Every account starts with{" "}
-							{CURRENCY_SYMBOL}
-							{STARTING_BALANCE.toLocaleString()}.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className="flex flex-wrap gap-2">
-							<Button size="sm" onClick={() => handleTopUp(100)}>
-								<Plus /> {CURRENCY_SYMBOL}100
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => handleTopUp(500)}
-							>
-								<Plus /> {CURRENCY_SYMBOL}500
-							</Button>
-							<Button variant="ghost" size="sm" onClick={handleReset}>
-								<RotateCcw /> Reset
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Account</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<dl className="space-y-3 text-sm">
-							<Stat label="Joined" value={formatJoined(me.joinedAt)} />
-							<Stat label="Email" value={me.email ?? "—"} />
-							<Stat label="Display name" value={me.name ?? "—"} />
-						</dl>
-					</CardContent>
-				</Card>
-			</section>
+			<Card className="mt-6">
+				<CardHeader>
+					<CardTitle>Account</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<dl className="space-y-3 text-sm">
+						<Stat label="Joined" value={formatJoined(me.joinedAt)} />
+						<Stat label="Email" value={me.email ?? "—"} />
+						<Stat label="Display name" value={me.name ?? "—"} />
+					</dl>
+				</CardContent>
+			</Card>
 
 			<Card className="mt-6">
 				<CardHeader>

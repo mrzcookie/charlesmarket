@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
-import { LogIn, LogOut, Plus, ShieldCheck, User } from "lucide-react";
+import { LogIn, LogOut, Plus, ShieldCheck, User, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,9 @@ export function UserMenu() {
 					</a>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<a href="/portfolio">Portfolio</a>
+					<a href="/portfolio">
+						<Wallet /> Portfolio
+					</a>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
 					<a href="/propose">
