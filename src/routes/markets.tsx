@@ -19,7 +19,7 @@ import { type Category, categories, toUIMarket } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
 type Sort = "volume" | "closing" | "trending" | "new";
-type View = "board" | "tiles";
+type View = "tiles" | "board";
 
 type SearchParams = {
 	category?: Category | "All";
@@ -57,7 +57,7 @@ function MarketsPage() {
 	const sort: Sort = search.sort ?? "volume";
 	const navigate = Route.useNavigate();
 	const [query, setQuery] = useState(search.q ?? "");
-	const [view, setView] = useState<View>("board");
+	const [view, setView] = useState<View>("tiles");
 
 	useEffect(() => {
 		setQuery(search.q ?? "");
@@ -94,13 +94,13 @@ function MarketsPage() {
 		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<Kicker>THE BOARD</Kicker>
+					<Kicker>TICKETS</Kicker>
 					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
-						All Charles tickets
+						Every ticket on Charles
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						{isLoading
-							? "Loading the board…"
+							? "Loading tickets…"
 							: `${filtered.length} of ${markets.length} open for trading. Sorted by ${sortLabel(sort)}.`}
 					</p>
 				</div>
@@ -180,16 +180,16 @@ function MarketsPage() {
 						onValueChange={(v) => v && setView(v as View)}
 						className="hidden md:flex"
 					>
-						<ToggleGroupItem value="board">Board</ToggleGroupItem>
-						<ToggleGroupItem value="tiles">Tiles</ToggleGroupItem>
+						<ToggleGroupItem value="board">List</ToggleGroupItem>
+						<ToggleGroupItem value="tiles">Grid</ToggleGroupItem>
 					</ToggleGroup>
 				</form>
 			</div>
 
 			{isLoading ? (
-				<div className="mt-8 border border-rule">
-					{Array.from({ length: 8 }, (_, i) => `mkt-row-${i}`).map((k) => (
-						<RowSkeleton key={k} />
+				<div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{Array.from({ length: 6 }, (_, i) => `mkt-tile-${i}`).map((k) => (
+						<TileSkeleton key={k} />
 					))}
 				</div>
 			) : filtered.length === 0 ? (
@@ -223,13 +223,20 @@ function MarketsPage() {
 	);
 }
 
-function RowSkeleton() {
+function TileSkeleton() {
 	return (
-		<div className="ledger-row flex items-center gap-4 px-4 py-4">
-			<Skeleton className="h-3 w-12" />
-			<Skeleton className="h-4 flex-1" />
-			<Skeleton className="hidden h-5 w-16 sm:block" />
-			<Skeleton className="h-4 w-20" />
+		<div className="flex h-full flex-col gap-4 border border-rule bg-ink-2 p-4 sm:p-5">
+			<div className="flex items-center justify-between">
+				<Skeleton className="h-3 w-24" />
+				<Skeleton className="h-3 w-12" />
+			</div>
+			<Skeleton className="h-5 w-full" />
+			<Skeleton className="h-5 w-3/4" />
+			<Skeleton className="h-9 w-full" />
+			<div className="grid grid-cols-2 gap-2">
+				<Skeleton className="h-14" />
+				<Skeleton className="h-14" />
+			</div>
 		</div>
 	);
 }

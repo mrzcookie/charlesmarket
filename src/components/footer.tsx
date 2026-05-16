@@ -24,16 +24,16 @@ export function Footer() {
 				<FooterCol
 					title="Trade"
 					links={[
-						{ label: "Board", to: "/markets" },
-						{ label: "Tape", to: "/activity" },
-						{ label: "Desk", to: "/leaderboard" },
+						{ label: "Tickets", to: "/markets" },
+						{ label: "Activity", to: "/activity" },
+						{ label: "Leaderboard", to: "/leaderboard" },
 						{ label: "Propose", to: "/propose" },
 					]}
 				/>
 				<FooterCol
 					title="Account"
 					links={[
-						{ label: "Book", to: "/portfolio" },
+						{ label: "Portfolio", to: "/portfolio" },
 						{ label: "Profile", to: "/profile" },
 					]}
 				/>

@@ -127,8 +127,8 @@ function ProposePage() {
 				</h1>
 				<p className="mt-3 max-w-2xl text-bone-2 text-sm sm:text-base">
 					Submit a question, set the closing date, and the moderators will
-					approve, reject, or send notes. Approved tickets go live on the board
-					with your starting Yes price.
+					approve, reject, or send notes. Approved tickets go live with your
+					starting Yes price.
 				</p>
 			</header>
 
@@ -212,7 +212,7 @@ function AuthedBody() {
 				initialLiquidity: liquidity,
 			});
 			toast.success("Proposal submitted", {
-				description: "Moderators will review it shortly.",
+				description: "Admins will review it shortly.",
 			});
 			navigate({ to: "/portfolio" });
 		} catch (err) {

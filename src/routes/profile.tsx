@@ -43,11 +43,8 @@ function ProfilePage() {
 function ProfileBody() {
 	const me = useQuery(api.users.me, {});
 	const updateHandle = useMutation(api.users.updateHandle);
-	const updateName = useMutation(api.users.updateName);
 	const [handleDraft, setHandleDraft] = useState<string | null>(null);
 	const [savingHandle, setSavingHandle] = useState(false);
-	const [nameDraft, setNameDraft] = useState<string | null>(null);
-	const [savingName, setSavingName] = useState(false);
 
 	if (me === undefined) return <ProfileSkeleton />;
 	if (me === null) return <ProfileSkeleton />;
@@ -68,23 +65,7 @@ function ProfileBody() {
 		}
 	};
 
-	const saveName = async () => {
-		if (nameDraft == null) return;
-		setSavingName(true);
-		try {
-			const next = await updateName({ name: nameDraft });
-			toast.success("Display name updated", { description: next });
-			setNameDraft(null);
-		} catch (err) {
-			toast.error("Couldn't update display name", {
-				description: err instanceof Error ? err.message : String(err),
-			});
-		} finally {
-			setSavingName(false);
-		}
-	};
-
-	const initial = me.name?.[0] ?? me.email?.[0] ?? me.handle?.[1] ?? "C";
+	const initial = me.handle?.[1] ?? "C";
 
 	return (
 		<>
@@ -102,12 +83,9 @@ function ProfileBody() {
 							<h1 className="display-headline mt-1 text-3xl tracking-[-0.03em] sm:text-4xl">
 								{me.handle}
 							</h1>
-							<p className="mt-1 font-mono text-bone-3 text-xs uppercase tracking-[0.12em]">
-								{me.email ?? "Signed in"}
-							</p>
 							<div className="mt-3 flex flex-wrap gap-2">
 								<Badge>Trader</Badge>
-								{me.isAdmin && <BracketChip>MODERATOR</BracketChip>}
+								{me.isAdmin && <BracketChip>ADMIN</BracketChip>}
 							</div>
 						</div>
 					</div>
@@ -122,66 +100,29 @@ function ProfileBody() {
 						</div>
 					</div>
 				</div>
+				<div className="mt-6 border-rule border-t pt-4">
+					<Button asChild variant="outline" size="sm">
+						<Link
+							to="/profile/$username"
+							params={{
+								username: encodeURIComponent(me.handle.replace(/^@/, "")),
+							}}
+						>
+							View your public profile →
+						</Link>
+					</Button>
+				</div>
 			</section>
 
 			<section className="mt-10 border border-rule bg-ink-2 p-6">
 				<div className="border-rule border-b pb-3">
 					<Kicker>PROFILE</Kicker>
 					<p className="mt-2 text-bone-2 text-sm">
-						Visible to other traders across activity, comments, and the desk.
+						Your handle is what other traders see across activity, comments, and
+						the leaderboard.
 					</p>
 				</div>
 				<div className="mt-3 text-sm">
-					<Pref
-						label="Display name"
-						control={
-							<div className="flex items-center gap-2">
-								{nameDraft == null ? (
-									<>
-										<span className="max-w-[16rem] truncate font-mono text-bone">
-											{me.name ?? "—"}
-										</span>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											onClick={() => setNameDraft(me.name ?? "")}
-											aria-label="Edit display name"
-										>
-											<Pencil />
-										</Button>
-									</>
-								) : (
-									<>
-										<Input
-											value={nameDraft}
-											onChange={(e) => setNameDraft(e.target.value)}
-											className="h-8 w-48"
-											maxLength={60}
-											placeholder="Your name"
-										/>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											onClick={() => setNameDraft(null)}
-											disabled={savingName}
-											aria-label="Cancel"
-										>
-											<X />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											onClick={saveName}
-											disabled={savingName}
-											aria-label="Save display name"
-										>
-											<Check />
-										</Button>
-									</>
-								)}
-							</div>
-						}
-					/>
 					<Pref
 						label="Handle"
 						control={
@@ -233,7 +174,6 @@ function ProfileBody() {
 						label="Joined"
 						control={<StaticVal value={formatJoined(me.joinedAt)} />}
 					/>
-					<Pref label="Email" control={<StaticVal value={me.email ?? "—"} />} />
 				</div>
 			</section>
 

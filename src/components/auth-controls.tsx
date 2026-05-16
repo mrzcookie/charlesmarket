@@ -47,7 +47,7 @@ export function SignInButton({
 export function UserMenu() {
 	const { signOut } = useAuthActions();
 	const me = useQuery(api.users.me);
-	const initial = me?.name?.[0] ?? me?.email?.[0] ?? me?.handle?.[1] ?? "C";
+	const initial = me?.handle?.[1] ?? "C";
 
 	return (
 		<DropdownMenu>
@@ -76,11 +76,6 @@ export function UserMenu() {
 					<span className="font-bold font-mono text-bone text-sm">
 						{me?.handle ?? "@you"}
 					</span>
-					{me?.email && (
-						<span className="truncate font-normal font-sans text-bone-3 text-xs">
-							{me.email}
-						</span>
-					)}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>

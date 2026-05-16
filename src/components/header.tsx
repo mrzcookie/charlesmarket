@@ -32,10 +32,10 @@ import { ThemeToggle } from "./theme-toggle";
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 const navLinks: { to: string; label: string; icon: IconType }[] = [
-	{ to: "/markets", label: "Board", icon: Store },
-	{ to: "/activity", label: "Tape", icon: Activity },
-	{ to: "/leaderboard", label: "Desk", icon: Trophy },
-	{ to: "/portfolio", label: "Book", icon: Wallet },
+	{ to: "/markets", label: "Tickets", icon: Store },
+	{ to: "/activity", label: "Activity", icon: Activity },
+	{ to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+	{ to: "/portfolio", label: "Portfolio", icon: Wallet },
 ];
 
 export function Header() {

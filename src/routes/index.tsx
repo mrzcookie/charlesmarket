@@ -53,7 +53,7 @@ function Home() {
 			<div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
 				<section className="py-12 sm:py-16">
 					<SectionHead
-						kicker="TODAY'S BOARD"
+						kicker="TODAY'S TOP"
 						title="The big ticket"
 						href="/markets"
 					/>
@@ -85,34 +85,34 @@ function Home() {
 
 				<section className="border-rule border-t py-12 sm:py-16">
 					<SectionHead
-						kicker="THE REST OF THE BOARD"
+						kicker="MORE TICKETS"
 						title="Open tickets"
 						href="/markets"
 					/>
-					<div className="mt-6 border border-rule">
-						{isLoading ? (
-							<div className="space-y-0">
-								{Array.from({ length: 6 }, (_, i) => `row-skel-${i}`).map(
-									(k) => (
-										<RowSkeleton key={k} />
-									)
-								)}
-							</div>
-						) : rest.length === 0 ? (
-							<div className="px-4 py-12 text-center text-bone-2 text-sm">
-								That's the whole board for now. Pitch the next one.
-							</div>
-						) : (
-							rest.map((m) => (
-								<MarketCard key={m._id} market={m} variant="compact" />
-							))
-						)}
-					</div>
+					{isLoading ? (
+						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{Array.from({ length: 6 }, (_, i) => `grid-skel-${i}`).map(
+								(k) => (
+									<TileSkeleton key={k} />
+								)
+							)}
+						</div>
+					) : rest.length === 0 ? (
+						<div className="mt-6 border border-rule border-dashed px-4 py-12 text-center text-bone-2 text-sm">
+							That's everything for now. Pitch the next one.
+						</div>
+					) : (
+						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{rest.map((m) => (
+								<MarketCard key={m._id} market={m} />
+							))}
+						</div>
+					)}
 					{!isLoading && markets.length > 0 ? (
 						<div className="mt-8 flex justify-center">
 							<Button asChild variant="outline">
 								<Link to="/markets">
-									Open the full board · {markets.length} tickets
+									Browse all {markets.length} tickets
 									<ArrowRight />
 								</Link>
 							</Button>
@@ -177,7 +177,7 @@ function Hero({
 					</p>
 					<div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
 						<Button asChild size="lg" className="w-full sm:w-auto">
-							<Link to="/markets">Open the board</Link>
+							<Link to="/markets">Browse tickets</Link>
 						</Button>
 						<Button
 							asChild
@@ -205,11 +205,21 @@ function Hero({
 						tone="brand"
 					/>
 					<div className="flex flex-col gap-1">
-						<div className="label">Top desk</div>
+						<div className="label">Top trader</div>
 						<div className="flex items-baseline gap-2">
-							<span className="font-bold font-mono text-bone text-lg leading-none">
-								{loading ? "—" : topTrader}
-							</span>
+							{loading || topTrader === "—" ? (
+								<span className="font-bold font-mono text-bone text-lg leading-none">
+									—
+								</span>
+							) : (
+								<Link
+									to="/profile/$username"
+									params={{ username: encodeURIComponent(topTrader) }}
+									className="font-bold font-mono text-bone text-lg leading-none hover:text-brand"
+								>
+									@{topTrader}
+								</Link>
+							)}
 							{topTraderPnl ? (
 								<span className="font-mono font-semibold text-brand text-xs tabular-nums">
 									+{topTraderPnl}
@@ -306,13 +316,20 @@ function FeaturedSkeleton() {
 	);
 }
 
-function RowSkeleton() {
+function TileSkeleton() {
 	return (
-		<div className="ledger-row flex items-center gap-4 px-4 py-4">
-			<Skeleton className="h-3 w-12" />
-			<Skeleton className="h-4 flex-1" />
-			<Skeleton className="hidden h-5 w-16 sm:block" />
-			<Skeleton className="h-4 w-20" />
+		<div className="flex h-full flex-col gap-4 border border-rule bg-ink-2 p-4 sm:p-5">
+			<div className="flex items-center justify-between">
+				<Skeleton className="h-3 w-24" />
+				<Skeleton className="h-3 w-12" />
+			</div>
+			<Skeleton className="h-5 w-full" />
+			<Skeleton className="h-5 w-3/4" />
+			<Skeleton className="h-9 w-full" />
+			<div className="grid grid-cols-2 gap-2">
+				<Skeleton className="h-14" />
+				<Skeleton className="h-14" />
+			</div>
 		</div>
 	);
 }
@@ -320,7 +337,7 @@ function RowSkeleton() {
 function EmptyMarkets() {
 	return (
 		<div className="border border-rule border-dashed bg-ink-2 px-6 py-16 text-center">
-			<Kicker>EMPTY BOARD</Kicker>
+			<Kicker>NOTHING OPEN</Kicker>
 			<h3 className="display-headline mt-3 text-2xl">No tickets yet.</h3>
 			<p className="mx-auto mt-2 max-w-md text-bone-2 text-sm">
 				Pitch the first one. Frame a question Charles could fail at, set the

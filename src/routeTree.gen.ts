@@ -18,6 +18,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
@@ -67,6 +68,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
+  id: '/$username',
+  path: '/$username',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const MarketIdRoute = MarketIdRouteImport.update({
   id: '/market/$id',
   path: '/market/$id',
@@ -90,11 +96,12 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -103,11 +110,12 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -118,11 +126,12 @@ export interface FileRoutesById {
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
+    | '/profile/$username'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
+    | '/profile/$username'
     | '/admin'
   id:
     | '__root__'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
+    | '/profile/$username'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -176,7 +188,7 @@ export interface RootRouteChildren {
   LeaderboardRoute: typeof LeaderboardRoute
   MarketsRoute: typeof MarketsRoute
   PortfolioRoute: typeof PortfolioRoute
-  ProfileRoute: typeof ProfileRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   ProposeRoute: typeof ProposeRoute
   MarketIdRoute: typeof MarketIdRoute
 }
@@ -246,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/profile/$username': {
+      id: '/profile/$username'
+      path: '/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof ProfileUsernameRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/market/$id': {
       id: '/market/$id'
       path: '/market/$id'
@@ -284,6 +303,17 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ProfileRouteChildren {
+  ProfileUsernameRoute: typeof ProfileUsernameRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileUsernameRoute: ProfileUsernameRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivityRoute: ActivityRoute,
@@ -291,7 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeaderboardRoute: LeaderboardRoute,
   MarketsRoute: MarketsRoute,
   PortfolioRoute: PortfolioRoute,
-  ProfileRoute: ProfileRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   ProposeRoute: ProposeRoute,
   MarketIdRoute: MarketIdRoute,
 }

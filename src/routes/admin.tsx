@@ -73,7 +73,7 @@ function Sidebar() {
 	const navItems = [
 		{
 			to: "/admin/markets" as const,
-			label: "Tickets",
+			label: "Markets",
 			icon: BarChart2,
 		},
 		{ to: "/admin/users" as const, label: "Users", icon: Users },
@@ -86,7 +86,7 @@ function Sidebar() {
 					<ShieldCheck className="size-4 text-brand" />
 				</div>
 				<div>
-					<Kicker>MODERATOR</Kicker>
+					<Kicker>ADMIN</Kicker>
 					<p className="mt-1 font-bold font-display text-base leading-none tracking-[-0.02em]">
 						Admin Console
 					</p>
@@ -148,7 +148,7 @@ function NotAuthorized() {
 				you access.
 			</p>
 			<Button asChild variant="outline" className="mt-6">
-				<Link to="/markets">Back to the board</Link>
+				<Link to="/markets">Back to tickets</Link>
 			</Button>
 		</div>
 	);

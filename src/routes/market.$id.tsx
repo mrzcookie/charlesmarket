@@ -120,7 +120,7 @@ function Breadcrumbs({ market }: { market: UIMarket }) {
 	return (
 		<nav className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
 			<Link to="/markets" className="shrink-0 hover:text-brand">
-				Board
+				Tickets
 			</Link>
 			<span aria-hidden="true">/</span>
 			<Link
@@ -360,13 +360,21 @@ function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
 				<TableBody>
 					{trades.map((t) => (
 						<TableRow key={t._id}>
-							<TableCell className="flex items-center gap-2">
-								<Avatar className="size-6 rounded-[2px]">
-									<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
-										{t.handle.charAt(1).toUpperCase()}
-									</AvatarFallback>
-								</Avatar>
-								<span className="truncate font-mono text-xs">{t.handle}</span>
+							<TableCell>
+								<Link
+									to="/profile/$username"
+									params={{
+										username: encodeURIComponent(t.handle.replace(/^@/, "")),
+									}}
+									className="flex items-center gap-2 hover:text-brand"
+								>
+									<Avatar className="size-6 rounded-[2px]">
+										<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
+											{t.handle.charAt(1).toUpperCase()}
+										</AvatarFallback>
+									</Avatar>
+									<span className="truncate font-mono text-xs">{t.handle}</span>
+								</Link>
 							</TableCell>
 							<TableCell>
 								<Badge variant={t.side === "Yes" ? "yes" : "no"}>
@@ -505,12 +513,22 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 				comments.map((c) => (
 					<div key={c._id} className="border border-rule bg-ink p-4">
 						<div className="flex items-center gap-2 font-mono text-xs">
-							<Avatar className="size-6 rounded-[2px]">
-								<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
-									{c.handle.charAt(1).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
-							<span className="font-bold text-bone">{c.handle}</span>
+							<Link
+								to="/profile/$username"
+								params={{
+									username: encodeURIComponent(c.handle.replace(/^@/, "")),
+								}}
+								className="flex items-center gap-2 hover:text-brand"
+							>
+								<Avatar className="size-6 rounded-[2px]">
+									<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
+										{c.handle.charAt(1).toUpperCase()}
+									</AvatarFallback>
+								</Avatar>
+								<span className="font-bold text-bone hover:text-brand">
+									{c.handle}
+								</span>
+							</Link>
 							<span className="text-bone-3 uppercase tracking-[0.12em]">
 								{relativeTime(c._creationTime)}
 							</span>
@@ -852,7 +870,7 @@ function MarketNotFound({ id }: { id: string }) {
 				Nothing matches "{id}". Probably Charles deleted it.
 			</p>
 			<Button asChild className="mt-8">
-				<Link to="/markets">Open the board</Link>
+				<Link to="/markets">Browse tickets</Link>
 			</Button>
 		</main>
 	);

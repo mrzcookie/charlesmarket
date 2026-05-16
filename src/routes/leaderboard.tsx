@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { useState } from "react";
 import { Kicker } from "@/components/console";
@@ -32,13 +32,13 @@ function LeaderboardPage() {
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
 			<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 				<div>
-					<Kicker>THE DESK</Kicker>
+					<Kicker>LEADERBOARD</Kicker>
 					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
 						Top traders
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						Ranked by lifetime P&L in shekels ({CURRENCY_SYMBOL}). Realized plus
-						unrealized.
+						unrealized. Tap a handle to see their book.
 					</p>
 				</div>
 				<ToggleGroup
@@ -59,7 +59,8 @@ function LeaderboardPage() {
 				<LeaderboardSkeleton />
 			) : traders.length === 0 ? (
 				<div className="mt-12 border border-rule border-dashed bg-ink-2 py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-					No traders yet. Sign in and place the first trade to claim the desk.
+					No traders yet. Sign in and place the first trade to claim the top
+					spot.
 				</div>
 			) : (
 				<>
@@ -71,36 +72,40 @@ function LeaderboardPage() {
 
 					<section className="mt-10">
 						<div className="border-rule border-b pb-3">
-							<Kicker>FULL DESK</Kicker>
+							<Kicker>FULL RANKING</Kicker>
 						</div>
 						<ul className="md:hidden">
 							{traders.map((t, i) => (
-								<li
-									key={t._id}
-									className="ledger-row flex items-center gap-3 px-3 py-3"
-								>
-									<span className="w-6 shrink-0 font-bold font-mono text-bone-3 text-sm tabular-nums">
-										{String(i + 1).padStart(2, "0")}
-									</span>
-									<TraderAvatar handle={t.handle} image={t.image} />
-									<div className="min-w-0 flex-1">
-										<div className="truncate font-mono font-semibold text-bone text-sm">
-											{t.handle}
-										</div>
-										<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-											{money(t.volume)} vol · {Math.round(t.winRate * 100)}% win
-										</div>
-									</div>
-									<div
-										className={cn(
-											"text-right font-bold font-mono text-sm tabular-nums",
-											t.pnl >= 0 ? "text-brand" : "text-magenta"
-										)}
+								<li key={t._id} className="ledger-row">
+									<Link
+										to="/profile/$username"
+										params={{ username: encodeHandle(t.handle) }}
+										className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-2"
 									>
-										{t.pnl >= 0 ? "+" : "−"}
-										{CURRENCY_SYMBOL}
-										{Math.round(Math.abs(t.pnl)).toLocaleString()}
-									</div>
+										<span className="w-6 shrink-0 font-bold font-mono text-bone-3 text-sm tabular-nums">
+											{String(i + 1).padStart(2, "0")}
+										</span>
+										<TraderAvatar handle={t.handle} image={t.image} />
+										<div className="min-w-0 flex-1">
+											<div className="truncate font-mono font-semibold text-bone text-sm">
+												{t.handle}
+											</div>
+											<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+												{money(t.volume)} vol · {Math.round(t.winRate * 100)}%
+												win
+											</div>
+										</div>
+										<div
+											className={cn(
+												"text-right font-bold font-mono text-sm tabular-nums",
+												t.pnl >= 0 ? "text-brand" : "text-magenta"
+											)}
+										>
+											{t.pnl >= 0 ? "+" : "−"}
+											{CURRENCY_SYMBOL}
+											{Math.round(Math.abs(t.pnl)).toLocaleString()}
+										</div>
+									</Link>
 								</li>
 							))}
 						</ul>
@@ -118,24 +123,24 @@ function LeaderboardPage() {
 								</TableHeader>
 								<TableBody>
 									{traders.map((t, i) => (
-										<TableRow key={t._id}>
+										<TableRow
+											key={t._id}
+											className="cursor-pointer transition-colors hover:bg-ink-3"
+										>
 											<TableCell className="pl-4 font-bold font-mono text-bone-3 tabular-nums">
 												{String(i + 1).padStart(2, "0")}
 											</TableCell>
 											<TableCell>
-												<div className="flex items-center gap-2">
+												<Link
+													to="/profile/$username"
+													params={{ username: encodeHandle(t.handle) }}
+													className="flex items-center gap-2 hover:text-brand"
+												>
 													<TraderAvatar handle={t.handle} image={t.image} />
-													<div>
-														<div className="font-mono font-semibold text-bone">
-															{t.handle}
-														</div>
-														{t.name && (
-															<div className="font-mono text-bone-3 text-xs">
-																{t.name}
-															</div>
-														)}
-													</div>
-												</div>
+													<span className="font-mono font-semibold text-bone">
+														{t.handle}
+													</span>
+												</Link>
 											</TableCell>
 											<TableCell
 												className={cn(
@@ -182,10 +187,12 @@ type Trader = {
 function PodiumCard({ trader, place }: { trader: Trader; place: number }) {
 	const positive = trader.pnl >= 0;
 	return (
-		<div
+		<Link
+			to="/profile/$username"
+			params={{ username: encodeHandle(trader.handle) }}
 			className={cn(
-				"flex items-center gap-4 border border-rule bg-ink-2 p-5",
-				place === 1 && "border-brand bg-brand-wash"
+				"flex items-center gap-4 border border-rule bg-ink-2 p-5 transition-colors hover:border-rule-bright",
+				place === 1 && "border-brand bg-brand-wash hover:border-brand-deep"
 			)}
 		>
 			<div
@@ -217,7 +224,7 @@ function PodiumCard({ trader, place }: { trader: Trader; place: number }) {
 					{Math.round(trader.winRate * 100)}% win
 				</div>
 			</div>
-		</div>
+		</Link>
 	);
 }
 
@@ -243,13 +250,16 @@ function TraderAvatar({
 	);
 }
 
+function encodeHandle(handle: string): string {
+	return encodeURIComponent(handle.replace(/^@/, ""));
+}
+
 function LeaderboardSkeleton() {
 	return (
 		<>
 			<div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-				{Array.from({ length: 3 }).map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-					<Skeleton key={i} className="h-24" />
+				{Array.from({ length: 3 }, (_, i) => `lb-skel-${i}`).map((k) => (
+					<Skeleton key={k} className="h-24" />
 				))}
 			</div>
 			<Skeleton className="mt-10 h-80" />

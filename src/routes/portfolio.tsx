@@ -29,7 +29,7 @@ function PortfolioPage() {
 	return (
 		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
 			<header>
-				<Kicker>YOUR BOOK</Kicker>
+				<Kicker>YOUR PORTFOLIO</Kicker>
 				<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
 					Portfolio
 				</h1>
@@ -294,7 +294,7 @@ function SignInPanel() {
 		<div className="mt-12 border border-rule bg-ink-2 px-6 py-16 text-center">
 			<Kicker>SIGNED OUT</Kicker>
 			<h2 className="display-headline mt-3 text-2xl">
-				Sign in to see your book
+				Sign in to see your portfolio
 			</h2>
 			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
 				Positions, cash, and lifetime P&L live on your account. Sign in and

@@ -15,7 +15,8 @@ export default defineSchema({
 		isAdmin: v.optional(v.boolean()),
 	})
 		.index("email", ["email"])
-		.index("phone", ["phone"]),
+		.index("phone", ["phone"])
+		.index("by_handle", ["handle"]),
 
 	marketProposals: defineTable({
 		proposerId: v.id("users"),

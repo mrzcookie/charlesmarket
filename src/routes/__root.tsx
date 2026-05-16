@@ -155,7 +155,7 @@ function GlobalError({ error }: { error: Error }) {
 			</h1>
 			<p className="mt-4 max-w-lg text-bone-2">
 				Something blew up rendering this page. Probably Charles's fault. Try
-				reloading; if it keeps happening, head back to the board.
+				reloading; if it keeps happening, head back to tickets.
 			</p>
 			<pre className="mt-6 max-w-xl overflow-x-auto border border-rule bg-ink-2 p-3 text-left font-mono text-[11px] text-magenta">
 				{error.message}
@@ -163,7 +163,7 @@ function GlobalError({ error }: { error: Error }) {
 			<div className="mt-8 flex gap-3">
 				<Button onClick={() => window.location.reload()}>Reload</Button>
 				<Button asChild variant="outline">
-					<Link to="/markets">Open the board</Link>
+					<Link to="/markets">Browse tickets</Link>
 				</Button>
 			</div>
 		</main>
@@ -181,14 +181,14 @@ function GlobalNotFound() {
 			</h1>
 			<p className="mt-4 max-w-md text-bone-2">
 				That page does not exist, or Charles forgot where he put it. Either way,
-				back to the board.
+				back to tickets.
 			</p>
 			<div className="mt-8 flex gap-3">
 				<Button asChild>
-					<Link to="/markets">Open the board</Link>
+					<Link to="/markets">Browse tickets</Link>
 				</Button>
 				<Button asChild variant="outline">
-					<Link to="/">Console home</Link>
+					<Link to="/">Go home</Link>
 				</Button>
 			</div>
 		</main>

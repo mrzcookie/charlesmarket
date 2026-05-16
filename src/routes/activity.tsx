@@ -24,7 +24,7 @@ function ActivityPage() {
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
 			<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 				<div>
-					<Kicker>THE TAPE</Kicker>
+					<Kicker>ACTIVITY</Kicker>
 					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
 						Live activity
 					</h1>
@@ -56,7 +56,7 @@ function ActivityPage() {
 				</div>
 			) : events.length === 0 ? (
 				<div className="mt-12 border border-rule border-dashed bg-ink-2 px-6 py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-					Quiet on the tape. Trades will show up live as they hit the book.
+					Quiet right now. Trades will show up live as they hit.
 				</div>
 			) : (
 				<ol className="mt-10 border border-rule">
@@ -83,16 +83,22 @@ function EventRow({ event }: { event: FeedEvent }) {
 			<div className="min-w-0">
 				<div className="flex flex-wrap items-center gap-2 text-sm">
 					{event.kind !== "resolve" && (
-						<>
+						<Link
+							to="/profile/$username"
+							params={{
+								username: encodeURIComponent(event.handle.replace(/^@/, "")),
+							}}
+							className="flex items-center gap-2 hover:text-brand"
+						>
 							<Avatar className="size-6 rounded-[2px]">
 								<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
 									{event.handle.charAt(1).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
-							<span className="font-mono font-semibold text-bone">
+							<span className="font-mono font-semibold text-bone group-hover:text-brand">
 								{event.handle}
 							</span>
-						</>
+						</Link>
 					)}
 					<EventVerb event={event} />
 					<Link
