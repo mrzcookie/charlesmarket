@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { ArrowRight } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { ArrowRight, Check, Clock, Pencil, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { BracketChip, Kicker, marketId, Stat } from "@/components/console";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -77,6 +80,12 @@ function PublicProfilePage() {
 				</Link>
 				<span aria-hidden="true">/</span>
 				<span className="text-bone">{profile.handle}</span>
+				{isMine ? (
+					<>
+						<span aria-hidden="true">/</span>
+						<span className="text-brand">You</span>
+					</>
+				) : null}
 			</nav>
 
 			<section className="mt-6 border border-rule bg-ink-2 p-6 sm:p-8">
@@ -91,11 +100,15 @@ function PublicProfilePage() {
 							</AvatarFallback>
 						</Avatar>
 						<div className="min-w-0">
-							<Kicker>TRADER</Kicker>
-							<h1 className="display-headline mt-1 break-all text-3xl tracking-[-0.03em] sm:text-4xl">
-								{profile.handle}
-							</h1>
-							<div className="mt-3 flex flex-wrap gap-2">
+							<Kicker>{isMine ? "YOUR ACCOUNT" : "TRADER"}</Kicker>
+							{isMine && me ? (
+								<EditableHandle currentHandle={me.handle} />
+							) : (
+								<h1 className="display-headline mt-1 break-all text-3xl tracking-[-0.03em] sm:text-4xl">
+									{profile.handle}
+								</h1>
+							)}
+							<div className="mt-3 flex flex-wrap items-center gap-2">
 								<Badge>Trader</Badge>
 								{profile.isAdmin ? <BracketChip>ADMIN</BracketChip> : null}
 								<span className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
@@ -121,15 +134,34 @@ function PublicProfilePage() {
 						</div>
 					</div>
 				</div>
-
-				{isMine ? (
-					<div className="mt-6 border-rule border-t pt-4">
-						<Button asChild variant="outline" size="sm">
-							<Link to="/profile">Edit your profile →</Link>
-						</Button>
-					</div>
-				) : null}
 			</section>
+
+			{isMine && me ? (
+				<section className="mt-6 border border-rule bg-ink-2 p-6">
+					<div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+						<div>
+							<Kicker>PRIVATE · CASH ON HAND</Kicker>
+							<div className="mt-2 font-bold font-mono text-3xl text-brand tabular-nums sm:text-4xl">
+								{CURRENCY_SYMBOL}
+								{Math.round(me.balance).toLocaleString()}
+							</div>
+							<div className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+								in play-money shekels · only visible to you
+							</div>
+						</div>
+						<div className="flex gap-2">
+							<Button asChild variant="outline" size="sm">
+								<Link to="/portfolio">View portfolio</Link>
+							</Button>
+							<Button asChild size="sm">
+								<Link to="/propose">
+									<Plus /> New ticket
+								</Link>
+							</Button>
+						</div>
+					</div>
+				</section>
+			) : null}
 
 			<section className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 border-rule border-y py-6 sm:grid-cols-4">
 				<Stat
@@ -199,7 +231,7 @@ function PublicProfilePage() {
 								<TableHeader>
 									<TableRow>
 										<TableHead className="pl-4">ID</TableHead>
-										<TableHead>Market</TableHead>
+										<TableHead>Ticket</TableHead>
 										<TableHead>Side</TableHead>
 										<TableHead className="text-right">Shares</TableHead>
 										<TableHead className="text-right">Avg</TableHead>
@@ -312,8 +344,187 @@ function PublicProfilePage() {
 					</Button>
 				</div>
 			</section>
+
+			{isMine ? <MyProposals /> : null}
 		</main>
 	);
+}
+
+function EditableHandle({ currentHandle }: { currentHandle: string }) {
+	const updateHandle = useMutation(api.users.updateHandle);
+	const [draft, setDraft] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
+
+	const save = async () => {
+		if (draft == null) return;
+		setSaving(true);
+		try {
+			const next = await updateHandle({ handle: draft });
+			toast.success("Handle updated", { description: next });
+			setDraft(null);
+			// Bounce the URL to the new handle
+			window.location.href = `/profile/${encodeURIComponent(next.replace(/^@/, ""))}`;
+		} catch (err) {
+			toast.error("Couldn't update handle", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	if (draft == null) {
+		return (
+			<div className="mt-1 flex items-center gap-2">
+				<h1 className="display-headline break-all text-3xl tracking-[-0.03em] sm:text-4xl">
+					{currentHandle}
+				</h1>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					onClick={() => setDraft(currentHandle)}
+					aria-label="Edit handle"
+				>
+					<Pencil />
+				</Button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="mt-2 flex flex-wrap items-center gap-2">
+			<Input
+				value={draft}
+				onChange={(e) => setDraft(e.target.value)}
+				className="mono-input h-9 w-48"
+				maxLength={32}
+				autoFocus
+			/>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={() => setDraft(null)}
+				disabled={saving}
+				aria-label="Cancel"
+			>
+				<X />
+			</Button>
+			<Button
+				variant="default"
+				size="sm"
+				onClick={save}
+				disabled={saving}
+				aria-label="Save handle"
+			>
+				<Check /> {saving ? "Saving…" : "Save"}
+			</Button>
+		</div>
+	);
+}
+
+function MyProposals() {
+	const proposals = useQuery(api.proposals.listMine, {});
+	const remove = useMutation(api.proposals.remove);
+
+	const handleDelete = async (id: string) => {
+		if (!confirm("Delete this proposal?")) return;
+		try {
+			await remove({ proposalId: id as never });
+			toast.info("Proposal deleted");
+		} catch (err) {
+			toast.error("Couldn't delete", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	return (
+		<section className="mt-12 border border-rule bg-ink-2 p-6">
+			<div className="flex items-center justify-between border-rule border-b pb-3">
+				<div>
+					<Kicker>PRIVATE · YOUR PROPOSALS</Kicker>
+					<p className="mt-2 text-bone-2 text-sm">
+						Tickets you've pitched. Approved ones go live; rejected ones show
+						reviewer notes.
+					</p>
+				</div>
+				<Button asChild size="sm">
+					<Link to="/propose">
+						<Plus /> New
+					</Link>
+				</Button>
+			</div>
+			<div className="mt-4">
+				{proposals === undefined ? (
+					<Skeleton className="h-24" />
+				) : proposals.length === 0 ? (
+					<div className="border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+						No proposals yet.{" "}
+						<Link to="/propose" className="text-brand underline">
+							Pitch your first ticket
+						</Link>
+					</div>
+				) : (
+					<ul>
+						{proposals.map((p) => (
+							<li
+								key={p._id}
+								className="ledger-row flex flex-wrap items-start justify-between gap-2 py-4"
+							>
+								<div className="min-w-0 flex-1">
+									<div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
+										<ProposalStatusBadge status={p.status} />
+										<span className="text-bone-3">{p.category}</span>
+									</div>
+									<div className="mt-2 font-display font-semibold text-bone">
+										{p.question}
+									</div>
+									{p.rejectionReason ? (
+										<div className="mt-2 font-mono text-[11px] text-magenta uppercase tracking-[0.1em]">
+											{p.rejectionReason}
+										</div>
+									) : null}
+									{p.approvedMarketSlug ? (
+										<Link
+											to="/ticket/$id"
+											params={{ id: p.approvedMarketSlug }}
+											className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-brand uppercase tracking-[0.12em] hover:underline"
+										>
+											OPEN TICKET <ArrowRight className="size-3" />
+										</Link>
+									) : null}
+								</div>
+								{p.status !== "approved" ? (
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => handleDelete(p._id)}
+									>
+										Delete
+									</Button>
+								) : null}
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+		</section>
+	);
+}
+
+function ProposalStatusBadge({
+	status,
+}: {
+	status: "pending" | "approved" | "rejected";
+}) {
+	if (status === "pending")
+		return (
+			<Badge variant="outline">
+				<Clock className="size-3" /> PENDING
+			</Badge>
+		);
+	if (status === "approved") return <Badge variant="yes">APPROVED</Badge>;
+	return <Badge variant="no">REJECTED</Badge>;
 }
 
 function MobileStat({
