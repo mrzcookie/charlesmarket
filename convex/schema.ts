@@ -36,6 +36,10 @@ export default defineSchema({
 		reviewedBy: v.optional(v.id("users")),
 		reviewedAt: v.optional(v.number()),
 		approvedMarketId: v.optional(v.id("markets")),
+		// Legacy field — no longer written by submit(). Kept optional so existing
+		// rows pass schema validation; run `migrations:stripResolutionSource` once
+		// and then this can be removed entirely.
+		resolutionSource: v.optional(v.string()),
 	})
 		.index("by_status", ["status"])
 		.index("by_proposer", ["proposerId"]),
@@ -59,6 +63,8 @@ export default defineSchema({
 		),
 		resolution: v.optional(sideUnion),
 		createdAt: v.number(),
+		// Legacy field — same story as marketProposals.resolutionSource.
+		resolutionSource: v.optional(v.string()),
 	})
 		.index("by_slug", ["slug"])
 		.index("by_category", ["category"])

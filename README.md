@@ -6,24 +6,31 @@ himself out, showing up late on Friday, finishing the half marathon under
 two hours, calling his mom on Mother's Day.
 
 Polymarket-style UI, NVIDIA-green brand, Convex backend with Google sign-in.
-Play money only. Real feelings.
+Community-proposed markets, moderator-resolved outcomes. Play money only.
+Real feelings.
 
 > _Not affiliated with Charles (probably). Not affiliated with Polymarket or
 > NVIDIA at all._
 
 ## What's in the box
 
-- 12 seeded markets with categories (Antics, Mishaps, Relationships, Career,
-  Health, Travel, Money), volume/liquidity, closing dates
+- 12 seeded markets across Antics, Mishaps, Relationships, Career, Health,
+  Travel, Money
 - Live order placement with atomic balance deduction, position aggregation,
-  trade logging, and simple price impact
+  trade logging, and simple linear price impact
+- **Community proposals**: anyone signed in can pitch a new market via
+  `/propose`; admins approve, reject, or note rejection reasons
+- **Admin console** at `/admin`: review proposals, create markets directly,
+  close / reopen, resolve as Yes or No (settles all positions and pays out
+  winners 1 ₪/share), delete with cascade
 - Real-time activity feed (trades + comments + resolutions)
 - Leaderboard with realized + unrealized P&L
-- Per-user portfolio with cash, open positions, and settled history
+- Per-user portfolio with cash, open positions, settled history
 - Comments per market
 - Google sign-in via Convex Auth — every account starts with ₪1,000
+- Editable handle and display name on your profile
 - Light + dark mode, mobile sheet nav, sonner toasts on every mutation
-- 100% server-enforced bidding — no auth, no orders
+- 100% server-enforced bidding, proposals, and admin actions
 
 ## Stack
 
@@ -60,6 +67,9 @@ npx convex env set AUTH_GOOGLE_SECRET <client-secret>
 
 # 4. Seed the 12 starter markets
 npx convex run seed:run
+
+# 5. Sign in once at http://localhost:3000, then promote yourself to admin
+npx convex run admin:bootstrapAdmin '{"email":"you@example.com"}'
 ```
 
 Full walkthrough: [`CONVEX_SETUP.md`](./CONVEX_SETUP.md).
@@ -73,24 +83,35 @@ so teammates know what's expected.
 Everything else — Google credentials, JWT keys, `SITE_URL` — lives on the
 Convex deployment, not in `.env.local`.
 
+For Vercel deploys, set `CONVEX_DEPLOY_KEY` (Production scope) and use
+`npx convex deploy --cmd 'pnpm run build'` as the build command.
+`pnpm build` runs `convex codegen` before `vite build`, so the generated
+client is always present at bundle time regardless of what the outer
+deploy does.
+
 ## Scripts
 
 ```sh
 pnpm dev                # Vite dev server on :3000
-pnpm build              # Production build
+pnpm build              # convex codegen + vite build
 pnpm preview            # Preview the production bundle
 pnpm check              # biome check --write (format + lint)
 
 npx convex dev          # Watch + push convex/ to the dev deployment
+npx convex codegen      # Regenerate convex/_generated/ without pushing
 npx convex run seed:run # Seed the starter markets (idempotent)
 npx convex run seed:wipe# Drop markets/positions/trades/comments/priceTicks
+
+# One-shot ops
+npx convex run admin:bootstrapAdmin '{"email":"you@example.com"}'
+npx convex run migrations:stripResolutionSource
 ```
 
 ## Project layout (TL;DR)
 
 ```
-convex/        Backend functions, schema, auth, seed
-src/routes/    File-based pages (home, /markets, /market/$id, …)
+convex/        Backend functions, schema, auth, seed, admin, proposals, migrations
+src/routes/    File-based pages (home, /markets, /market/$id, /propose, /admin, …)
 src/components/Header, footer, market-card, auth controls, theme toggle
 src/components/ui/  shadcn primitives (owned, edit freely)
 src/lib/       Convex client, wallet hook, market helpers, cn()
@@ -99,7 +120,7 @@ src/styles/    Tailwind v4 + brand tokens + dark mode
 
 The agent-oriented guide ([`CLAUDE.md`](./CLAUDE.md) / [`AGENTS.md`](./AGENTS.md))
 has the full architectural notes — UI conventions, currency formatting, auth
-patterns, the chart fallback, and the gotchas you'll hit.
+patterns, the market lifecycle, the chart fallback, and the gotchas you'll hit.
 
 ## Roadmap
 
@@ -110,11 +131,11 @@ Done:
 - Google sign-in via Convex Auth, server-enforced bidding
 - Realtime everywhere (orders, positions, leaderboard, activity)
 - Sonner toasts on every mutation
+- Community-driven market proposals + moderator console
+- Market resolution flow with position settlement and payouts
 
 Next:
 
-- Market resolution flow (`orders.sell` already lives — needs an admin-gated
-  `markets.resolve` and payout sweep)
 - Scheduled cron to auto-close markets at `closesAtMs`
 - LMSR-style pricing to replace the linear price-impact stub
 - Real order book + matching engine (current book is synthetic)
