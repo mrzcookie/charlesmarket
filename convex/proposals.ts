@@ -15,8 +15,6 @@ const CATEGORIES = [
 
 const MIN_QUESTION = 12;
 const MAX_QUESTION = 140;
-const MIN_DESCRIPTION = 20;
-const MAX_DESCRIPTION = 1_000;
 const MIN_LIQUIDITY = 100;
 const MAX_LIQUIDITY = 50_000;
 
@@ -45,7 +43,6 @@ async function uniqueSlug(ctx: QueryCtx, desired: string): Promise<string> {
 
 function validateProposalShape(args: {
 	question: string;
-	description: string;
 	category: string;
 	resolutionSource: string;
 	tags: string[];
@@ -55,7 +52,6 @@ function validateProposalShape(args: {
 	initialLiquidity: number;
 }) {
 	const question = args.question.trim();
-	const description = args.description.trim();
 	const resolutionSource = args.resolutionSource.trim();
 	const closesAt = args.closesAt.trim();
 	const tags = args.tags
@@ -70,14 +66,6 @@ function validateProposalShape(args: {
 	}
 	if (!/\?$/.test(question)) {
 		throw new Error("Question must end with a '?'");
-	}
-	if (
-		description.length < MIN_DESCRIPTION ||
-		description.length > MAX_DESCRIPTION
-	) {
-		throw new Error(
-			`Description must be ${MIN_DESCRIPTION}-${MAX_DESCRIPTION} characters`
-		);
 	}
 	if (!CATEGORIES.includes(args.category as (typeof CATEGORIES)[number])) {
 		throw new Error("Pick a valid category");
@@ -100,7 +88,6 @@ function validateProposalShape(args: {
 
 	return {
 		question,
-		description,
 		resolutionSource,
 		closesAt,
 		tags,
@@ -110,7 +97,6 @@ function validateProposalShape(args: {
 export const submit = mutation({
 	args: {
 		question: v.string(),
-		description: v.string(),
 		category: v.string(),
 		resolutionSource: v.string(),
 		tags: v.array(v.string()),
@@ -126,7 +112,7 @@ export const submit = mutation({
 		const id = await ctx.db.insert("marketProposals", {
 			proposerId: user._id,
 			question: cleaned.question,
-			description: cleaned.description,
+			description: "",
 			category: args.category,
 			resolutionSource: cleaned.resolutionSource,
 			tags: cleaned.tags,

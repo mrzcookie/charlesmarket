@@ -198,8 +198,7 @@ function AuthedBody() {
 		Number.isFinite(closesAtMs) && closesAtMs > Date.now() + 5 * 60_000;
 	const yesOk = yesPrice > 0.01 && yesPrice < 0.99;
 	const liqOk = liquidity >= 100 && liquidity <= 50_000;
-	const formValid =
-		questionOk && resolutionOk && futureOk && yesOk && liqOk;
+	const formValid = questionOk && resolutionOk && futureOk && yesOk && liqOk;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -242,8 +241,8 @@ function AuthedBody() {
 				<CardHeader>
 					<CardTitle>Market details</CardTitle>
 					<CardDescription>
-						Be specific. Vague questions get rejected — the question
-						itself should make the YES/NO call unambiguous.
+						Be specific. Vague questions get rejected — the question itself
+						should make the YES/NO call unambiguous.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

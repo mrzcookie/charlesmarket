@@ -59,7 +59,6 @@ export const listAll = query({
 export const createMarket = mutation({
 	args: {
 		question: v.string(),
-		description: v.string(),
 		category: v.string(),
 		resolutionSource: v.string(),
 		tags: v.array(v.string()),
@@ -72,13 +71,11 @@ export const createMarket = mutation({
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
 		const question = args.question.trim();
-		const description = args.description.trim();
 		const resolutionSource = args.resolutionSource.trim();
 		const closesAt = args.closesAt.trim();
 		if (question.length < 6 || !/\?$/.test(question)) {
 			throw new Error("Question must end with '?'");
 		}
-		if (description.length < 10) throw new Error("Description too short");
 		if (!CATEGORIES.includes(args.category as (typeof CATEGORIES)[number])) {
 			throw new Error("Invalid category");
 		}
@@ -110,7 +107,7 @@ export const createMarket = mutation({
 		const marketId = await ctx.db.insert("markets", {
 			slug,
 			question,
-			description,
+			description: "",
 			category: args.category,
 			yesPrice: args.initialYesPrice,
 			volume: 0,
