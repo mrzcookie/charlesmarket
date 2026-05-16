@@ -41,7 +41,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
 	return (
-		<main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
 			<AuthLoading>
 				<ProfileSkeleton />
 			</AuthLoading>
@@ -104,35 +104,39 @@ function ProfileBody() {
 	return (
 		<>
 			<Card className="bg-gradient-to-br from-accent/40 to-card">
-				<CardContent className="flex flex-col gap-5 md:flex-row md:items-center">
-					<Avatar className="size-20 shrink-0">
-						{me.image ? <AvatarImage src={me.image} alt="" /> : null}
-						<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 font-bold text-2xl text-primary-foreground">
-							{initial.toUpperCase()}
-						</AvatarFallback>
-					</Avatar>
-					<div className="flex-1">
-						<h1 className="font-bold text-2xl tracking-tight">{me.handle}</h1>
-						<p className="text-muted-foreground">
-							{me.email ?? "Signed in"} · Trading on Charlesmarket
-						</p>
-						<div className="mt-3 flex flex-wrap gap-2">
-							<Badge variant="brand">Trader</Badge>
-							{me.isAdmin && (
-								<Badge
-									variant="outline"
-									className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300"
-								>
-									Moderator
-								</Badge>
-							)}
+				<CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
+					<div className="flex items-center gap-4 md:contents">
+						<Avatar className="size-16 shrink-0 sm:size-20">
+							{me.image ? <AvatarImage src={me.image} alt="" /> : null}
+							<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 font-bold text-2xl text-primary-foreground">
+								{initial.toUpperCase()}
+							</AvatarFallback>
+						</Avatar>
+						<div className="flex-1">
+							<h1 className="font-bold text-xl tracking-tight sm:text-2xl">
+								{me.handle}
+							</h1>
+							<p className="truncate text-muted-foreground text-sm">
+								{me.email ?? "Signed in"}
+							</p>
+							<div className="mt-2 flex flex-wrap gap-2">
+								<Badge variant="brand">Trader</Badge>
+								{me.isAdmin && (
+									<Badge
+										variant="outline"
+										className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300"
+									>
+										Moderator
+									</Badge>
+								)}
+							</div>
 						</div>
 					</div>
-					<div className="flex flex-col items-end">
+					<div className="flex flex-col items-start border-t pt-3 md:items-end md:border-t-0 md:pt-0">
 						<div className="text-muted-foreground text-xs uppercase tracking-wide">
 							Balance
 						</div>
-						<div className="font-bold font-mono text-3xl">
+						<div className="font-bold font-mono text-2xl sm:text-3xl">
 							{CURRENCY_SYMBOL}
 							{Math.round(me.balance).toLocaleString()}
 						</div>

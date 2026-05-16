@@ -23,24 +23,29 @@ function ActivityPage() {
 	const events = useQuery(api.activity.feed, { filter, limit: 50 });
 
 	return (
-		<main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="font-bold text-3xl tracking-tight">Activity</h1>
-					<p className="mt-1 text-muted-foreground">
+					<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
+						Activity
+					</h1>
+					<p className="mt-1 text-muted-foreground text-sm sm:text-base">
 						Every trade, comment, and resolution on Charlesmarket.
 					</p>
 				</div>
-				<ToggleGroup
-					type="single"
-					value={filter}
-					onValueChange={(v) => v && setFilter(v as Filter)}
-				>
-					<ToggleGroupItem value="all">All</ToggleGroupItem>
-					<ToggleGroupItem value="trades">Trades</ToggleGroupItem>
-					<ToggleGroupItem value="resolutions">Resolutions</ToggleGroupItem>
-					<ToggleGroupItem value="comments">Comments</ToggleGroupItem>
-				</ToggleGroup>
+				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+					<ToggleGroup
+						type="single"
+						value={filter}
+						onValueChange={(v) => v && setFilter(v as Filter)}
+						className="w-max sm:w-auto"
+					>
+						<ToggleGroupItem value="all">All</ToggleGroupItem>
+						<ToggleGroupItem value="trades">Trades</ToggleGroupItem>
+						<ToggleGroupItem value="resolutions">Resolutions</ToggleGroupItem>
+						<ToggleGroupItem value="comments">Comments</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
 			</div>
 
 			{events === undefined ? (

@@ -29,9 +29,13 @@ export const Route = createFileRoute("/portfolio")({
 
 function PortfolioPage() {
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-			<h1 className="font-bold text-3xl tracking-tight">Portfolio</h1>
-			<p className="mt-1 text-muted-foreground">Your active bets on Charles.</p>
+		<main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
+				Portfolio
+			</h1>
+			<p className="mt-1 text-muted-foreground text-sm sm:text-base">
+				Your active bets on Charles.
+			</p>
 
 			<AuthLoading>
 				<PortfolioSkeleton />
@@ -94,57 +98,89 @@ function PortfolioBody() {
 							No open positions yet — go bet on Charles.
 						</div>
 					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className="pl-6">Market</TableHead>
-									<TableHead>Side</TableHead>
-									<TableHead className="text-right">Shares</TableHead>
-									<TableHead className="text-right">Avg</TableHead>
-									<TableHead className="text-right">Now</TableHead>
-									<TableHead className="pr-6 text-right">P&L</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
+						<>
+							<ul className="divide-y md:hidden">
 								{positions.map((p) => (
-									<TableRow key={p._id}>
-										<TableCell className="pl-6">
+									<li key={p._id} className="space-y-2 px-4 py-3">
+										<div className="flex items-start justify-between gap-2">
 											<Link
 												to="/market/$id"
 												params={{ id: p.marketSlug }}
-												className="font-medium hover:text-primary"
+												className="flex-1 font-medium text-sm hover:text-primary"
 											>
 												{p.question}
 											</Link>
-										</TableCell>
-										<TableCell>
 											<Badge variant={p.side === "Yes" ? "yes" : "no"}>
 												{p.side}
 											</Badge>
-										</TableCell>
-										<TableCell className="text-right">
-											{p.shares.toFixed(2)}
-										</TableCell>
-										<TableCell className="text-right font-mono">
-											{cents(p.avgPrice)}
-										</TableCell>
-										<TableCell className="text-right font-mono">
-											{cents(p.current)}
-										</TableCell>
-										<TableCell
-											className={cn(
-												"pr-6 text-right font-semibold",
-												p.pnl >= 0 ? "text-yes" : "text-no"
-											)}
-										>
-											{p.pnl >= 0 ? "+" : "−"}
-											{CURRENCY_SYMBOL}
-											{Math.round(Math.abs(p.pnl))}
-										</TableCell>
-									</TableRow>
+										</div>
+										<div className="grid grid-cols-4 gap-2 text-xs">
+											<MobileStat label="Shares" value={p.shares.toFixed(2)} />
+											<MobileStat label="Avg" value={cents(p.avgPrice)} />
+											<MobileStat label="Now" value={cents(p.current)} />
+											<MobileStat
+												label="P&L"
+												value={`${p.pnl >= 0 ? "+" : "−"}${CURRENCY_SYMBOL}${Math.round(Math.abs(p.pnl))}`}
+												tone={p.pnl >= 0 ? "up" : "down"}
+											/>
+										</div>
+									</li>
 								))}
-							</TableBody>
-						</Table>
+							</ul>
+							<div className="hidden md:block">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead className="pl-6">Market</TableHead>
+											<TableHead>Side</TableHead>
+											<TableHead className="text-right">Shares</TableHead>
+											<TableHead className="text-right">Avg</TableHead>
+											<TableHead className="text-right">Now</TableHead>
+											<TableHead className="pr-6 text-right">P&L</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{positions.map((p) => (
+											<TableRow key={p._id}>
+												<TableCell className="pl-6">
+													<Link
+														to="/market/$id"
+														params={{ id: p.marketSlug }}
+														className="font-medium hover:text-primary"
+													>
+														{p.question}
+													</Link>
+												</TableCell>
+												<TableCell>
+													<Badge variant={p.side === "Yes" ? "yes" : "no"}>
+														{p.side}
+													</Badge>
+												</TableCell>
+												<TableCell className="text-right">
+													{p.shares.toFixed(2)}
+												</TableCell>
+												<TableCell className="text-right font-mono">
+													{cents(p.avgPrice)}
+												</TableCell>
+												<TableCell className="text-right font-mono">
+													{cents(p.current)}
+												</TableCell>
+												<TableCell
+													className={cn(
+														"pr-6 text-right font-semibold",
+														p.pnl >= 0 ? "text-yes" : "text-no"
+													)}
+												>
+													{p.pnl >= 0 ? "+" : "−"}
+													{CURRENCY_SYMBOL}
+													{Math.round(Math.abs(p.pnl))}
+												</TableCell>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
+							</div>
+						</>
 					)}
 				</CardContent>
 			</Card>
@@ -209,13 +245,13 @@ function StatCard({
 }) {
 	return (
 		<Card>
-			<CardContent>
-				<div className="text-muted-foreground text-xs uppercase tracking-wide">
+			<CardContent className="px-4 sm:px-6">
+				<div className="text-[10px] text-muted-foreground uppercase tracking-wide sm:text-xs">
 					{label}
 				</div>
 				<div
 					className={cn(
-						"mt-1 font-bold text-2xl",
+						"mt-1 font-bold text-lg sm:text-2xl",
 						tone === "up" && "text-yes",
 						tone === "down" && "text-no"
 					)}
@@ -224,6 +260,33 @@ function StatCard({
 				</div>
 			</CardContent>
 		</Card>
+	);
+}
+
+function MobileStat({
+	label,
+	value,
+	tone,
+}: {
+	label: string;
+	value: string;
+	tone?: "up" | "down";
+}) {
+	return (
+		<div>
+			<div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+				{label}
+			</div>
+			<div
+				className={cn(
+					"font-mono font-semibold text-sm",
+					tone === "up" && "text-yes",
+					tone === "down" && "text-no"
+				)}
+			>
+				{value}
+			</div>
+		</div>
 	);
 }
 

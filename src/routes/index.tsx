@@ -45,7 +45,7 @@ function Home() {
 				loading={isLoading}
 			/>
 
-			<section className="mx-auto w-full max-w-7xl px-4 pt-10 pb-6 sm:px-6">
+			<section className="mx-auto w-full max-w-7xl px-4 pt-8 pb-6 sm:px-6 sm:pt-10">
 				<SectionHeader
 					eyebrow="Hot right now"
 					title="Trending Charles markets"
@@ -65,7 +65,7 @@ function Home() {
 				<CategoryStrip />
 			</section>
 
-			<section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6">
+			<section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-20">
 				<SectionHeader eyebrow="All markets" title="Featured" href="/markets" />
 				{isLoading ? (
 					<div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -115,7 +115,7 @@ function Hero({
 }) {
 	return (
 		<section className="border-b bg-gradient-to-b from-accent/40 to-background">
-			<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr] md:py-20">
+			<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 sm:py-14 md:grid-cols-[1.4fr_1fr] md:gap-10 md:py-20">
 				<div>
 					<Badge variant="brand" className="gap-2">
 						<span className="relative flex h-2 w-2">
@@ -124,24 +124,24 @@ function Hero({
 						</span>
 						Live · {loading ? "—" : marketCount} markets open
 					</Badge>
-					<h1 className="mt-4 font-bold text-4xl tracking-tight md:text-5xl">
+					<h1 className="mt-4 font-bold text-3xl leading-tight tracking-tight sm:text-4xl md:text-5xl">
 						The prediction market for{" "}
 						<span className="text-primary">Charles</span>.
 					</h1>
-					<p className="mt-4 max-w-xl text-lg text-muted-foreground">
+					<p className="mt-3 max-w-xl text-base text-muted-foreground sm:mt-4 sm:text-lg">
 						Will he show up on time? Get the job? Lock himself out again? Trade
 						Yes/No contracts and let the wisdom of the friend group decide.
 					</p>
-					<div className="mt-6 flex flex-wrap gap-3">
-						<Button asChild>
+					<div className="mt-5 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
+						<Button asChild className="flex-1 sm:flex-none">
 							<Link to="/markets">Browse markets</Link>
 						</Button>
-						<Button asChild variant="outline">
+						<Button asChild variant="outline" className="flex-1 sm:flex-none">
 							<Link to="/propose">Propose a market</Link>
 						</Button>
 					</div>
 				</div>
-				<div className="grid grid-cols-2 gap-3 self-end">
+				<div className="grid grid-cols-2 gap-2 self-end sm:gap-3">
 					<Stat
 						label="Total volume"
 						value={loading ? "—" : money(totalVolume)}
@@ -161,11 +161,11 @@ function Hero({
 function Stat({ label, value }: { label: string; value: string }) {
 	return (
 		<Card>
-			<CardContent>
-				<div className="text-muted-foreground text-xs uppercase tracking-wide">
+			<CardContent className="px-4 sm:px-6">
+				<div className="text-[10px] text-muted-foreground uppercase tracking-wide sm:text-xs">
 					{label}
 				</div>
-				<div className="mt-1 font-semibold text-xl">{value}</div>
+				<div className="mt-1 font-semibold text-lg sm:text-xl">{value}</div>
 			</CardContent>
 		</Card>
 	);
@@ -181,16 +181,18 @@ function SectionHeader({
 	href?: string;
 }) {
 	return (
-		<div className="flex items-end justify-between">
-			<div>
+		<div className="flex items-end justify-between gap-2">
+			<div className="min-w-0">
 				<div className="flex items-center gap-1.5 text-primary text-xs uppercase tracking-wide">
 					<TrendingUp className="size-3.5" />
 					{eyebrow}
 				</div>
-				<h2 className="mt-1 font-bold text-2xl tracking-tight">{title}</h2>
+				<h2 className="mt-1 font-bold text-xl tracking-tight sm:text-2xl">
+					{title}
+				</h2>
 			</div>
 			{href && (
-				<Button asChild variant="link" size="sm">
+				<Button asChild variant="link" size="sm" className="shrink-0">
 					<Link to={href}>View all →</Link>
 				</Button>
 			)}
@@ -200,12 +202,17 @@ function SectionHeader({
 
 function CategoryStrip() {
 	return (
-		<div className="flex flex-wrap items-center gap-2">
-			<span className="font-medium text-muted-foreground text-sm">
+		<div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+			<span className="shrink-0 font-medium text-muted-foreground text-sm">
 				Categories:
 			</span>
 			{categories.map((c) => (
-				<Badge key={c} asChild variant="outline" className="rounded-full">
+				<Badge
+					key={c}
+					asChild
+					variant="outline"
+					className="shrink-0 rounded-full"
+				>
 					<Link to="/markets" search={{ category: c }}>
 						{c}
 					</Link>

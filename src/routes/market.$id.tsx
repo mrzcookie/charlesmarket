@@ -51,18 +51,16 @@ function MarketDetail() {
 	const market = toUIMarket(doc);
 
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Breadcrumbs market={market} />
-			<div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-[1.7fr_1fr]">
-				<div className="space-y-6">
-					<MarketHeader market={market} />
-					<PriceChartCard market={market} />
-					<MarketTabs market={market} />
-				</div>
-				<aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+			<div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1.7fr_1fr] lg:gap-8">
+				<MarketHeader market={market} />
+				<aside className="space-y-4 lg:sticky lg:top-20 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
 					<OrderTicket market={market} />
 					<Stats market={market} />
 				</aside>
+				<PriceChartCard market={market} />
+				<MarketTabs market={market} />
 			</div>
 		</main>
 	);
@@ -70,20 +68,22 @@ function MarketDetail() {
 
 function Breadcrumbs({ market }: { market: UIMarket }) {
 	return (
-		<nav className="flex items-center gap-2 text-muted-foreground text-sm">
-			<Link to="/markets" className="hover:text-foreground">
+		<nav className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-muted-foreground text-xs sm:gap-2 sm:text-sm">
+			<Link to="/markets" className="shrink-0 hover:text-foreground">
 				Markets
 			</Link>
 			<span>/</span>
 			<Link
 				to="/markets"
 				search={{ category: market.category }}
-				className="hover:text-foreground"
+				className="shrink-0 hover:text-foreground"
 			>
 				{market.category}
 			</Link>
-			<span>/</span>
-			<span className="truncate text-foreground">{market.question}</span>
+			<span className="hidden sm:inline">/</span>
+			<span className="hidden truncate text-foreground sm:inline">
+				{market.question}
+			</span>
 		</nav>
 	);
 }
@@ -91,7 +91,7 @@ function Breadcrumbs({ market }: { market: UIMarket }) {
 function MarketHeader({ market }: { market: UIMarket }) {
 	return (
 		<div>
-			<div className="flex flex-wrap items-center gap-2">
+			<div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
 				<Badge variant="secondary" className="text-[10px] uppercase">
 					{market.category}
 				</Badge>
@@ -101,12 +101,12 @@ function MarketHeader({ market }: { market: UIMarket }) {
 					</Badge>
 				))}
 			</div>
-			<h1 className="mt-3 font-bold text-3xl leading-tight tracking-tight md:text-4xl">
+			<h1 className="mt-3 font-bold text-2xl leading-tight tracking-tight sm:text-3xl md:text-4xl">
 				{market.question}
 			</h1>
 			<div className="mt-4 flex items-end justify-between">
 				<div>
-					<div className="font-mono font-semibold text-3xl text-yes">
+					<div className="font-mono font-semibold text-2xl text-yes sm:text-3xl">
 						{cents(market.yesPrice)}
 					</div>
 					<div className="text-muted-foreground text-sm">Yes price</div>
@@ -149,8 +149,8 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 
 	return (
 		<Card>
-			<CardHeader className="flex flex-row items-center justify-between">
-				<CardTitle>
+			<CardHeader className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+				<CardTitle className="text-base sm:text-lg">
 					Yes price · history
 					{liveHistory === undefined ? null : liveHistory.length < 2 ? (
 						<span className="ml-2 font-normal text-muted-foreground text-xs">
@@ -163,9 +163,10 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 					size="sm"
 					value={range}
 					onValueChange={(v) => v && setRange(v as typeof range)}
+					className="self-end sm:self-auto"
 				>
 					{(["1H", "6H", "1D", "1W", "ALL"] as const).map((r) => (
-						<ToggleGroupItem key={r} value={r} className="px-2.5 text-xs">
+						<ToggleGroupItem key={r} value={r} className="px-2 text-xs">
 							{r}
 						</ToggleGroupItem>
 					))}
@@ -174,7 +175,7 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 			<CardContent>
 				<svg
 					viewBox={`0 0 ${w} ${h}`}
-					className="h-56 w-full"
+					className="h-40 w-full sm:h-56"
 					preserveAspectRatio="none"
 					aria-label="Yes price history"
 				>
@@ -198,12 +199,14 @@ function MarketTabs({ market }: { market: UIMarket }) {
 		<Card>
 			<Tabs defaultValue="about" className="w-full">
 				<CardHeader className="pb-0">
-					<TabsList>
-						<TabsTrigger value="about">About</TabsTrigger>
-						<TabsTrigger value="trades">Trades</TabsTrigger>
-						<TabsTrigger value="orderbook">Order book</TabsTrigger>
-						<TabsTrigger value="comments">Comments</TabsTrigger>
-					</TabsList>
+					<div className="-mx-6 overflow-x-auto px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+						<TabsList>
+							<TabsTrigger value="about">About</TabsTrigger>
+							<TabsTrigger value="trades">Trades</TabsTrigger>
+							<TabsTrigger value="orderbook">Book</TabsTrigger>
+							<TabsTrigger value="comments">Comments</TabsTrigger>
+						</TabsList>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<TabsContent value="about">
@@ -274,44 +277,48 @@ function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
 		);
 	}
 	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>Trader</TableHead>
-					<TableHead>Side</TableHead>
-					<TableHead className="text-right">Shares</TableHead>
-					<TableHead className="text-right">Price</TableHead>
-					<TableHead className="text-right">When</TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{trades.map((t) => (
-					<TableRow key={t._id}>
-						<TableCell className="flex items-center gap-2">
-							<Avatar className="size-6">
-								<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 text-[10px] text-primary-foreground">
-									{t.handle.charAt(1).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
-							{t.handle}
-						</TableCell>
-						<TableCell>
-							<Badge variant={t.side === "Yes" ? "yes" : "no"}>
-								{t.kind === "sell" ? "↓" : ""}
-								{t.side}
-							</Badge>
-						</TableCell>
-						<TableCell className="text-right">{t.shares.toFixed(2)}</TableCell>
-						<TableCell className="text-right font-mono">
-							{cents(t.price)}
-						</TableCell>
-						<TableCell className="text-right text-muted-foreground">
-							{relativeTime(t._creationTime)}
-						</TableCell>
+		<div className="-mx-6 overflow-x-auto px-6">
+			<Table className="min-w-[460px]">
+				<TableHeader>
+					<TableRow>
+						<TableHead>Trader</TableHead>
+						<TableHead>Side</TableHead>
+						<TableHead className="text-right">Shares</TableHead>
+						<TableHead className="text-right">Price</TableHead>
+						<TableHead className="text-right">When</TableHead>
 					</TableRow>
-				))}
-			</TableBody>
-		</Table>
+				</TableHeader>
+				<TableBody>
+					{trades.map((t) => (
+						<TableRow key={t._id}>
+							<TableCell className="flex items-center gap-2">
+								<Avatar className="size-6">
+									<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 text-[10px] text-primary-foreground">
+										{t.handle.charAt(1).toUpperCase()}
+									</AvatarFallback>
+								</Avatar>
+								<span className="truncate">{t.handle}</span>
+							</TableCell>
+							<TableCell>
+								<Badge variant={t.side === "Yes" ? "yes" : "no"}>
+									{t.kind === "sell" ? "↓" : ""}
+									{t.side}
+								</Badge>
+							</TableCell>
+							<TableCell className="text-right">
+								{t.shares.toFixed(2)}
+							</TableCell>
+							<TableCell className="text-right font-mono">
+								{cents(t.price)}
+							</TableCell>
+							<TableCell className="whitespace-nowrap text-right text-muted-foreground">
+								{relativeTime(t._creationTime)}
+							</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
+		</div>
 	);
 }
 
@@ -574,27 +581,63 @@ function OrderTicket({ market }: { market: UIMarket }) {
 
 	return (
 		<Card>
-			<CardContent className="space-y-5">
+			<CardContent className="space-y-4 px-4 sm:px-6">
 				<div className="grid grid-cols-2 gap-2">
-					<Button
-						variant={side === "Yes" ? "yes" : "secondary"}
+					<button
+						type="button"
 						onClick={() => setSide("Yes")}
+						className={cn(
+							"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
+							side === "Yes"
+								? "border-yes bg-yes/10 ring-1 ring-yes"
+								: "border-border bg-muted/40 hover:bg-muted"
+						)}
 					>
-						Yes · {cents(market.yesPrice)}
-					</Button>
-					<Button
-						variant={side === "No" ? "no" : "secondary"}
+						<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
+							Yes
+						</span>
+						<span className="font-mono font-semibold text-lg text-yes">
+							{cents(market.yesPrice)}
+						</span>
+					</button>
+					<button
+						type="button"
 						onClick={() => setSide("No")}
+						className={cn(
+							"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
+							side === "No"
+								? "border-no bg-no/10 ring-1 ring-no"
+								: "border-border bg-muted/40 hover:bg-muted"
+						)}
 					>
-						No · {cents(1 - market.yesPrice)}
-					</Button>
+						<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
+							No
+						</span>
+						<span className="font-mono font-semibold text-lg text-no">
+							{cents(1 - market.yesPrice)}
+						</span>
+					</button>
 				</div>
 
 				<div className="space-y-1.5">
-					<Label htmlFor="amount" className="text-muted-foreground text-xs">
-						Amount
-					</Label>
-					<div className="flex items-center gap-2 rounded-md border bg-muted px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+					<div className="flex items-center justify-between">
+						<Label htmlFor="amount" className="text-muted-foreground text-xs">
+							Amount
+						</Label>
+						<span className="text-muted-foreground text-xs">
+							Balance{" "}
+							<span className="font-mono text-foreground">
+								{CURRENCY_SYMBOL}
+								{mounted ? Math.round(balance).toLocaleString() : "—"}
+							</span>
+						</span>
+					</div>
+					<div
+						className={cn(
+							"flex items-center gap-2 rounded-md border bg-muted px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
+							insufficient && "border-no/60 focus-within:border-no"
+						)}
+					>
 						<span className="font-mono text-muted-foreground">
 							{CURRENCY_SYMBOL}
 						</span>
@@ -603,42 +646,41 @@ function OrderTicket({ market }: { market: UIMarket }) {
 							inputMode="decimal"
 							value={amount}
 							onChange={(e) => setAmount(e.target.value)}
-							className="h-10 border-0 bg-transparent p-0 font-semibold text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
+							className="h-11 border-0 bg-transparent p-0 font-semibold text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
 						/>
-						<span className="text-muted-foreground text-xs">
-							/ {mounted ? Math.round(balance).toLocaleString() : "—"}
-						</span>
+					</div>
+					<div className="grid grid-cols-4 gap-1.5 pt-1">
+						{["50", "100", "250", "500"].map((v) => (
+							<Button
+								key={v}
+								variant="outline"
+								size="sm"
+								onClick={() => setAmount(v)}
+								className="font-mono"
+							>
+								{CURRENCY_SYMBOL}
+								{v}
+							</Button>
+						))}
 					</div>
 				</div>
 
-				<div className="flex flex-wrap gap-2">
-					{["50", "100", "250", "500"].map((v) => (
-						<Button
-							key={v}
-							variant="outline"
-							size="xs"
-							onClick={() => setAmount(v)}
-						>
-							{CURRENCY_SYMBOL}
-							{v}
-						</Button>
-					))}
-				</div>
-
-				<div className="space-y-2 text-sm">
+				<div className="space-y-1.5 rounded-md bg-muted/50 px-3 py-2.5 text-sm">
 					<Row label="Avg price" value={cents(price)} />
 					<Row label="Shares" value={shares.toFixed(2)} />
-					<Row
-						label="Max payout"
-						value={`${CURRENCY_SYMBOL}${Math.round(payout)}`}
-						accent
-					/>
+					<div className="border-t pt-1.5">
+						<Row
+							label="Max payout"
+							value={`${CURRENCY_SYMBOL}${Math.round(payout)}`}
+							accent
+						/>
+					</div>
 				</div>
 
 				<Button
 					variant={side === "Yes" ? "yes" : "no"}
 					size="lg"
-					className="w-full"
+					className="h-12 w-full text-base"
 					disabled={submitting || insufficient || cost <= 0}
 					onClick={submit}
 				>

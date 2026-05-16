@@ -126,15 +126,15 @@ function formatCloseLabel(ms: number): string {
 
 function ProposePage() {
 	return (
-		<main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 			<header className="flex flex-col gap-2">
 				<Badge variant="brand" className="w-fit gap-1.5">
 					<Sparkles className="size-3.5" /> Propose a market
 				</Badge>
-				<h1 className="font-bold text-3xl tracking-tight">
+				<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
 					Pitch your next Charles market
 				</h1>
-				<p className="max-w-2xl text-muted-foreground">
+				<p className="max-w-2xl text-muted-foreground text-sm sm:text-base">
 					Submit a question, set the closing date, and the moderators will
 					approve, reject, or send notes. Approved markets go live with your
 					starting Yes price and liquidity.

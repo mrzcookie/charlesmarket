@@ -89,11 +89,13 @@ function MarketsPage() {
 	}, [markets, search.q, query, sort]);
 
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex flex-col gap-1">
-					<h1 className="font-bold text-3xl tracking-tight">Markets</h1>
-					<p className="text-muted-foreground">
+					<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
+						Markets
+					</h1>
+					<p className="text-muted-foreground text-sm sm:text-base">
 						{isLoading
 							? "Loading markets…"
 							: `${filtered.length} of ${markets.length} markets open for trading.`}
@@ -101,34 +103,36 @@ function MarketsPage() {
 				</div>
 				<Button asChild variant="outline" size="sm">
 					<Link to="/propose">
-						<Plus /> Propose a market
+						<Plus /> Propose
 					</Link>
 				</Button>
 			</div>
 
-			<div className="sticky top-[57px] z-10 mt-6 flex flex-col gap-3 border-b bg-background/85 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
-				<ToggleGroup
-					type="single"
-					value={category}
-					onValueChange={(v) =>
-						v &&
-						navigate({
-							search: {
-								category: v as Category | "All",
-								sort,
-								q: search.q,
-							},
-						})
-					}
-					className="flex-wrap justify-start"
-				>
-					<ToggleGroupItem value="All">All</ToggleGroupItem>
-					{categories.map((c) => (
-						<ToggleGroupItem key={c} value={c}>
-							{c}
-						</ToggleGroupItem>
-					))}
-				</ToggleGroup>
+			<div className="sticky top-[53px] z-10 -mx-4 mt-4 flex flex-col gap-3 border-b bg-background/85 px-4 py-3 backdrop-blur sm:top-[57px] sm:mx-0 sm:px-0 sm:py-4 md:flex-row md:items-center md:justify-between">
+				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+					<ToggleGroup
+						type="single"
+						value={category}
+						onValueChange={(v) =>
+							v &&
+							navigate({
+								search: {
+									category: v as Category | "All",
+									sort,
+									q: search.q,
+								},
+							})
+						}
+						className="w-max md:w-auto md:flex-wrap md:justify-start"
+					>
+						<ToggleGroupItem value="All">All</ToggleGroupItem>
+						{categories.map((c) => (
+							<ToggleGroupItem key={c} value={c}>
+								{c}
+							</ToggleGroupItem>
+						))}
+					</ToggleGroup>
+				</div>
 				<form
 					className="flex items-center gap-2"
 					onSubmit={(e) => {
@@ -143,8 +147,8 @@ function MarketsPage() {
 						type="search"
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						placeholder="Search markets…"
-						className="w-full max-w-xs"
+						placeholder="Search…"
+						className="min-w-0 flex-1 md:max-w-xs"
 					/>
 					<Select
 						value={sort}
@@ -154,7 +158,7 @@ function MarketsPage() {
 							})
 						}
 					>
-						<SelectTrigger className="w-[160px]">
+						<SelectTrigger className="w-[140px] shrink-0 md:w-[160px]">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>

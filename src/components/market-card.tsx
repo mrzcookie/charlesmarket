@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useConvexAuth, useMutation } from "convex/react";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,11 +110,9 @@ function QuickBuyDialog({
 	const [amount, setAmount] = useState("100");
 	const [submitting, setSubmitting] = useState(false);
 
-	// Sync side when dialog re-opens with a different initial side
-	const handleOpenChange = (next: boolean) => {
-		if (next) setSide(initialSide);
-		onOpenChange(next);
-	};
+	useEffect(() => {
+		if (open) setSide(initialSide);
+	}, [open, initialSide]);
 
 	const price = side === "Yes" ? market.yesPrice : 1 - market.yesPrice;
 	const cost = Number(amount) || 0;
@@ -154,10 +152,13 @@ function QuickBuyDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle className="line-clamp-2 font-medium text-muted-foreground text-sm leading-snug">
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="max-w-sm gap-3 p-5 sm:gap-4 sm:p-6">
+				<DialogHeader className="pr-8">
+					<div className="font-medium text-[11px] text-muted-foreground uppercase tracking-wide">
+						Quick buy
+					</div>
+					<DialogTitle className="line-clamp-3 font-semibold text-base leading-snug">
 						{market.question}
 					</DialogTitle>
 				</DialogHeader>
@@ -195,30 +196,66 @@ function QuickBuyDialog({
 						/>
 					</div>
 				) : (
-					<div className="space-y-4 py-2">
+					<div className="space-y-4">
 						<div className="grid grid-cols-2 gap-2">
-							<Button
-								variant={side === "Yes" ? "yes" : "secondary"}
+							<button
+								type="button"
 								onClick={() => setSide("Yes")}
+								className={cn(
+									"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
+									side === "Yes"
+										? "border-yes bg-yes/10 ring-1 ring-yes"
+										: "border-border bg-muted/40 hover:bg-muted"
+								)}
 							>
-								Yes · {cents(market.yesPrice)}
-							</Button>
-							<Button
-								variant={side === "No" ? "no" : "secondary"}
+								<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
+									Yes
+								</span>
+								<span className="font-mono font-semibold text-lg text-yes">
+									{cents(market.yesPrice)}
+								</span>
+							</button>
+							<button
+								type="button"
 								onClick={() => setSide("No")}
+								className={cn(
+									"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
+									side === "No"
+										? "border-no bg-no/10 ring-1 ring-no"
+										: "border-border bg-muted/40 hover:bg-muted"
+								)}
 							>
-								No · {cents(1 - market.yesPrice)}
-							</Button>
+								<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
+									No
+								</span>
+								<span className="font-mono font-semibold text-lg text-no">
+									{cents(1 - market.yesPrice)}
+								</span>
+							</button>
 						</div>
 
 						<div className="space-y-1.5">
-							<Label
-								htmlFor="quick-amount"
-								className="text-muted-foreground text-xs"
+							<div className="flex items-center justify-between">
+								<Label
+									htmlFor="quick-amount"
+									className="text-muted-foreground text-xs"
+								>
+									Amount
+								</Label>
+								<span className="text-muted-foreground text-xs">
+									Balance{" "}
+									<span className="font-mono text-foreground">
+										{CURRENCY_SYMBOL}
+										{mounted ? Math.round(balance).toLocaleString() : "—"}
+									</span>
+								</span>
+							</div>
+							<div
+								className={cn(
+									"flex items-center gap-2 rounded-md border bg-muted px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
+									insufficient && "border-no/60 focus-within:border-no"
+								)}
 							>
-								Amount
-							</Label>
-							<div className="flex items-center gap-2 rounded-md border bg-muted px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
 								<span className="font-mono text-muted-foreground">
 									{CURRENCY_SYMBOL}
 								</span>
@@ -227,29 +264,26 @@ function QuickBuyDialog({
 									inputMode="decimal"
 									value={amount}
 									onChange={(e) => setAmount(e.target.value)}
-									className="h-10 border-0 bg-transparent p-0 font-semibold text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
+									className="h-11 border-0 bg-transparent p-0 font-semibold text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
 								/>
-								<span className="text-muted-foreground text-xs">
-									/ {mounted ? Math.round(balance).toLocaleString() : "—"}
-								</span>
+							</div>
+							<div className="grid grid-cols-4 gap-1.5 pt-1">
+								{["50", "100", "250", "500"].map((v) => (
+									<Button
+										key={v}
+										variant="outline"
+										size="sm"
+										onClick={() => setAmount(v)}
+										className="font-mono"
+									>
+										{CURRENCY_SYMBOL}
+										{v}
+									</Button>
+								))}
 							</div>
 						</div>
 
-						<div className="flex flex-wrap gap-2">
-							{["50", "100", "250", "500"].map((v) => (
-								<Button
-									key={v}
-									variant="outline"
-									size="xs"
-									onClick={() => setAmount(v)}
-								>
-									{CURRENCY_SYMBOL}
-									{v}
-								</Button>
-							))}
-						</div>
-
-						<div className="space-y-1.5 rounded-md bg-muted/50 px-3 py-2 text-sm">
+						<div className="space-y-1.5 rounded-md bg-muted/50 px-3 py-2.5 text-sm">
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">Avg price</span>
 								<span className="font-mono">{cents(price)}</span>
@@ -258,7 +292,7 @@ function QuickBuyDialog({
 								<span className="text-muted-foreground">Shares</span>
 								<span className="font-mono">{shares.toFixed(2)}</span>
 							</div>
-							<div className="flex justify-between">
+							<div className="flex justify-between border-t pt-1.5">
 								<span className="text-muted-foreground">Max payout</span>
 								<span className="font-semibold">
 									{CURRENCY_SYMBOL}
@@ -270,7 +304,7 @@ function QuickBuyDialog({
 						<Button
 							variant={side === "Yes" ? "yes" : "no"}
 							size="lg"
-							className="w-full"
+							className="h-12 w-full text-base"
 							disabled={submitting || insufficient || cost <= 0}
 							onClick={submit}
 						>
@@ -352,7 +386,7 @@ export function BuyButton({
 	return (
 		<Button
 			variant={outcome === "yes" ? "yes-soft" : "no-soft"}
-			size="sm"
+			className="h-10 font-semibold sm:h-9"
 			onClick={(e) => {
 				e.preventDefault();
 				e.stopPropagation();

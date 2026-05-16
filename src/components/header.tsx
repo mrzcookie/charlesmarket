@@ -56,7 +56,7 @@ export function Header() {
 
 	return (
 		<header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
-			<div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6">
+			<div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-6 sm:px-6 sm:py-3">
 				<Sheet>
 					<SheetTrigger asChild>
 						<Button
@@ -130,7 +130,7 @@ export function Header() {
 					<div className="grid h-8 w-8 place-items-center rounded-lg bg-primary font-black text-primary-foreground text-sm">
 						C
 					</div>
-					<span className="font-semibold text-base tracking-tight">
+					<span className="hidden font-semibold text-base tracking-tight sm:inline">
 						Charlesmarket
 					</span>
 				</Link>
@@ -180,15 +180,17 @@ export function Header() {
 					})}
 				</nav>
 
-				<div className="ml-auto flex items-center gap-2">
+				<div className="ml-auto flex items-center gap-1.5 sm:gap-2">
 					<ThemeToggle />
 					<Authenticated>
 						<Badge
 							variant="brand"
-							className="hidden h-9 gap-1.5 rounded-md px-3 font-mono text-sm sm:inline-flex"
+							className="h-9 gap-1 rounded-md px-2 font-mono text-xs sm:gap-1.5 sm:px-3 sm:text-sm"
 							title="Your shekel balance"
 						>
-							<span className="text-base leading-none">{CURRENCY_SYMBOL}</span>
+							<span className="text-sm leading-none sm:text-base">
+								{CURRENCY_SYMBOL}
+							</span>
 							<span className="tabular-nums">{balanceText}</span>
 						</Badge>
 					</Authenticated>
