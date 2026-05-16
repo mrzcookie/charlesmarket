@@ -18,11 +18,20 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/portfolio")({
 	component: PortfolioPage,
+	head: () =>
+		pageHead({
+			title: "Your portfolio",
+			description:
+				"Your open positions, cash balance, lifetime P&L, and every ticket you've settled on Charles.",
+			path: "/portfolio",
+			noIndex: true,
+		}),
 });
 
 function PortfolioPage() {

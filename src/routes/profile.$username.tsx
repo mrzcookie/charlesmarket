@@ -18,11 +18,21 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
+import { useDynamicHead } from "@/lib/seo-client";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/profile/$username")({
 	component: PublicProfilePage,
+	head: ({ params }) => {
+		const handle = decodeURIComponent(params.username).replace(/^@/, "");
+		return pageHead({
+			title: `@${handle}`,
+			description: `${handle} on Charles — trader profile, open positions, P&L, and trade history.`,
+			path: `/profile/${encodeURIComponent(handle)}`,
+		});
+	},
 });
 
 function PublicProfilePage() {
@@ -38,6 +48,16 @@ function PublicProfilePage() {
 		limit: 20,
 	});
 	const me = useQuery(api.users.me, {});
+
+	const cleanHandle = handleParam.replace(/^@/, "");
+	const pnlLabel = profile ? money(profile.pnl) : "";
+	useDynamicHead({
+		title: profile ? `@${cleanHandle} · ${pnlLabel} P&L` : `@${cleanHandle}`,
+		description: profile
+			? `@${cleanHandle} on Charles — ${pnlLabel} lifetime P&L. Open positions, trade history, and shekels at stake.`
+			: `Trader profile for @${cleanHandle} on Charles.`,
+		path: `/profile/${encodeURIComponent(cleanHandle)}`,
+	});
 
 	if (profile === undefined) {
 		return (

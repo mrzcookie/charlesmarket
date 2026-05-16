@@ -9,10 +9,18 @@ import { SignInButton } from "@/components/auth-controls";
 import { Kicker } from "@/components/console";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENCY_SYMBOL, STARTING_BALANCE } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/profile/")({
 	component: ProfileIndex,
+	head: () =>
+		pageHead({
+			title: "Your profile",
+			description: "Your public trader profile on Charles.",
+			path: "/profile",
+			noIndex: true,
+		}),
 });
 
 function ProfileIndex() {

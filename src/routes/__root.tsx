@@ -97,45 +97,108 @@ const chunkErrorRecoveryScript = `
 })();
 `;
 
+const SITE_URL = "https://charles.market";
+const SITE_NAME = "CHARLES.MARKET";
+const DEFAULT_TITLE = "CHARLES.MARKET — Bet on Charles";
+const DEFAULT_DESCRIPTION =
+	"A play-money prediction console for one chaotic friend named Charles. Trade Yes/No tickets in shekels on his next mishap, milestone, or antic.";
+const OG_IMAGE = `${SITE_URL}/og.svg`;
+
+const structuredData = {
+	"@context": "https://schema.org",
+	"@graph": [
+		{
+			"@type": "WebSite",
+			"@id": `${SITE_URL}/#website`,
+			url: `${SITE_URL}/`,
+			name: SITE_NAME,
+			description: DEFAULT_DESCRIPTION,
+			inLanguage: "en",
+			potentialAction: {
+				"@type": "SearchAction",
+				target: {
+					"@type": "EntryPoint",
+					urlTemplate: `${SITE_URL}/tickets?q={search_term_string}`,
+				},
+				"query-input": "required name=search_term_string",
+			},
+		},
+		{
+			"@type": "Organization",
+			"@id": `${SITE_URL}/#org`,
+			name: SITE_NAME,
+			url: `${SITE_URL}/`,
+			logo: `${SITE_URL}/favicon.svg`,
+		},
+	],
+};
+
 export const Route = createRootRoute({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
-			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "CHARLES.MARKET / Bet on Charles" },
 			{
-				name: "description",
-				content:
-					"The prediction console for Charles. Trade Yes/No tickets on his next mishap, milestone, or antic.",
+				name: "viewport",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
+			{ title: DEFAULT_TITLE },
+			{ name: "description", content: DEFAULT_DESCRIPTION },
+			{
+				name: "keywords",
+				content:
+					"prediction market, play-money, friends, betting, Yes/No tickets, shekels, prediction console, Charles, social bets, market for friends",
+			},
+			{ name: "application-name", content: SITE_NAME },
+			{ name: "apple-mobile-web-app-title", content: SITE_NAME },
+			{ name: "apple-mobile-web-app-capable", content: "yes" },
+			{
+				name: "apple-mobile-web-app-status-bar-style",
+				content: "black-translucent",
+			},
+			{ name: "format-detection", content: "telephone=no" },
 			{ name: "theme-color", content: "#bcf03d" },
 			{ name: "color-scheme", content: "dark light" },
 			{
-				property: "og:title",
-				content: "CHARLES.MARKET / Bet on Charles",
-			},
-			{
-				property: "og:description",
+				name: "robots",
 				content:
-					"A near-future prediction console built for one chaotic friend. Play-money shekels, real consequences for his reputation.",
+					"index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
 			},
+			{ name: "googlebot", content: "index, follow" },
+			{ name: "referrer", content: "strict-origin-when-cross-origin" },
+			{ name: "author", content: SITE_NAME },
+			{ name: "creator", content: SITE_NAME },
+			{ name: "publisher", content: SITE_NAME },
+			{ property: "og:title", content: DEFAULT_TITLE },
+			{ property: "og:description", content: DEFAULT_DESCRIPTION },
 			{ property: "og:type", content: "website" },
-			{ property: "og:site_name", content: "CHARLES.MARKET" },
-			{ name: "twitter:card", content: "summary_large_image" },
+			{ property: "og:site_name", content: SITE_NAME },
+			{ property: "og:url", content: `${SITE_URL}/` },
+			{ property: "og:locale", content: "en_US" },
+			{ property: "og:image", content: OG_IMAGE },
+			{ property: "og:image:type", content: "image/svg+xml" },
+			{ property: "og:image:width", content: "1200" },
+			{ property: "og:image:height", content: "630" },
 			{
-				name: "twitter:title",
-				content: "CHARLES.MARKET / Bet on Charles",
+				property: "og:image:alt",
+				content: "CHARLES.MARKET — bet on Charles in shekels",
 			},
+			{ name: "twitter:card", content: "summary_large_image" },
+			{ name: "twitter:title", content: DEFAULT_TITLE },
+			{ name: "twitter:description", content: DEFAULT_DESCRIPTION },
+			{ name: "twitter:image", content: OG_IMAGE },
 			{
-				name: "twitter:description",
-				content:
-					"A near-future prediction console built for one chaotic friend. Play-money shekels, real consequences.",
+				name: "twitter:image:alt",
+				content: "CHARLES.MARKET — bet on Charles in shekels",
 			},
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+			{ rel: "alternate icon", href: "/favicon.svg" },
+			{ rel: "mask-icon", href: "/favicon.svg", color: "#bcf03d" },
 			{ rel: "apple-touch-icon", href: "/favicon.svg" },
+			{ rel: "manifest", href: "/site.webmanifest" },
+			{ rel: "canonical", href: `${SITE_URL}/` },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
 			{
 				rel: "preconnect",
@@ -150,6 +213,10 @@ export const Route = createRootRoute({
 		scripts: [
 			{ children: themeInitScript },
 			{ children: chunkErrorRecoveryScript },
+			{
+				type: "application/ld+json",
+				children: JSON.stringify(structuredData),
+			},
 		],
 	}),
 	shellComponent: RootDocument,

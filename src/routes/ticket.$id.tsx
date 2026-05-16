@@ -31,6 +31,8 @@ import {
 	trail,
 	type UIMarket,
 } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
+import { useDynamicHead } from "@/lib/seo-client";
 import { cn } from "@/lib/utils";
 import { useBalance } from "@/lib/wallet";
 import { api } from "../../convex/_generated/api";
@@ -38,6 +40,13 @@ import type { Id } from "../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/ticket/$id")({
 	component: MarketDetail,
+	head: ({ params }) =>
+		pageHead({
+			title: "Ticket",
+			description:
+				"Trade Yes/No on Charles in shekels. Live prices, order book, and resolution status.",
+			path: `/ticket/${params.id}`,
+		}),
 });
 
 function MarketDetail() {
@@ -45,6 +54,17 @@ function MarketDetail() {
 	const doc = useQuery(api.markets.getBySlug, { slug: id });
 	const [quickBuyOpen, setQuickBuyOpen] = useState(false);
 	const [quickBuySide, setQuickBuySide] = useState<"Yes" | "No">("Yes");
+
+	const yesPct = doc ? Math.round(doc.yesPrice * 100) : null;
+	const dynamicTitle = doc ? `${doc.question} — ${yesPct}% Yes` : "Ticket";
+	const dynamicDescription = doc
+		? `${doc.question} Trade Yes/No on Charles in shekels. Current Yes price ${yesPct}₪.`
+		: "A prediction ticket on Charles.";
+	useDynamicHead({
+		title: dynamicTitle,
+		description: dynamicDescription,
+		path: `/ticket/${id}`,
+	});
 
 	if (doc === undefined) return <MarketDetailSkeleton />;
 	if (doc === null) return <MarketNotFound id={id} />;

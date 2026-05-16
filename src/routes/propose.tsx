@@ -24,10 +24,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/propose")({
 	component: ProposePage,
+	head: () =>
+		pageHead({
+			title: "Propose a ticket",
+			description:
+				"Pitch a Yes/No prediction ticket about Charles. If an admin approves it, the rest of us can trade it.",
+			path: "/propose",
+		}),
 });
 
 type Example = {

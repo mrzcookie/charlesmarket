@@ -1,0 +1,19 @@
+{
+	"name": "CHARLES.MARKET",
+	"short_name": "Charles",
+	"description": "A play-money prediction console for one chaotic friend named Charles. Trade Yes/No tickets in shekels.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#15191d",
+	"theme_color": "#bcf03d",
+	"icons": [
+		{
+			"src": "/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		}
+	]
+}

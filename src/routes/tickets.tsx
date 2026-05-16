@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type Category, categories, toUIMarket } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { api } from "../../convex/_generated/api";
 
 type Sort = "volume" | "closing" | "trending" | "new";
@@ -29,6 +30,13 @@ type SearchParams = {
 
 export const Route = createFileRoute("/tickets")({
 	component: MarketsPage,
+	head: () =>
+		pageHead({
+			title: "All tickets",
+			description:
+				"Browse every open prediction ticket on Charles. Filter by category, sort by volume, trend, or closing soonest.",
+			path: "/tickets",
+		}),
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		const cat = search.category;
 		const sort = search.sort;

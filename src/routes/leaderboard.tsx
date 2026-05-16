@@ -14,11 +14,19 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CURRENCY_SYMBOL, money } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/leaderboard")({
 	component: LeaderboardPage,
+	head: () =>
+		pageHead({
+			title: "Leaderboard",
+			description:
+				"Top traders on Charles, ranked by lifetime P&L in shekels. Realized profit plus unrealized mark-to-market.",
+			path: "/leaderboard",
+		}),
 });
 
 const ranges = ["24h", "7d", "30d", "All"] as const;

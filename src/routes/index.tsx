@@ -6,10 +6,18 @@ import { MarketCard } from "@/components/market-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENCY_SYMBOL, categories, money, toUIMarket } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/")({
 	component: Home,
+	head: () =>
+		pageHead({
+			title: "Bet on Charles",
+			description:
+				"A play-money prediction console for one chaotic friend. Trade Yes/No tickets in shekels on Charles's next mishap, milestone, or antic.",
+			path: "/",
+		}),
 });
 
 function Home() {

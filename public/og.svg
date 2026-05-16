@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="CHARLES.MARKET — bet on Charles in shekels">
+  <defs>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#252b32" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#15191d" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#15191d" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#15191d"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#fade)"/>
+
+  <!-- Brand mark -->
+  <g transform="translate(72,72)">
+    <rect width="80" height="80" rx="4" fill="#bcf03d"/>
+    <text x="40" y="58" font-family="ui-monospace, Menlo, monospace" font-size="48" font-weight="800" text-anchor="middle" fill="#181f0c" letter-spacing="-2">C.</text>
+  </g>
+
+  <!-- Status chip -->
+  <g transform="translate(176,92)">
+    <text font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#bcf03d" letter-spacing="3">[ LIVE · PREDICTION CONSOLE ]</text>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="72" y="320" font-family="'Funnel Display', 'Helvetica Neue', Arial, sans-serif" font-size="148" font-weight="800" fill="#f5f3eb" letter-spacing="-6">CHARLES</text>
+  <text x="72" y="448" font-family="'Funnel Display', 'Helvetica Neue', Arial, sans-serif" font-size="148" font-weight="800" fill="#bcf03d" letter-spacing="-6">.MARKET</text>
+
+  <!-- Tagline -->
+  <text x="72" y="520" font-family="'Funnel Sans', 'Helvetica Neue', Arial, sans-serif" font-size="34" font-weight="500" fill="#c8c5b6">Bet on Charles. Yes / No tickets in shekels (₪).</text>
+
+  <!-- Ticker -->
+  <g transform="translate(72,560)">
+    <text font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#9ca196" letter-spacing="3">YES 78₪</text>
+    <text x="170" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#9ca196" letter-spacing="3">·</text>
+    <text x="200" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#9ca196" letter-spacing="3">NO 22₪</text>
+    <text x="370" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#9ca196" letter-spacing="3">·</text>
+    <text x="400" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="700" fill="#bcf03d" letter-spacing="3">+6.0%</text>
+  </g>
+
+  <!-- Bottom rule -->
+  <rect x="72" y="600" width="1056" height="1" fill="#252b32"/>
+</svg>

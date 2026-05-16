@@ -8,10 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cents, money } from "@/lib/markets";
+import { pageHead } from "@/lib/seo";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/activity")({
 	component: ActivityPage,
+	head: () =>
+		pageHead({
+			title: "Live activity",
+			description:
+				"Every trade, comment, and resolution on Charles. The realtime feed, newest first.",
+			path: "/activity",
+		}),
 });
 
 type Filter = "all" | "trades" | "resolutions" | "comments";

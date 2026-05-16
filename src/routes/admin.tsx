@@ -15,11 +15,19 @@ import { SignInButton } from "@/components/auth-controls";
 import { BracketChip, Kicker } from "@/components/console";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageHead } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/admin")({
 	component: AdminLayout,
+	head: () =>
+		pageHead({
+			title: "Admin console",
+			description: "Admin-only console.",
+			path: "/admin",
+			noIndex: true,
+		}),
 });
 
 function AdminLayout() {

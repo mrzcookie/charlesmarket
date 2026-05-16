@@ -1,5 +1,22 @@
+# CHARLES.MARKET
 User-agent: *
 Allow: /
 
 Disallow: /admin
 Disallow: /admin/*
+Disallow: /portfolio
+Disallow: /profile
+Disallow: /profile/
+
+# AI training crawlers — opt out by default
+User-agent: GPTBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://charles.market/sitemap.xml
+Host: https://charles.market
