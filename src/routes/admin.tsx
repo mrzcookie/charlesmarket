@@ -49,7 +49,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories, money } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
@@ -212,9 +211,11 @@ function ProposalsPanel() {
 										<h3 className="mt-2 font-semibold text-base leading-snug">
 											{p.question}
 										</h3>
-										<p className="mt-1 text-muted-foreground text-sm">
-											{p.description}
-										</p>
+										{p.description && (
+											<p className="mt-1 text-muted-foreground text-sm">
+												{p.description}
+											</p>
+										)}
 										<dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
 											<KV label="Closes" value={p.closesAt} />
 											<KV
@@ -570,7 +571,6 @@ function StatusBadge({ market }: { market: Doc<"markets"> }) {
 function CreateMarketForm() {
 	const create = useMutation(api.admin.createMarket);
 	const [question, setQuestion] = useState("");
-	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState("Antics");
 	const [resolutionSource, setResolutionSource] = useState("");
 	const [tagInput, setTagInput] = useState("");
@@ -600,7 +600,6 @@ function CreateMarketForm() {
 				.filter(Boolean);
 			const r = await create({
 				question: question.trim(),
-				description: description.trim(),
 				category,
 				resolutionSource: resolutionSource.trim(),
 				tags,
@@ -619,7 +618,6 @@ function CreateMarketForm() {
 				description: `/market/${r.slug}`,
 			});
 			setQuestion("");
-			setDescription("");
 			setResolutionSource("");
 			setTagInput("");
 			setClosesAt("");
@@ -652,16 +650,6 @@ function CreateMarketForm() {
 							onChange={(e) => setQuestion(e.target.value)}
 							placeholder="Will Charles…?"
 							maxLength={140}
-							required
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="a-description">Description</Label>
-						<Textarea
-							id="a-description"
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							rows={3}
 							required
 						/>
 					</div>

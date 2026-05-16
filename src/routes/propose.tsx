@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
@@ -39,7 +38,6 @@ export const Route = createFileRoute("/propose")({
 
 type Example = {
 	question: string;
-	description: string;
 	category: string;
 	resolutionSource: string;
 	tags: string;
@@ -48,24 +46,18 @@ type Example = {
 const EXAMPLES: Example[] = [
 	{
 		question: "Will Charles return the rental car without a new dent?",
-		description:
-			"Resolves YES if the Hertz inspection report on return shows no new damage versus pickup.",
 		category: "Mishaps",
 		resolutionSource: "Hertz inspection report",
 		tags: "travel, chaos",
 	},
 	{
 		question: "Will Charles finish 'Annihilation' before our book club?",
-		description:
-			"Resolves YES if Charles can answer 3 spoiler questions correctly at the book club meeting on June 10.",
 		category: "Antics",
 		resolutionSource: "Live quiz at book club",
 		tags: "reading, book-club",
 	},
 	{
 		question: "Will Charles RSVP to the wedding within 7 days?",
-		description:
-			"Resolves YES if the wedding website shows Charles's RSVP submitted within 7 days of the invite being sent.",
 		category: "Relationships",
 		resolutionSource: "Wedding RSVP timestamp",
 		tags: "wedding, deadline",
@@ -163,7 +155,6 @@ function AuthedBody() {
 	const navigate = useNavigate();
 
 	const [question, setQuestion] = useState("");
-	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState<string>("Antics");
 	const [resolutionSource, setResolutionSource] = useState("");
 	const [tagInput, setTagInput] = useState("");
@@ -198,20 +189,17 @@ function AuthedBody() {
 	);
 
 	const questionTrim = question.trim();
-	const descriptionTrim = description.trim();
 	const questionOk =
 		questionTrim.length >= 12 &&
 		questionTrim.length <= 140 &&
 		questionTrim.endsWith("?");
-	const descriptionOk =
-		descriptionTrim.length >= 20 && descriptionTrim.length <= 1_000;
 	const resolutionOk = resolutionSource.trim().length > 0;
 	const futureOk =
 		Number.isFinite(closesAtMs) && closesAtMs > Date.now() + 5 * 60_000;
 	const yesOk = yesPrice > 0.01 && yesPrice < 0.99;
 	const liqOk = liquidity >= 100 && liquidity <= 50_000;
 	const formValid =
-		questionOk && descriptionOk && resolutionOk && futureOk && yesOk && liqOk;
+		questionOk && resolutionOk && futureOk && yesOk && liqOk;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -220,7 +208,6 @@ function AuthedBody() {
 		try {
 			await submit({
 				question: questionTrim,
-				description: descriptionTrim,
 				category,
 				resolutionSource: resolutionSource.trim(),
 				tags,
@@ -244,7 +231,6 @@ function AuthedBody() {
 
 	const fillExample = (ex: Example) => {
 		setQuestion(ex.question);
-		setDescription(ex.description);
 		setCategory(ex.category);
 		setResolutionSource(ex.resolutionSource);
 		setTagInput(ex.tags);
@@ -256,8 +242,8 @@ function AuthedBody() {
 				<CardHeader>
 					<CardTitle>Market details</CardTitle>
 					<CardDescription>
-						Be specific. Vague questions get rejected — the resolution criteria
-						must be unambiguous.
+						Be specific. Vague questions get rejected — the question
+						itself should make the YES/NO call unambiguous.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -275,23 +261,6 @@ function AuthedBody() {
 							<div className="flex justify-between text-muted-foreground text-xs">
 								<span>Must end with '?' and be 12–140 characters.</span>
 								<span className="font-mono">{question.length}/140</span>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="description">Resolution criteria</Label>
-							<Textarea
-								id="description"
-								placeholder="Resolves YES if … Specify the evidence required and the deadline."
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-								maxLength={1_000}
-								rows={4}
-								aria-invalid={description.length > 0 && !descriptionOk}
-							/>
-							<div className="flex justify-between text-muted-foreground text-xs">
-								<span>Describe exactly when it resolves YES vs NO.</span>
-								<span className="font-mono">{description.length}/1000</span>
 							</div>
 						</div>
 
