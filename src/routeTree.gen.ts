@@ -15,6 +15,9 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
@@ -49,6 +52,21 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarketsRoute = AdminMarketsRouteImport.update({
+  id: '/admin/markets',
+  path: '/markets',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ActivityRoute = ActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
@@ -69,6 +87,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
@@ -80,6 +101,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
@@ -92,6 +116,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
@@ -105,6 +132,9 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
+    | '/admin/'
+    | '/admin/markets'
+    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
@@ -116,6 +146,9 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
+    | '/admin/'
+    | '/admin/markets'
+    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
@@ -127,6 +160,9 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
+    | '/admin/'
+    | '/admin/markets'
+    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
@@ -135,10 +171,25 @@ export interface FileRouteTypes {
     | '/market/$id'
   fileRoutesById: FileRoutesById
 }
+
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminMarketsRoute: typeof AdminMarketsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+}
+
+const adminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminMarketsRoute: AdminMarketsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(adminRouteChildren)
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivityRoute: typeof ActivityRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   LeaderboardRoute: typeof LeaderboardRoute
   MarketsRoute: typeof MarketsRoute
   PortfolioRoute: typeof PortfolioRoute
@@ -191,6 +242,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/markets': {
+      id: '/admin/markets'
+      path: '/markets'
+      fullPath: '/admin/markets'
+      preLoaderRoute: typeof AdminMarketsRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
     '/activity': {
       id: '/activity'
       path: '/activity'
@@ -218,7 +290,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivityRoute: ActivityRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   LeaderboardRoute: LeaderboardRoute,
   MarketsRoute: MarketsRoute,
   PortfolioRoute: PortfolioRoute,

@@ -356,3 +356,89 @@ export const revokeAdmin = mutation({
 		return { ok: true };
 	},
 });
+
+export const listUsers = query({
+	args: {},
+	handler: async (ctx) => {
+		await requireAdmin(ctx);
+		const users = await ctx.db.query("users").collect();
+		return users.map((u) => ({
+			_id: u._id,
+			_creationTime: u._creationTime,
+			email: u.email ?? null,
+			handle: u.handle ?? "@anon",
+			name: u.name ?? null,
+			balance: u.balance ?? 0,
+			joinedAt: u.joinedAt ?? null,
+			isAdmin: Boolean(u.isAdmin),
+		}));
+	},
+});
+
+export const adminUpdateUser = mutation({
+	args: {
+		userId: v.id("users"),
+		handle: v.optional(v.string()),
+		name: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		await requireAdmin(ctx);
+		const user = await ctx.db.get(args.userId);
+		if (!user) throw new Error("User not found");
+		const patch: Partial<Doc<"users">> = {};
+		if (args.handle !== undefined) {
+			const h = args.handle.trim();
+			const normalized = h.startsWith("@") ? h : `@${h}`;
+			if (normalized.length > 32) throw new Error("Handle too long");
+			patch.handle = normalized;
+		}
+		if (args.name !== undefined) {
+			const n = args.name.trim();
+			if (!n) throw new Error("Name cannot be empty");
+			if (n.length > 60) throw new Error("Name too long");
+			patch.name = n;
+		}
+		await ctx.db.patch(args.userId, patch);
+		return { ok: true };
+	},
+});
+
+export const deleteUser = mutation({
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		const me = await requireAdmin(ctx);
+		if (me._id === userId) throw new Error("Cannot delete yourself");
+		const user = await ctx.db.get(userId);
+		if (!user) throw new Error("User not found");
+		await ctx.db.delete(userId);
+		return { ok: true };
+	},
+});
+
+export const userTrades = query({
+	args: { userId: v.id("users") },
+	handler: async (ctx, { userId }) => {
+		await requireAdmin(ctx);
+		const trades = await ctx.db
+			.query("trades")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.order("desc")
+			.take(50);
+		return await Promise.all(
+			trades.map(async (t) => {
+				const market = await ctx.db.get(t.marketId);
+				return {
+					_id: t._id,
+					_creationTime: t._creationTime,
+					side: t.side,
+					kind: t.kind,
+					shares: t.shares,
+					price: t.price,
+					cost: t.cost,
+					marketQuestion: market?.question ?? "Deleted market",
+					marketSlug: market?.slug ?? "",
+				};
+			}),
+		);
+	},
+});

@@ -9,6 +9,7 @@ import {
 import { lazy, type ReactNode, Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { TableRegistryProvider } from "@/components/table-devtools";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { convex } from "@/lib/convex";
@@ -19,7 +20,8 @@ const Devtools = import.meta.env.DEV
 			Promise.all([
 				import("@tanstack/react-devtools"),
 				import("@tanstack/react-router-devtools"),
-			]).then(([{ TanStackDevtools }, router]) => ({
+				import("@/components/table-devtools"),
+			]).then(([{ TanStackDevtools }, router, tableDevtools]) => ({
 				default: () => (
 					<TanStackDevtools
 						config={{ position: "bottom-right" }}
@@ -27,6 +29,10 @@ const Devtools = import.meta.env.DEV
 							{
 								name: "TanStack Router",
 								render: <router.TanStackRouterDevtoolsPanel />,
+							},
+							{
+								name: "TanStack Table",
+								render: <tableDevtools.TableDevtoolsPanel />,
 							},
 						]}
 					/>
@@ -85,25 +91,27 @@ function RootDocument({ children }: { children: ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="flex min-h-screen flex-col font-sans">
-				<ConvexAuthProvider client={convex}>
-					<a
-						href="#main-content"
-						className="absolute top-0 left-2 z-50 -translate-y-full rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground text-sm shadow focus:top-2 focus:translate-y-0"
-					>
-						Skip to content
-					</a>
-					<Header />
-					<div id="main-content" className="flex flex-1 flex-col">
-						{children}
-					</div>
-					<Footer />
-					<Toaster richColors closeButton position="bottom-right" />
-				</ConvexAuthProvider>
-				{Devtools && (
-					<Suspense fallback={null}>
-						<Devtools />
-					</Suspense>
-				)}
+				<TableRegistryProvider>
+					<ConvexAuthProvider client={convex}>
+						<a
+							href="#main-content"
+							className="absolute top-0 left-2 z-50 -translate-y-full rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground text-sm shadow focus:top-2 focus:translate-y-0"
+						>
+							Skip to content
+						</a>
+						<Header />
+						<div id="main-content" className="flex flex-1 flex-col">
+							{children}
+						</div>
+						<Footer />
+						<Toaster richColors closeButton position="bottom-right" />
+					</ConvexAuthProvider>
+					{Devtools && (
+						<Suspense fallback={null}>
+							<Devtools />
+						</Suspense>
+					)}
+				</TableRegistryProvider>
 				<Scripts />
 			</body>
 		</html>
