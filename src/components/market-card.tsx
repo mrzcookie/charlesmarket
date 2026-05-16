@@ -16,6 +16,7 @@ import {
 	cents,
 	type Market,
 	money,
+	trail,
 	type UIMarket,
 } from "@/lib/markets";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,10 @@ export function MarketCard({
 	const yes = market.yesPrice;
 	const no = 1 - yes;
 	const id = marketId(market.slug);
-	const sparkPts = market.history.map((h) => h.yes);
+	const sparkPts =
+		market.history.length >= 2
+			? market.history.map((h) => h.yes)
+			: trail(yes).map((h) => h.yes);
 
 	if (variant === "featured") {
 		return (
