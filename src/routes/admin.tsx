@@ -148,7 +148,7 @@ function NotAuthorized() {
 				you access.
 			</p>
 			<Button asChild variant="outline" className="mt-6">
-				<Link to="/markets">Back to tickets</Link>
+				<Link to="/tickets">Back to tickets</Link>
 			</Button>
 		</div>
 	);

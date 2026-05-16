@@ -6,7 +6,7 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
-import { lazy, type ReactNode, Suspense } from "react";
+import { lazy, type ReactNode, Suspense, useEffect } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { TableRegistryProvider } from "@/components/table-devtools";
@@ -50,6 +50,50 @@ const themeInitScript = `
   } catch (e) {
     document.documentElement.classList.add('dark');
   }
+})();
+`;
+
+// Hard-reload once when a code-split chunk fails to load (stale deploy after
+// a new release). The session-storage flag prevents an infinite reload loop
+// if the chunk really is broken and not just a hash mismatch.
+const chunkErrorRecoveryScript = `
+(function() {
+  var KEY = '__cm_chunk_reload_at';
+  function recover(reason) {
+    try {
+      var last = Number(sessionStorage.getItem(KEY) || '0');
+      if (Date.now() - last < 10000) return;
+      sessionStorage.setItem(KEY, String(Date.now()));
+    } catch (e) {}
+    if (typeof console !== 'undefined') {
+      console.warn('[charlesmarket] chunk load failed, hard-reloading:', reason);
+    }
+    window.location.reload();
+  }
+  window.addEventListener('vite:preloadError', function (e) {
+    e.preventDefault();
+    recover('vite:preloadError');
+  });
+  window.addEventListener('error', function (e) {
+    var msg = e && e.message ? String(e.message) : '';
+    if (
+      msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+      msg.indexOf('Importing a module script failed') !== -1 ||
+      (msg.indexOf('ChunkLoadError') !== -1)
+    ) {
+      recover('window.error');
+    }
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var msg = (e && e.reason && (e.reason.message || String(e.reason))) || '';
+    if (
+      msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+      msg.indexOf('Importing a module script failed') !== -1 ||
+      msg.indexOf('ChunkLoadError') !== -1
+    ) {
+      recover('unhandledrejection');
+    }
+  });
 })();
 `;
 
@@ -103,7 +147,10 @@ export const Route = createRootRoute({
 				href: "https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Funnel+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@500;700&display=swap",
 			},
 		],
-		scripts: [{ children: themeInitScript }],
+		scripts: [
+			{ children: themeInitScript },
+			{ children: chunkErrorRecoveryScript },
+		],
 	}),
 	shellComponent: RootDocument,
 	notFoundComponent: GlobalNotFound,
@@ -144,7 +191,50 @@ function RootDocument({ children }: { children: ReactNode }) {
 	);
 }
 
+function isChunkLoadError(error: Error): boolean {
+	const msg = error?.message ?? "";
+	return (
+		msg.includes("Failed to fetch dynamically imported module") ||
+		msg.includes("Importing a module script failed") ||
+		msg.includes("ChunkLoadError") ||
+		error?.name === "ChunkLoadError"
+	);
+}
+
 function GlobalError({ error }: { error: Error }) {
+	const chunkError = isChunkLoadError(error);
+
+	useEffect(() => {
+		if (!chunkError || typeof window === "undefined") return;
+		const KEY = "__cm_chunk_reload_at";
+		let last = 0;
+		try {
+			last = Number(sessionStorage.getItem(KEY) || "0");
+			sessionStorage.setItem(KEY, String(Date.now()));
+		} catch {}
+		if (Date.now() - last < 10_000) return;
+		window.location.reload();
+	}, [chunkError]);
+
+	if (chunkError) {
+		return (
+			<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
+				<div className="bracket-chip" data-pulse="true">
+					RELOADING
+				</div>
+				<h1 className="display-headline mt-6 text-4xl sm:text-5xl">
+					New version is live.
+				</h1>
+				<p className="mt-4 max-w-md text-bone-2">
+					Refreshing to pick up the latest build…
+				</p>
+				<Button className="mt-8" onClick={() => window.location.reload()}>
+					Reload now
+				</Button>
+			</main>
+		);
+	}
+
 	return (
 		<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
 			<div className="bracket-chip" data-tone="danger">
@@ -163,7 +253,7 @@ function GlobalError({ error }: { error: Error }) {
 			<div className="mt-8 flex gap-3">
 				<Button onClick={() => window.location.reload()}>Reload</Button>
 				<Button asChild variant="outline">
-					<Link to="/markets">Browse tickets</Link>
+					<Link to="/tickets">Browse tickets</Link>
 				</Button>
 			</div>
 		</main>
@@ -185,7 +275,7 @@ function GlobalNotFound() {
 			</p>
 			<div className="mt-8 flex gap-3">
 				<Button asChild>
-					<Link to="/markets">Browse tickets</Link>
+					<Link to="/tickets">Browse tickets</Link>
 				</Button>
 				<Button asChild variant="outline">
 					<Link to="/">Go home</Link>

@@ -172,7 +172,7 @@ function PublicProfilePage() {
 								<li key={p._id} className="ledger-row space-y-2 px-3 py-3">
 									<div className="flex items-start justify-between gap-2">
 										<Link
-											to="/market/$id"
+											to="/ticket/$id"
 											params={{ id: p.marketSlug }}
 											className="flex-1 font-display font-semibold text-bone text-sm hover:text-brand"
 										>
@@ -215,7 +215,7 @@ function PublicProfilePage() {
 											</TableCell>
 											<TableCell>
 												<Link
-													to="/market/$id"
+													to="/ticket/$id"
 													params={{ id: p.marketSlug }}
 													className="font-display font-semibold text-bone hover:text-brand"
 												>
@@ -281,7 +281,7 @@ function PublicProfilePage() {
 									{marketId(t.marketSlug)}
 								</span>
 								<Link
-									to="/market/$id"
+									to="/ticket/$id"
 									params={{ id: t.marketSlug }}
 									className="line-clamp-1 font-display font-semibold text-bone text-sm hover:text-brand"
 								>

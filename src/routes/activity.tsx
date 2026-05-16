@@ -102,7 +102,7 @@ function EventRow({ event }: { event: FeedEvent }) {
 					)}
 					<EventVerb event={event} />
 					<Link
-						to="/market/$id"
+						to="/ticket/$id"
 						params={{ id: event.marketSlug }}
 						className="font-display font-semibold text-bone hover:text-brand"
 					>

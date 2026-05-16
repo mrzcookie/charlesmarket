@@ -51,7 +51,7 @@ export function MarketCard({
 		return (
 			<>
 				<Link
-					to="/market/$id"
+					to="/ticket/$id"
 					params={{ id: market.slug }}
 					className="group block border border-rule bg-ink-2 p-6 transition-colors hover:border-rule-bright hover:bg-ink-3 sm:p-8"
 				>
@@ -109,7 +109,7 @@ export function MarketCard({
 		return (
 			<>
 				<Link
-					to="/market/$id"
+					to="/ticket/$id"
 					params={{ id: market.slug }}
 					className="ledger-row group grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 px-3 py-3 sm:gap-6 sm:px-4 sm:py-4"
 				>
@@ -158,7 +158,7 @@ export function MarketCard({
 	return (
 		<>
 			<Link
-				to="/market/$id"
+				to="/ticket/$id"
 				params={{ id: market.slug }}
 				className="group flex h-full flex-col border border-rule bg-ink-2 p-4 transition-colors hover:border-rule-bright hover:bg-ink-3 sm:p-5"
 			>
@@ -498,7 +498,7 @@ export function QuickBuyDialog({
 						</Button>
 
 						<Link
-							to="/market/$id"
+							to="/ticket/$id"
 							params={{ id: market.slug }}
 							className="block text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em] hover:text-brand"
 							onClick={() => onOpenChange(false)}

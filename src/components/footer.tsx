@@ -24,7 +24,7 @@ export function Footer() {
 				<FooterCol
 					title="Trade"
 					links={[
-						{ label: "Tickets", to: "/markets" },
+						{ label: "Tickets", to: "/tickets" },
 						{ label: "Activity", to: "/activity" },
 						{ label: "Leaderboard", to: "/leaderboard" },
 						{ label: "Propose", to: "/propose" },

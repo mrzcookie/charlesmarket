@@ -401,7 +401,7 @@ function AuthedBody() {
 
 					<div className="flex flex-col-reverse items-stretch gap-3 border-rule border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
 						<Button asChild type="button" variant="ghost">
-							<Link to="/markets">Cancel</Link>
+							<Link to="/tickets">Cancel</Link>
 						</Button>
 						<Button type="submit" disabled={!formValid || submitting}>
 							{submitting ? (

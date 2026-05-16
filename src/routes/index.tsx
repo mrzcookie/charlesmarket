@@ -55,7 +55,7 @@ function Home() {
 					<SectionHead
 						kicker="TODAY'S TOP"
 						title="The big ticket"
-						href="/markets"
+						href="/tickets"
 					/>
 					<div className="mt-6">
 						{isLoading ? (
@@ -73,7 +73,7 @@ function Home() {
 						<SectionHead
 							kicker="HEAVY VOLUME"
 							title="Where the shekels are"
-							href="/markets"
+							href="/tickets"
 						/>
 						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
 							{trending.map((m) => (
@@ -87,7 +87,7 @@ function Home() {
 					<SectionHead
 						kicker="MORE TICKETS"
 						title="Open tickets"
-						href="/markets"
+						href="/tickets"
 					/>
 					{isLoading ? (
 						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -111,7 +111,7 @@ function Home() {
 					{!isLoading && markets.length > 0 ? (
 						<div className="mt-8 flex justify-center">
 							<Button asChild variant="outline">
-								<Link to="/markets">
+								<Link to="/tickets">
 									Browse all {markets.length} tickets
 									<ArrowRight />
 								</Link>
@@ -126,7 +126,7 @@ function Home() {
 						{categories.map((c) => (
 							<Link
 								key={c}
-								to="/markets"
+								to="/tickets"
 								search={{ category: c }}
 								className="flex items-center gap-2 border border-rule px-3 py-2 font-mono font-semibold text-[11px] text-bone-2 uppercase tracking-[0.14em] transition-colors hover:border-brand hover:text-brand"
 							>
@@ -177,7 +177,7 @@ function Hero({
 					</p>
 					<div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
 						<Button asChild size="lg" className="w-full sm:w-auto">
-							<Link to="/markets">Browse tickets</Link>
+							<Link to="/tickets">Browse tickets</Link>
 						</Button>
 						<Button
 							asChild

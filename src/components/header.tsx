@@ -32,7 +32,7 @@ import { ThemeToggle } from "./theme-toggle";
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 const navLinks: { to: string; label: string; icon: IconType }[] = [
-	{ to: "/markets", label: "Tickets", icon: Store },
+	{ to: "/tickets", label: "Tickets", icon: Store },
 	{ to: "/activity", label: "Activity", icon: Activity },
 	{ to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 	{ to: "/portfolio", label: "Portfolio", icon: Wallet },
@@ -50,7 +50,7 @@ export function Header() {
 	const submitSearch = () => {
 		const q = query.trim();
 		navigate({
-			to: "/markets",
+			to: "/tickets",
 			search: q ? { q } : { category: "All" },
 		});
 	};

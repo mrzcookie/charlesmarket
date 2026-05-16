@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TicketsRouteImport } from './routes/tickets'
 import { Route as ProposeRouteImport } from './routes/propose'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
@@ -17,12 +18,19 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
 
+const TicketsRoute = TicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProposeRoute = ProposeRouteImport.update({
   id: '/propose',
   path: '/propose',
@@ -63,10 +71,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const TicketIdRoute = TicketIdRouteImport.update({
+  id: '/ticket/$id',
+  path: '/ticket/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   id: '/$username',
@@ -98,11 +116,14 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
+  '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
+  '/ticket/$id': typeof TicketIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,13 +131,15 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
-  '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
+  '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
+  '/ticket/$id': typeof TicketIdRoute
   '/admin': typeof AdminIndexRoute
+  '/profile': typeof ProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,11 +151,14 @@ export interface FileRoutesById {
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRouteWithChildren
   '/propose': typeof ProposeRoute
+  '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
+  '/ticket/$id': typeof TicketIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -145,11 +171,14 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/profile'
     | '/propose'
+    | '/tickets'
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
+    | '/ticket/$id'
     | '/admin/'
+    | '/profile/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -157,13 +186,15 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
-    | '/profile'
     | '/propose'
+    | '/tickets'
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
+    | '/ticket/$id'
     | '/admin'
+    | '/profile'
   id:
     | '__root__'
     | '/'
@@ -174,11 +205,14 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/profile'
     | '/propose'
+    | '/tickets'
     | '/admin/markets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
+    | '/ticket/$id'
     | '/admin/'
+    | '/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,11 +224,20 @@ export interface RootRouteChildren {
   PortfolioRoute: typeof PortfolioRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   ProposeRoute: typeof ProposeRoute
+  TicketsRoute: typeof TicketsRoute
   MarketIdRoute: typeof MarketIdRoute
+  TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tickets': {
+      id: '/tickets'
+      path: '/tickets'
+      fullPath: '/tickets'
+      preLoaderRoute: typeof TicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/propose': {
       id: '/propose'
       path: '/propose'
@@ -251,12 +294,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/ticket/$id': {
+      id: '/ticket/$id'
+      path: '/ticket/$id'
+      fullPath: '/ticket/$id'
+      preLoaderRoute: typeof TicketIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/profile/$username': {
       id: '/profile/$username'
@@ -305,10 +362,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ProfileRouteChildren {
   ProfileUsernameRoute: typeof ProfileUsernameRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
 const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileUsernameRoute: ProfileUsernameRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
 }
 
 const ProfileRouteWithChildren =
@@ -323,7 +382,9 @@ const rootRouteChildren: RootRouteChildren = {
   PortfolioRoute: PortfolioRoute,
   ProfileRoute: ProfileRouteWithChildren,
   ProposeRoute: ProposeRoute,
+  TicketsRoute: TicketsRoute,
   MarketIdRoute: MarketIdRoute,
+  TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -523,7 +523,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 						<div className="max-w-[380px]">
 							{r.rowType === "market" && r.slug ? (
 								<Link
-									to="/market/$id"
+									to="/ticket/$id"
 									params={{ id: r.slug }}
 									className="font-medium text-sm hover:text-primary hover:underline"
 								>
@@ -909,7 +909,7 @@ function ActionsCell({
 									{row.slug && (
 										<DropdownMenuItem asChild>
 											<Link
-												to="/market/$id"
+												to="/ticket/$id"
 												params={{ id: row.slug }}
 												className="flex items-center gap-2"
 											>
@@ -1002,7 +1002,7 @@ function ActionsCell({
 									{row.approvedMarketSlug && (
 										<DropdownMenuItem asChild>
 											<Link
-												to="/market/$id"
+												to="/ticket/$id"
 												params={{ id: row.approvedMarketSlug }}
 												className="flex items-center gap-2"
 											>

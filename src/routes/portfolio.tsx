@@ -89,7 +89,7 @@ function PortfolioBody() {
 				<div className="flex items-center justify-between border-rule border-b pb-3">
 					<Kicker>OPEN POSITIONS</Kicker>
 					<Link
-						to="/markets"
+						to="/tickets"
 						className="font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.14em] hover:text-brand"
 					>
 						+ New
@@ -106,7 +106,7 @@ function PortfolioBody() {
 								<li key={p._id} className="ledger-row space-y-2 px-3 py-3">
 									<div className="flex items-start justify-between gap-2">
 										<Link
-											to="/market/$id"
+											to="/ticket/$id"
 											params={{ id: p.marketSlug }}
 											className="flex-1 font-display font-semibold text-bone text-sm hover:text-brand"
 										>
@@ -150,7 +150,7 @@ function PortfolioBody() {
 											</TableCell>
 											<TableCell>
 												<Link
-													to="/market/$id"
+													to="/ticket/$id"
 													params={{ id: p.marketSlug }}
 													className="font-display font-semibold text-bone hover:text-brand"
 												>
