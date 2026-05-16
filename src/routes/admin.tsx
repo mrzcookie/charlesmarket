@@ -49,6 +49,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories, money } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
@@ -216,7 +217,7 @@ function ProposalsPanel() {
 												{p.description}
 											</p>
 										)}
-										<dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+										<dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
 											<KV label="Closes" value={p.closesAt} />
 											<KV
 												label="Yes start"
@@ -225,7 +226,6 @@ function ProposalsPanel() {
 												)}`}
 											/>
 											<KV label="Liquidity" value={money(p.initialLiquidity)} />
-											<KV label="Source" value={p.resolutionSource} />
 										</dl>
 										{p.rejectionReason && (
 											<div className="mt-3 rounded border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-xs">
@@ -571,8 +571,8 @@ function StatusBadge({ market }: { market: Doc<"markets"> }) {
 function CreateMarketForm() {
 	const create = useMutation(api.admin.createMarket);
 	const [question, setQuestion] = useState("");
+	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState("Antics");
-	const [resolutionSource, setResolutionSource] = useState("");
 	const [tagInput, setTagInput] = useState("");
 	const [closesAt, setClosesAt] = useState("");
 	const [customAt, setCustomAt] = useState<string>(() => {
@@ -600,8 +600,8 @@ function CreateMarketForm() {
 				.filter(Boolean);
 			const r = await create({
 				question: question.trim(),
+				description: description.trim(),
 				category,
-				resolutionSource: resolutionSource.trim(),
 				tags,
 				closesAt:
 					closesAt.trim() ||
@@ -618,7 +618,7 @@ function CreateMarketForm() {
 				description: `/market/${r.slug}`,
 			});
 			setQuestion("");
-			setResolutionSource("");
+			setDescription("");
 			setTagInput("");
 			setClosesAt("");
 			setSlug("");
@@ -653,31 +653,30 @@ function CreateMarketForm() {
 							required
 						/>
 					</div>
-					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<div className="space-y-2">
-							<Label htmlFor="a-cat">Category</Label>
-							<Select value={category} onValueChange={setCategory}>
-								<SelectTrigger id="a-cat">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{categories.map((c) => (
-										<SelectItem key={c} value={c}>
-											{c}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="a-source">Resolution source</Label>
-							<Input
-								id="a-source"
-								value={resolutionSource}
-								onChange={(e) => setResolutionSource(e.target.value)}
-								required
-							/>
-						</div>
+					<div className="space-y-2">
+						<Label htmlFor="a-description">Description (optional)</Label>
+						<Textarea
+							id="a-description"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							rows={3}
+							maxLength={1_000}
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="a-cat">Category</Label>
+						<Select value={category} onValueChange={setCategory}>
+							<SelectTrigger id="a-cat">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{categories.map((c) => (
+									<SelectItem key={c} value={c}>
+										{c}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						<div className="space-y-2">

@@ -28,7 +28,6 @@ export type Market = {
 	closesIn: string;
 	trend: "up" | "down" | "flat";
 	delta: number;
-	resolutionSource: string;
 	tags: string[];
 	history: PriceTick[];
 };
@@ -65,7 +64,6 @@ export const markets: Market[] = [
 		closesIn: "2d 4h",
 		trend: "up",
 		delta: 0.06,
-		resolutionSource: "Group chat timestamps",
 		tags: ["weekend", "friday-hang"],
 		history: trail(0.78),
 	},
@@ -84,7 +82,6 @@ export const markets: Market[] = [
 		closesIn: "47d",
 		trend: "down",
 		delta: -0.04,
-		resolutionSource: "LinkedIn + verbal confirmation",
 		tags: ["career", "deadline"],
 		history: trail(0.34),
 	},
@@ -103,7 +100,6 @@ export const markets: Market[] = [
 		closesIn: "5d",
 		trend: "down",
 		delta: -0.09,
-		resolutionSource: "Strava + photo evidence",
 		tags: ["weekly", "fitness"],
 		history: trail(0.12),
 	},
@@ -122,7 +118,6 @@ export const markets: Market[] = [
 		closesIn: "18h",
 		trend: "flat",
 		delta: 0.0,
-		resolutionSource: "Group chat",
 		tags: ["short-term"],
 		history: trail(0.41),
 	},
@@ -141,7 +136,6 @@ export const markets: Market[] = [
 		closesIn: "11d",
 		trend: "up",
 		delta: 0.08,
-		resolutionSource: "Photo evidence",
 		tags: ["grooming", "wedding"],
 		history: trail(0.67),
 	},
@@ -160,7 +154,6 @@ export const markets: Market[] = [
 		closesIn: "16d",
 		trend: "up",
 		delta: 0.03,
-		resolutionSource: "Locksmith receipts + witness",
 		tags: ["chaotic"],
 		history: trail(0.83),
 	},
@@ -179,7 +172,6 @@ export const markets: Market[] = [
 		closesIn: "62d",
 		trend: "up",
 		delta: 0.02,
-		resolutionSource: "Repair receipt or photo",
 		tags: ["chaos", "quarterly"],
 		history: trail(0.55),
 	},
@@ -198,7 +190,6 @@ export const markets: Market[] = [
 		closesIn: "9d",
 		trend: "down",
 		delta: -0.07,
-		resolutionSource: "Self-report + corroboration",
 		tags: ["dating"],
 		history: trail(0.29),
 	},
@@ -217,7 +208,6 @@ export const markets: Market[] = [
 		closesIn: "3d",
 		trend: "flat",
 		delta: 0.01,
-		resolutionSource: "Airline confirmation",
 		tags: ["travel"],
 		history: trail(0.22),
 	},
@@ -236,7 +226,6 @@ export const markets: Market[] = [
 		closesIn: "16d",
 		trend: "down",
 		delta: -0.03,
-		resolutionSource: "Venmo transaction",
 		tags: ["debts"],
 		history: trail(0.18),
 	},
@@ -255,7 +244,6 @@ export const markets: Market[] = [
 		closesIn: "24d",
 		trend: "up",
 		delta: 0.05,
-		resolutionSource: "Official race results",
 		tags: ["fitness", "race"],
 		history: trail(0.46),
 	},
@@ -274,7 +262,6 @@ export const markets: Market[] = [
 		closesIn: "5d",
 		trend: "down",
 		delta: -0.02,
-		resolutionSource: "Sleep tracker export",
 		tags: ["weekly"],
 		history: trail(0.09),
 	},
@@ -343,7 +330,6 @@ export type ConvexMarket = {
 	openInterest: number;
 	closesAt: string;
 	closesAtMs: number;
-	resolutionSource: string;
 	tags: string[];
 	status: "open" | "closed" | "resolved";
 	resolution?: "Yes" | "No";
@@ -376,7 +362,6 @@ export function toUIMarket(
 		closesIn: formatClosesIn(doc.closesAtMs),
 		trend,
 		delta,
-		resolutionSource: doc.resolutionSource,
 		tags: doc.tags,
 		history: history?.map((h, i) => ({ t: i, yes: h.yesPrice })) ?? [],
 	};

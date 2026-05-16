@@ -226,12 +226,21 @@ function MarketTabs({ market }: { market: UIMarket }) {
 
 function AboutTab({ market }: { market: UIMarket }) {
 	return (
-		<div className="space-y-2 text-sm">
-			<KV label="Closes" value={market.closesAt} />
-			<KV label="Resolution source" value={market.resolutionSource} />
-			<KV label="Open interest" value={money(market.openInterest)} />
-			<KV label="Volume" value={money(market.volume)} />
-			<KV label="Liquidity" value={money(market.liquidity)} />
+		<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+			{market.description && (
+				<div>
+					<h3 className="font-semibold text-sm">Description</h3>
+					<p className="mt-2 whitespace-pre-line text-muted-foreground text-sm leading-relaxed">
+						{market.description}
+					</p>
+				</div>
+			)}
+			<div className="space-y-2 text-sm">
+				<KV label="Closes" value={market.closesAt} />
+				<KV label="Open interest" value={money(market.openInterest)} />
+				<KV label="Volume" value={money(market.volume)} />
+				<KV label="Liquidity" value={money(market.liquidity)} />
+			</div>
 		</div>
 	);
 }

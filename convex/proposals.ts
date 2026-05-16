@@ -43,8 +43,8 @@ async function uniqueSlug(ctx: QueryCtx, desired: string): Promise<string> {
 
 function validateProposalShape(args: {
 	question: string;
+	description: string;
 	category: string;
-	resolutionSource: string;
 	tags: string[];
 	closesAt: string;
 	closesAtMs: number;
@@ -52,7 +52,7 @@ function validateProposalShape(args: {
 	initialLiquidity: number;
 }) {
 	const question = args.question.trim();
-	const resolutionSource = args.resolutionSource.trim();
+	const description = args.description.trim();
 	const closesAt = args.closesAt.trim();
 	const tags = args.tags
 		.map((t) => t.trim().toLowerCase())
@@ -67,10 +67,12 @@ function validateProposalShape(args: {
 	if (!/\?$/.test(question)) {
 		throw new Error("Question must end with a '?'");
 	}
+	if (description.length > 1_000) {
+		throw new Error("Description must be 1,000 characters or fewer");
+	}
 	if (!CATEGORIES.includes(args.category as (typeof CATEGORIES)[number])) {
 		throw new Error("Pick a valid category");
 	}
-	if (!resolutionSource) throw new Error("Resolution source is required");
 	if (!closesAt) throw new Error("Closing date label is required");
 	if (!Number.isFinite(args.closesAtMs) || args.closesAtMs < Date.now()) {
 		throw new Error("Closing time must be in the future");
@@ -88,7 +90,7 @@ function validateProposalShape(args: {
 
 	return {
 		question,
-		resolutionSource,
+		description,
 		closesAt,
 		tags,
 	};
@@ -97,8 +99,8 @@ function validateProposalShape(args: {
 export const submit = mutation({
 	args: {
 		question: v.string(),
+		description: v.string(),
 		category: v.string(),
-		resolutionSource: v.string(),
 		tags: v.array(v.string()),
 		closesAt: v.string(),
 		closesAtMs: v.number(),
@@ -112,9 +114,8 @@ export const submit = mutation({
 		const id = await ctx.db.insert("marketProposals", {
 			proposerId: user._id,
 			question: cleaned.question,
-			description: "",
+			description: cleaned.description,
 			category: args.category,
-			resolutionSource: cleaned.resolutionSource,
 			tags: cleaned.tags,
 			closesAt: cleaned.closesAt,
 			closesAtMs: args.closesAtMs,
@@ -136,7 +137,6 @@ async function enrichProposal(
 	question: string;
 	description: string;
 	category: string;
-	resolutionSource: string;
 	tags: string[];
 	closesAt: string;
 	closesAtMs: number;
@@ -160,7 +160,6 @@ async function enrichProposal(
 		question: p.question,
 		description: p.description,
 		category: p.category,
-		resolutionSource: p.resolutionSource,
 		tags: p.tags,
 		closesAt: p.closesAt,
 		closesAtMs: p.closesAtMs,
@@ -253,7 +252,6 @@ export const approve = mutation({
 			openInterest: 0,
 			closesAt: proposal.closesAt,
 			closesAtMs: proposal.closesAtMs,
-			resolutionSource: proposal.resolutionSource,
 			tags: proposal.tags,
 			status: "open",
 			createdAt: now,

@@ -14,7 +14,6 @@ type SeedMarket = {
 	openInterest: number;
 	closesAt: string;
 	closesInMs: number;
-	resolutionSource: string;
 	tags: string[];
 };
 
@@ -31,7 +30,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 8_120,
 		closesAt: "Fri 9:00 PM",
 		closesInMs: 2 * DAY + 4 * HOUR,
-		resolutionSource: "Group chat timestamps",
 		tags: ["weekend", "friday-hang"],
 	},
 	{
@@ -46,7 +44,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 5_400,
 		closesAt: "Jun 30",
 		closesInMs: 47 * DAY,
-		resolutionSource: "LinkedIn + verbal confirmation",
 		tags: ["career", "deadline"],
 	},
 	{
@@ -61,7 +58,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 3_300,
 		closesAt: "Sun 11:59 PM",
 		closesInMs: 5 * DAY,
-		resolutionSource: "Strava + photo evidence",
 		tags: ["weekly", "fitness"],
 	},
 	{
@@ -76,7 +72,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 1_900,
 		closesAt: "Tomorrow 6 PM",
 		closesInMs: 18 * HOUR,
-		resolutionSource: "Group chat",
 		tags: ["short-term"],
 	},
 	{
@@ -91,7 +86,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 2_700,
 		closesAt: "May 28",
 		closesInMs: 11 * DAY,
-		resolutionSource: "Photo evidence",
 		tags: ["grooming", "wedding"],
 	},
 	{
@@ -106,7 +100,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 9_800,
 		closesAt: "End of month",
 		closesInMs: 16 * DAY,
-		resolutionSource: "Locksmith receipts + witness",
 		tags: ["chaotic"],
 	},
 	{
@@ -121,7 +114,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 4_400,
 		closesAt: "Jun 30",
 		closesInMs: 62 * DAY,
-		resolutionSource: "Repair receipt or photo",
 		tags: ["chaos", "quarterly"],
 	},
 	{
@@ -136,7 +128,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 6_900,
 		closesAt: "May 24",
 		closesInMs: 9 * DAY,
-		resolutionSource: "Self-report + corroboration",
 		tags: ["dating"],
 	},
 	{
@@ -151,7 +142,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 2_100,
 		closesAt: "Sun 7:45 AM",
 		closesInMs: 3 * DAY,
-		resolutionSource: "Airline confirmation",
 		tags: ["travel"],
 	},
 	{
@@ -166,7 +156,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 3_700,
 		closesAt: "End of month",
 		closesInMs: 16 * DAY,
-		resolutionSource: "Venmo transaction",
 		tags: ["debts"],
 	},
 	{
@@ -181,7 +170,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 3_100,
 		closesAt: "Jun 8",
 		closesInMs: 24 * DAY,
-		resolutionSource: "Official race results",
 		tags: ["fitness", "race"],
 	},
 	{
@@ -196,7 +184,6 @@ const seedMarkets: SeedMarket[] = [
 		openInterest: 1_200,
 		closesAt: "Fri 9:00 AM",
 		closesInMs: 5 * DAY,
-		resolutionSource: "Sleep tracker export",
 		tags: ["weekly"],
 	},
 ];
@@ -222,7 +209,6 @@ export const run = mutation({
 				openInterest: m.openInterest,
 				closesAt: m.closesAt,
 				closesAtMs: now + m.closesInMs,
-				resolutionSource: m.resolutionSource,
 				tags: m.tags,
 				status: "open",
 				createdAt: now,

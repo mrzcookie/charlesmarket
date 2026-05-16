@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
@@ -38,28 +39,31 @@ export const Route = createFileRoute("/propose")({
 
 type Example = {
 	question: string;
+	description: string;
 	category: string;
-	resolutionSource: string;
 	tags: string;
 };
 
 const EXAMPLES: Example[] = [
 	{
 		question: "Will Charles return the rental car without a new dent?",
+		description:
+			"Resolves YES if the Hertz inspection report shows no new damage versus pickup.",
 		category: "Mishaps",
-		resolutionSource: "Hertz inspection report",
 		tags: "travel, chaos",
 	},
 	{
 		question: "Will Charles finish 'Annihilation' before our book club?",
+		description:
+			"Resolves YES if Charles can answer 3 spoiler questions at the June 10 meetup.",
 		category: "Antics",
-		resolutionSource: "Live quiz at book club",
 		tags: "reading, book-club",
 	},
 	{
 		question: "Will Charles RSVP to the wedding within 7 days?",
+		description:
+			"Resolves YES if the wedding website shows Charles's RSVP submitted within 7 days of the invite.",
 		category: "Relationships",
-		resolutionSource: "Wedding RSVP timestamp",
 		tags: "wedding, deadline",
 	},
 ];
@@ -155,8 +159,8 @@ function AuthedBody() {
 	const navigate = useNavigate();
 
 	const [question, setQuestion] = useState("");
+	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState<string>("Antics");
-	const [resolutionSource, setResolutionSource] = useState("");
 	const [tagInput, setTagInput] = useState("");
 	const [preset, setPreset] = useState<Preset>("1w");
 	const [customAt, setCustomAt] = useState<string>(
@@ -189,16 +193,17 @@ function AuthedBody() {
 	);
 
 	const questionTrim = question.trim();
+	const descriptionTrim = description.trim();
 	const questionOk =
 		questionTrim.length >= 12 &&
 		questionTrim.length <= 140 &&
 		questionTrim.endsWith("?");
-	const resolutionOk = resolutionSource.trim().length > 0;
+	const descriptionOk = descriptionTrim.length <= 1_000;
 	const futureOk =
 		Number.isFinite(closesAtMs) && closesAtMs > Date.now() + 5 * 60_000;
 	const yesOk = yesPrice > 0.01 && yesPrice < 0.99;
 	const liqOk = liquidity >= 100 && liquidity <= 50_000;
-	const formValid = questionOk && resolutionOk && futureOk && yesOk && liqOk;
+	const formValid = questionOk && descriptionOk && futureOk && yesOk && liqOk;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -207,8 +212,8 @@ function AuthedBody() {
 		try {
 			await submit({
 				question: questionTrim,
+				description: descriptionTrim,
 				category,
-				resolutionSource: resolutionSource.trim(),
 				tags,
 				closesAt: closesAtLabel,
 				closesAtMs,
@@ -230,8 +235,8 @@ function AuthedBody() {
 
 	const fillExample = (ex: Example) => {
 		setQuestion(ex.question);
+		setDescription(ex.description);
 		setCategory(ex.category);
-		setResolutionSource(ex.resolutionSource);
 		setTagInput(ex.tags);
 	};
 
@@ -263,32 +268,37 @@ function AuthedBody() {
 							</div>
 						</div>
 
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="category">Category</Label>
-								<Select value={category} onValueChange={setCategory}>
-									<SelectTrigger id="category">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{categories.map((c) => (
-											<SelectItem key={c} value={c}>
-												{c}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+						<div className="space-y-2">
+							<Label htmlFor="description">Description (optional)</Label>
+							<Textarea
+								id="description"
+								placeholder="How does it resolve? Add any context traders should know."
+								value={description}
+								onChange={(e) => setDescription(e.target.value)}
+								maxLength={1_000}
+								rows={3}
+								aria-invalid={!descriptionOk}
+							/>
+							<div className="flex justify-between text-muted-foreground text-xs">
+								<span>Up to 1,000 characters.</span>
+								<span className="font-mono">{description.length}/1000</span>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="source">Resolution source</Label>
-								<Input
-									id="source"
-									placeholder="e.g. group chat timestamp, receipt, Strava"
-									value={resolutionSource}
-									onChange={(e) => setResolutionSource(e.target.value)}
-									maxLength={120}
-								/>
-							</div>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="category">Category</Label>
+							<Select value={category} onValueChange={setCategory}>
+								<SelectTrigger id="category">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{categories.map((c) => (
+										<SelectItem key={c} value={c}>
+											{c}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 
 						<div className="space-y-2">
@@ -474,7 +484,7 @@ function AuthedBody() {
 									<ArrowRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 								</div>
 								<div className="mt-1 text-muted-foreground text-xs">
-									{ex.category} · {ex.resolutionSource}
+									{ex.category}
 								</div>
 							</button>
 						))}

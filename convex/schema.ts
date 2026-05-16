@@ -22,7 +22,6 @@ export default defineSchema({
 		question: v.string(),
 		description: v.string(),
 		category: v.string(),
-		resolutionSource: v.string(),
 		tags: v.array(v.string()),
 		closesAt: v.string(),
 		closesAtMs: v.number(),
@@ -52,7 +51,6 @@ export default defineSchema({
 		openInterest: v.number(),
 		closesAt: v.string(),
 		closesAtMs: v.number(),
-		resolutionSource: v.string(),
 		tags: v.array(v.string()),
 		status: v.union(
 			v.literal("open"),
