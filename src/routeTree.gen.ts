@@ -24,6 +24,7 @@ import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminTicketsRouteImport } from './routes/admin/tickets'
 import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
 
 const TicketsRoute = TicketsRouteImport.update({
@@ -101,6 +102,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTicketsRoute = AdminTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMarketsRoute = AdminMarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
+  '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
+  '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
   '/admin/markets': typeof AdminMarketsRoute
+  '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/propose'
     | '/tickets'
     | '/admin/markets'
+    | '/admin/tickets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/propose'
     | '/tickets'
     | '/admin/markets'
+    | '/admin/tickets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/propose'
     | '/tickets'
     | '/admin/markets'
+    | '/admin/tickets'
     | '/admin/users'
     | '/market/$id'
     | '/profile/$username'
@@ -336,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/tickets': {
+      id: '/admin/tickets'
+      path: '/tickets'
+      fullPath: '/admin/tickets'
+      preLoaderRoute: typeof AdminTicketsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/markets': {
       id: '/admin/markets'
       path: '/markets'
@@ -348,12 +367,14 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminMarketsRoute: typeof AdminMarketsRoute
+  AdminTicketsRoute: typeof AdminTicketsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminMarketsRoute: AdminMarketsRoute,
+  AdminTicketsRoute: AdminTicketsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

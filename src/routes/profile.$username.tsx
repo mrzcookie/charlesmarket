@@ -155,7 +155,7 @@ function PublicProfilePage() {
 							</Button>
 							<Button asChild size="sm">
 								<Link to="/propose">
-									<Plus /> New ticket
+									<Plus /> Propose
 								</Link>
 							</Button>
 						</div>

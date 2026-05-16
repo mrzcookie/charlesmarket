@@ -1,8 +1,8 @@
 # Convex backend setup
 
-The frontend is wired to Convex (`convex/`) with Google OAuth via Convex Auth.
-To bring the backend up locally, you need to provision a Convex deployment,
-configure auth, seed the markets, and promote yourself to admin.
+The frontend is wired to Convex (`convex/`) with Google OAuth via Convex
+Auth. To bring the backend up locally, provision a Convex deployment,
+configure auth, seed the tickets, and promote yourself to admin.
 
 ## 1. Provision a Convex deployment
 
@@ -32,9 +32,10 @@ In a second terminal:
 npx @convex-dev/auth
 ```
 
-This generates `JWT_PRIVATE_KEY` and `JWKS` and writes them to your **Convex
-deployment's** environment variables (not local `.env`). It also sets
-`SITE_URL` to `http://localhost:3000` by default — change later for prod.
+This generates `JWT_PRIVATE_KEY` and `JWKS` and writes them to your
+**Convex deployment's** environment variables (not local `.env`). It also
+sets `SITE_URL` to `http://localhost:3000` by default — change later for
+prod.
 
 ## 3. Add Google OAuth credentials
 
@@ -44,7 +45,8 @@ deployment's** environment variables (not local `.env`). It also sets
    ```
    https://<your-deployment>.convex.site/api/auth/callback/google
    ```
-   (Note: `convex.site`, not `convex.cloud`. The site URL is your deployment's HTTP-action endpoint.)
+   (Note: `convex.site`, not `convex.cloud`. The site URL is your
+   deployment's HTTP-action endpoint.)
 4. Save and copy the **Client ID** and **Client secret**.
 5. Set them on the Convex deployment:
    ```sh
@@ -54,7 +56,7 @@ deployment's** environment variables (not local `.env`). It also sets
 
 `npx convex dev` will pick the new env vars up automatically.
 
-## 4. Seed the markets
+## 4. Seed the tickets
 
 In a terminal (with `npx convex dev` running):
 
@@ -71,17 +73,17 @@ npx convex run seed:run
 
 ## 5. Promote yourself to admin
 
-Sign in once at `http://localhost:3000` so your user row exists, then run
-the bootstrap mutation (only works while zero admins exist, so it can't be
-used as a backdoor later):
+Sign in once at `http://localhost:3000` so your user row exists, then
+run the bootstrap mutation (only works while zero admins exist, so it
+can't be used as a backdoor later):
 
 ```sh
 npx convex run admin:bootstrapAdmin '{"email":"you@example.com"}'
 ```
 
-After that, the `/admin` route lights up for you and the user menu shows
-an Admin entry. Use `api.admin.grantAdmin` / `revokeAdmin` to manage
-other moderators from the dashboard or from your own admin code.
+After that, the `/admin` route lights up for you and the user menu
+shows an Admin entry. From `/admin/users` you can grant or revoke admin
+on anyone via the inline toggle.
 
 ## 6. (Optional) Production deploy
 
@@ -102,9 +104,10 @@ deployment too — and add the prod redirect URI in Google Cloud.
 
 ## 7. Schema field cleanup (one-time)
 
-`resolutionSource` used to live on `markets` and `marketProposals` but was
-removed. Existing rows still carry the field, so the validator keeps it as
-`v.optional(v.string())` for now. Drop it from every row with:
+`resolutionSource` used to live on `markets` and `marketProposals` but
+was removed. Existing rows still carry the field, so the validator
+keeps it as `v.optional(v.string())` for now. Drop it from every row
+with:
 
 ```sh
 npx convex run migrations:stripResolutionSource
@@ -117,31 +120,39 @@ Then remove the `resolutionSource: v.optional(v.string())` lines from
 
 **Server functions** (in `convex/`):
 
-| File             | Exports                                                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------- |
-| `auth.ts`        | `convexAuth` with Google provider; `createOrUpdateUser` sets handle + ₪1,000 balance          |
-| `users.ts`       | `me`, `amIAdmin`, `updateHandle`, `updateName`; `requireUser`/`currentUser`/`requireAdmin`    |
-| `wallet.ts`      | `get`, `topUp`, `reset` (`topUp`/`reset` exist but no UI surfaces them)                       |
-| `markets.ts`     | `list`, `getBySlug`, `trending`, `history`                                                    |
-| `orders.ts`      | `place`, `sell` — buy/sell with position aggregation, trade logging, and price impact         |
-| `trades.ts`     | `byMarket`, `positions`, `settled`                                                            |
-| `comments.ts`    | `byMarket`, `add`                                                                             |
-| `activity.ts`    | `feed` — merged stream of trades, comments, resolutions                                       |
-| `leaderboard.ts` | `top` — per-user P&L (realized + unrealized)                                                  |
-| `proposals.ts`   | `submit`, `listMine`, `listAll`, `pendingCount`, `approve`, `reject`, `remove`                |
-| `admin.ts`       | `listAll`, `createMarket`, `updateMarket`, `closeMarket`, `reopenMarket`, `resolveMarket`,    |
-|                  | `deleteMarket`, `grantAdmin`, `revokeAdmin`, `bootstrapAdmin`                                 |
-| `migrations.ts`  | `stripResolutionSource` — admin-only field cleanup                                            |
-| `seed.ts`        | `run`, `wipe` — idempotent market seed and dev-only nuke                                      |
+| File             | Exports                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `auth.ts`        | `convexAuth` with Google provider; `createOrUpdateUser` sets handle + ₪1,000 balance                                   |
+| `users.ts`       | `me`, `amIAdmin`, `updateHandle`, `publicProfile`, `publicPositions`, `publicTrades`; `requireUser`/`requireAdmin` helpers |
+| `wallet.ts`      | `get` — read your own balance                                                                                          |
+| `markets.ts`     | `list`, `getBySlug`, `trending`, `history`                                                                             |
+| `orders.ts`      | `place`, `sell` — buy/sell with position aggregation, trade logging, and price impact                                  |
+| `trades.ts`      | `byMarket`, `positions`, `settled`                                                                                     |
+| `comments.ts`    | `byMarket`, `add`                                                                                                      |
+| `activity.ts`    | `feed` — merged stream of trades, comments, resolutions                                                                |
+| `leaderboard.ts` | `top` — per-user P&L (realized + unrealized)                                                                           |
+| `proposals.ts`   | `submit`, `listMine`, `listAll`, `pendingCount`, `approve`, `reject`, `remove`                                          |
+| `admin.ts`       | `listAll`, `createMarket`, `updateMarket`, `closeMarket`, `reopenMarket`, `resolveMarket`, `deleteMarket`,             |
+|                  | `grantAdmin`, `revokeAdmin`, `bootstrapAdmin`, `listUsers`, `adminUpdateUser`, `deleteUser`, `userTrades`,             |
+|                  | `userActivity`, `adjustBalance`                                                                                        |
+| `migrations.ts`  | `stripResolutionSource` — admin-only field cleanup                                                                     |
+| `seed.ts`        | `run`, `wipe` — idempotent ticket seed and dev-only nuke                                                               |
 
 **Frontend wiring**:
 
 - `src/lib/convex.ts` — `ConvexReactClient` keyed by `VITE_CONVEX_URL`
-- `src/routes/__root.tsx` — wraps everything in `ConvexAuthProvider`
-- `src/components/auth-controls.tsx` — `SignInButton` (Google), `UserMenu` (Profile / Portfolio / Propose / Admin / Sign out), `AuthControls` (auth-aware swap)
-- `src/components/header.tsx` — iconified nav, mobile Sheet with Propose CTA, balance pill, user menu
-- `src/routes/propose.tsx` — guided proposal form, calls `api.proposals.submit`
-- `src/routes/admin.tsx` — tabbed console (proposals / markets / create), gated by `me.isAdmin`
+- `src/routes/__root.tsx` — wraps everything in `ConvexAuthProvider`,
+  ships the chunk-error auto-recovery script + the 404 / error boundary
+- `src/components/auth-controls.tsx` — `SignInButton` (Google),
+  `UserMenu` (Profile, Portfolio, Propose, Admin, Sign out)
+- `src/components/header.tsx` — iconified nav, mobile Sheet with Propose
+  CTA, balance pill, search-to-/tickets
+- `src/routes/propose.tsx` — guided proposal form, calls
+  `api.proposals.submit`
+- `src/routes/admin/tickets.tsx` — table + notifications sheet (pending
+  proposals + ended tickets) + edit drawer + create dialog
+- `src/routes/admin/users.tsx` — table + drawer (handle, balance ±,
+  admin toggle, merged activity feed, delete)
 
 To read data on the client, always go through Convex hooks:
 
@@ -149,11 +160,11 @@ To read data on the client, always go through Convex hooks:
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-const markets = useQuery(api.markets.list, { category: "All" });
+const tickets = useQuery(api.markets.list, { category: "All" });
 // Returns `undefined` while loading, then the live array.
 ```
 
-For the order ticket on the market detail page:
+For the order ticket on the ticket detail page:
 
 ```tsx
 import { useMutation } from "convex/react";
@@ -165,14 +176,18 @@ await placeOrder({ marketId, side: "Yes", amount: 100 });
 
 ## Notes
 
-- `convex/_generated/` is gitignored. The frontend won't typecheck until
-  you've run `npx convex dev` once (or `npx convex codegen`). `pnpm build`
-  runs codegen before Vite, so production builds work without committing it.
+- `convex/_generated/` is gitignored. The frontend won't typecheck
+  until you've run `npx convex dev` once (or `npx convex codegen`).
+  `pnpm build` runs codegen before Vite, so production builds work
+  without committing it.
 - `VITE_CONVEX_URL` must be set before `pnpm dev` for the React side to
   connect. In production on Vercel, `convex deploy --cmd` injects it.
-- When you remove a field from `convex/schema.ts`, Convex will reject the
-  push until existing rows are rewritten. The pattern is: re-add the field
-  as `v.optional(...)`, push, write a migration that uses `ctx.db.replace`
-  to drop the field from each row, run it, then remove the optional
-  declaration. `convex/migrations.ts:stripResolutionSource` is the working
-  template.
+- When you remove a field from `convex/schema.ts`, Convex will reject
+  the push until existing rows are rewritten. The pattern is: re-add
+  the field as `v.optional(...)`, push, write a migration that uses
+  `ctx.db.replace` to drop the field from each row, run it, then
+  remove the optional declaration.
+  `convex/migrations.ts:stripResolutionSource` is the working template.
+- `users.by_handle` is the index that powers `/profile/<handle>`. If
+  you ever drop it, `publicProfile`, `publicPositions`, and
+  `publicTrades` will throw at runtime.

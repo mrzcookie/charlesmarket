@@ -1,4 +1,4 @@
-# Charlesmarket — Design System
+# CHARLES.MARKET — Design System
 
 > "The Console" — a near-future trading desk built for one chaotic friend.
 
@@ -8,13 +8,13 @@ This file documents the design language. It is the contract every new surface an
 
 ## 1. The world
 
-Imagine the design as a physical object. Charlesmarket is a **2030 sports book console** — a single panel of instruments on a black anodized desk in a low-light room. The friend group runs Charles like a portfolio. Numbers tick. Lines pulse. One chemical-lime light glows on the bezel. The whole thing has the cold confidence of a Bloomberg terminal but the cheek of a group chat.
+Imagine the design as a physical object. CHARLES.MARKET is a **2030 sports book console** — a single panel of instruments on a black anodized desk in a low-light room. The friend group runs Charles like a portfolio. Numbers tick. Lines pulse. One chemical-lime light glows on the bezel. The whole thing has the cold confidence of a Bloomberg terminal but the cheek of a group chat.
 
 Every choice that follows is in service of that scene.
 
 - **Ink, not slate.** Backgrounds are deep ink with a faint cool undertone. Never pure black, never SaaS slate-blue.
 - **One lit color.** A single chemical lime carries the brand, the Yes outcome, every CTA, and the live pulse. No second accent. No gradients. No glow blur.
-- **Mono is structural.** Numerals, ratios, timestamps, market IDs — all mono, all tabular. The mono is part of the chassis.
+- **Mono is structural.** Numerals, ratios, timestamps, ticket IDs — all mono, all tabular. The mono is part of the chassis.
 - **Hairlines, not shadows.** Surfaces are separated by 1px rules in `--rule`. No drop shadows. No glass blur. No frosted anything.
 
 ---
@@ -31,7 +31,7 @@ All tokens are OKLCH. Neutrals carry a faint cool undertone (hue 225) so the who
 |---|---|---|
 | `--ink` | `oklch(0.13 0.014 232)` | Page background |
 | `--ink-2` | `oklch(0.17 0.016 228)` | Card / surface |
-| `--ink-3` | `oklch(0.22 0.018 225)` | Inset, ticker bar |
+| `--ink-3` | `oklch(0.22 0.018 225)` | Inset, sticky bottom CTA |
 | `--ink-4` | `oklch(0.28 0.018 225)` | Heavier inset, hover |
 | `--bone` | `oklch(0.96 0.006 225)` | Primary text |
 | `--bone-2` | `oklch(0.78 0.008 225)` | Secondary text |
@@ -95,7 +95,7 @@ A clean instrument-panel light theme. Same lime, deeper for legibility on bone.
 Use exclusively for:
 - Money (`₪78`, `₪1,200`)
 - Odds, ratios, percentages
-- Market IDs (`M-007`)
+- Ticket IDs (`M-007`)
 - Timestamps (`THU 21:00`)
 - Trade tape rows
 - Tab labels (`YES / NO / VOL / LIQ`)
@@ -112,7 +112,7 @@ Inter, IBM Plex (any), Space Mono, Space Grotesk, Outfit, DM Sans, DM Serif, Fra
 | Step | Token / class | Use |
 |---|---|---|
 | Display XL | `clamp(3rem, 6vw + 1rem, 5.5rem)` | Tabloid hero on home |
-| Display L | `clamp(2.25rem, 3.5vw + 0.5rem, 3.5rem)` | Market detail question |
+| Display L | `clamp(2.25rem, 3.5vw + 0.5rem, 3.5rem)` | Ticket detail question |
 | Display M | `clamp(1.6rem, 1.6vw + 0.6rem, 2.1rem)` | Section heads |
 | Display S | `clamp(1.2rem, 0.8vw + 0.7rem, 1.4rem)` | Ticket question |
 | Body | `1rem` | Default |
@@ -157,16 +157,17 @@ Banned. No `box-shadow: 0 0 24px var(--brand)`. The brand color carries itself t
 
 ## 5. Signature motifs
 
-These are the moves that make Charlesmarket *look like Charlesmarket*. Use them, don't generalize them away.
+These are the moves that make CHARLES.MARKET *look like CHARLES.MARKET*. Use them, don't generalize them away.
 
 1. **The console wordmark.** `CHARLES.MARKET` set in Funnel Display 800 with a `[ LIVE ]` lime bracket-chip next to it. The dot in the middle is rendered in `--brand`.
 2. **Bracket chips.** Status badges use `[ LABEL ]` square brackets in mono — `[ LIVE ]`, `[ CLOSED ]`, `[ RESOLVED YES ]`. The brackets are part of the type, not a UI element.
-3. **Numbered tickets.** Every market gets a `M-007` style ID prefix (left-padded zeros). Reads as a stock ticker / trade ID.
+3. **Numbered tickets.** Every ticket gets a `M-007` style ID prefix (left-padded zeros). Reads as a stock ticker / trade ID.
 4. **Hand-stamped price slabs.** Yes/No display as bordered ink slabs: top-line UPPER-CASE mono label, bottom-line big mono price. Lime on Yes when active, magenta on No when active.
-5. **Hairline ledger rows.** Market lists are 1px-separated rows with tabular numerals. No cards.
+5. **Hairline ledger rows.** Ticket lists are 1px-separated rows with tabular numerals. No cards.
 6. **Tabloid headlines.** Section headers are oversized Display with a `// SECTION` mono kicker above. The `//` is a literal character used as a marker.
-7. **The tape.** A sticky bottom ribbon on desktop showing the latest 4 market prices, live. Doesn't auto-scroll; rotates only when a real new trade arrives.
-8. **Mini sparklines.** Every market in a list shows a 24-point mono sparkline (just `<path>` strokes, no fill, lime if up, magenta if down).
+7. **Mini sparklines.** Every ticket in a list shows a 24-point mono sparkline (just `<path>` strokes, no fill, lime if up, magenta if down). Animates `stroke-dashoffset` once on first paint.
+8. **Sticky mobile buy bar.** On `/ticket/$id` below `lg`, a sticky-bottom strip hosts full-width lime Yes / magenta No buttons that open the same `QuickBuyDialog` used by the ticket grid.
+9. **Bell badge.** Admin sidebar surfaces pending proposals as a lime `[N]` badge next to "Tickets"; `/admin/tickets` carries the same count on its header bell. Click the bell to open a sheet split into "Proposals · awaiting review" and "Tickets · awaiting resolution" with inline approve / reject / resolve actions.
 
 ---
 
@@ -194,7 +195,7 @@ Body buttons default to mono uppercase. Long-form actions like "Post comment" ov
 
 Cards are rare. When used, they are `--ink-2` with a 1px `--rule` border, no shadow, sharp 4px corners. Most "card-like" surfaces are actually `<article>` blocks separated by hairline rules.
 
-### MarketTicket (replaces MarketCard)
+### MarketCard
 
 A horizontal trade-ticket layout, dense:
 
@@ -210,15 +211,21 @@ A horizontal trade-ticket layout, dense:
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-A "featured" variant doubles in size, uses Display L for the question, and shows a real chart instead of a sparkline.
+Three variants in `src/components/market-card.tsx`:
 
-### Order ticket (market detail sidebar)
+- `default` (tile) — the shape above. Used on the home grid and the ticket index.
+- `featured` — doubles in size, uses Display L for the question, fits a 140px-tall sparkline. Used as the home "big ticket" hero.
+- `compact` — single-line `M-### · question · sparkline · ₪yes / ₪no` row. Reserved for dense lists when a route needs to show many tickets at once.
 
-Mono header `ORDER · M-007`, Yes/No slab selectors, amount field with the ₪ glyph as a mono prefix, single lime stamp button at the bottom.
+`MarketCard` also opens `QuickBuyDialog` (exported from the same file) when a price slab is tapped.
 
-### Tape (sticky bottom ribbon)
+### Order ticket (ticket detail sidebar)
 
-Fixed bottom strip on desktop. 4 cells, each `M-### · ₪price · ▲/▼ delta`. Hairline rule above. Hides on mobile.
+Mono header `ORDER · M-007`, Yes/No slab selectors, amount field with the ₪ glyph as a mono prefix, single lime stamp button at the bottom. On `lg` it sticks at `top-20`; below `lg` it's hidden and replaced by a sticky bottom buy bar that opens `QuickBuyDialog`.
+
+### NotificationsSheet (admin)
+
+Right-side sheet on `/admin/tickets`. Bell badge counts pending proposals + ended tickets. Sheet body is two sections (`PROPOSALS · AWAITING REVIEW`, `TICKETS · AWAITING RESOLUTION`). Each row is a `border border-rule bg-ink-2` card with inline approve / reject / resolve buttons + an "Open" / "Edit" ghost that routes to the per-ticket drawer. Empty state is a single `ALL CLEAR` panel — no per-section emptiness when nothing's pending.
 
 ---
 
@@ -248,7 +255,7 @@ Forbidden: any "sparkle" icons, glowing icons, custom gradient SVGs, emoji.
 
 ## 9. Imagery
 
-Charlesmarket is text-first. There is no Charles photograph; the brand is the typography and the lime. **Don't generate fake Charles avatars, don't add stock photos of dudes, don't add hand-drawn illustrations.** When a market needs a visual, render a small mono category code (`[ANT]`, `[MIS]`) in `--brand` instead.
+CHARLES.MARKET is text-first. There is no Charles photograph; the brand is the typography and the lime. **Don't generate fake Charles avatars, don't add stock photos of dudes, don't add hand-drawn illustrations.** When a market needs a visual, render a small mono category code (`[ANT]`, `[MIS]`) in `--brand` instead.
 
 ---
 
@@ -273,7 +280,9 @@ Charlesmarket is text-first. There is no Charles photograph; the brand is the ty
 - Sentence-case "Yes price · history" tab labels with a middot. Use `YES PRICE / HISTORY` in mono.
 - A SaaS-style centered hero with `<icon> <title> <subtitle>` over a soft gradient. Tabloid hero only.
 - Cyan + navy + glass cards — the AI-reflex "futuristic" palette. The lime carries the future on its own.
-- "Live ticker" auto-scrolling marquees. The tape rotates on real trades only.
+- Auto-scrolling marquees / live tickers. We don't ship them.
+- Emails or "display names" on non-admin surfaces. Handles only.
+- Em dashes (`—`) and double-hyphens (`--`) in user copy. Commas, colons, periods.
 
 ---
 
@@ -281,4 +290,5 @@ Charlesmarket is text-first. There is no Charles photograph; the brand is the ty
 
 - A weekly "session" mechanic where the wordmark rotates a session number every Monday.
 - A real chart engine (currently SVG `<path>` only).
-- An ambient sound mark for trades — a single mechanical "click" tone.
+- An ambient sound mark for trades, a single mechanical "click" tone.
+- The trade tape ribbon (originally planned, deferred — would live above the footer on `lg` only).

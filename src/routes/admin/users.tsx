@@ -1,45 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import {
-	type ColumnDef,
-	flexRender,
-	getCoreRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	type SortingState,
-	useReactTable,
-} from "@tanstack/react-table";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
-	Activity,
 	Check,
-	ChevronLeft,
-	ChevronRight,
-	ChevronsUpDown,
+	ChevronDown,
+	ChevronUp,
+	ExternalLink,
+	Minus,
 	Pencil,
+	Plus,
 	Search,
 	Trash2,
 	X,
 } from "lucide-react";
-import {
-	type KeyboardEvent,
-	useCallback,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Kicker } from "@/components/console";
-import { useRegisterTable } from "@/components/table-devtools";
+import { BracketChip, Kicker } from "@/components/console";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
 	Sheet,
@@ -58,7 +37,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { CURRENCY_SYMBOL } from "@/lib/markets";
+import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -78,616 +57,765 @@ type UserRow = {
 	isAdmin: boolean;
 };
 
+type SortKey = "joinedAt" | "balance" | "handle";
+
 function UsersPage() {
 	const users = useQuery(api.admin.listUsers, {});
-	const [globalFilter, setGlobalFilter] = useState("");
+	const [query, setQuery] = useState("");
+	const [sortKey, setSortKey] = useState<SortKey>("joinedAt");
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+	const [drawerUser, setDrawerUser] = useState<UserRow | null>(null);
 
-	const filteredUsers = useMemo(() => {
+	const rows = useMemo(() => {
 		if (!users) return [];
-		if (!globalFilter.trim()) return users;
-		const q = globalFilter.toLowerCase();
-		return users.filter(
-			(u) =>
-				u.handle.toLowerCase().includes(q) ||
-				(u.name ?? "").toLowerCase().includes(q) ||
-				(u.email ?? "").toLowerCase().includes(q)
-		);
-	}, [users, globalFilter]);
+		const q = query.trim().toLowerCase();
+		const filtered = q
+			? users.filter(
+					(u) =>
+						u.handle.toLowerCase().includes(q) ||
+						(u.name ?? "").toLowerCase().includes(q) ||
+						(u.email ?? "").toLowerCase().includes(q)
+				)
+			: users;
+		const sorted = [...filtered] as UserRow[];
+		sorted.sort((a, b) => {
+			let cmp = 0;
+			if (sortKey === "balance") cmp = (a.balance ?? 0) - (b.balance ?? 0);
+			else if (sortKey === "handle") cmp = a.handle.localeCompare(b.handle);
+			else cmp = (a.joinedAt ?? 0) - (b.joinedAt ?? 0);
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+		return sorted;
+	}, [users, query, sortKey, sortDir]);
+
+	const toggleSort = (key: SortKey) => {
+		if (sortKey === key) {
+			setSortDir(sortDir === "asc" ? "desc" : "asc");
+		} else {
+			setSortKey(key);
+			setSortDir(key === "handle" ? "asc" : "desc");
+		}
+	};
+
+	const isLoading = users === undefined;
 
 	return (
-		<div className="space-y-6">
-			<div className="flex flex-wrap items-end justify-between gap-4">
+		<div className="space-y-8">
+			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<Kicker>ACCOUNTS</Kicker>
 					<h1 className="display-headline mt-2 text-3xl sm:text-4xl">Users</h1>
 					<p className="mt-2 max-w-xl text-bone-2 text-sm">
-						Manage handles, display names, admin access, and account status.
+						Edit handles, adjust balances, grant or revoke admin, and inspect
+						every trader's full activity.
 					</p>
 				</div>
-				{users !== undefined && (
+				{users !== undefined ? (
 					<Badge variant="outline">
 						{users.length} {users.length === 1 ? "USER" : "USERS"}
 					</Badge>
-				)}
-			</div>
+				) : null}
+			</header>
 
-			<div className="relative">
-				<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+			<div className="relative max-w-md">
+				<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
 				<Input
-					className="pl-9"
+					type="search"
 					placeholder="Search by handle, name, or email…"
-					value={globalFilter}
-					onChange={(e) => setGlobalFilter(e.target.value)}
+					value={query}
+					onChange={(e) => setQuery(e.target.value)}
+					className="pl-9"
 				/>
-				{globalFilter && (
+				{query ? (
 					<button
 						type="button"
-						onClick={() => setGlobalFilter("")}
-						className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						onClick={() => setQuery("")}
+						className="absolute top-1/2 right-3 -translate-y-1/2 text-bone-3 hover:text-bone"
+						aria-label="Clear search"
 					>
 						<X className="size-4" />
 					</button>
-				)}
+				) : null}
 			</div>
 
-			{users === undefined ? (
+			{isLoading ? (
 				<div className="space-y-3">
 					{Array.from({ length: 6 }, (_, i) => `user-skel-${i}`).map((k) => (
-						<Skeleton key={k} className="h-14 w-full rounded-lg" />
+						<Skeleton key={k} className="h-14 w-full" />
 					))}
 				</div>
+			) : rows.length === 0 ? (
+				<div className="space-y-3 border border-rule border-dashed bg-ink-2 px-6 py-12 text-center">
+					<Kicker>
+						{users && users.length === 0 ? "EMPTY" : "NO MATCHES"}
+					</Kicker>
+					<p className="font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+						{users && users.length === 0
+							? "No users yet. Once people sign in, they show up here."
+							: "Nothing matches that search."}
+					</p>
+				</div>
 			) : (
-				<UsersTable rows={filteredUsers as UserRow[]} />
+				<>
+					<div className="hidden border border-rule md:block">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead className="w-12 pl-4" />
+									<TableHead>
+										<SortButton
+											active={sortKey === "handle"}
+											dir={sortDir}
+											onClick={() => toggleSort("handle")}
+										>
+											Handle
+										</SortButton>
+									</TableHead>
+									<TableHead className="hidden lg:table-cell">Email</TableHead>
+									<TableHead className="text-right">
+										<SortButton
+											active={sortKey === "balance"}
+											dir={sortDir}
+											onClick={() => toggleSort("balance")}
+											className="ml-auto"
+										>
+											Balance
+										</SortButton>
+									</TableHead>
+									<TableHead>Role</TableHead>
+									<TableHead className="pr-4 text-right">
+										<SortButton
+											active={sortKey === "joinedAt"}
+											dir={sortDir}
+											onClick={() => toggleSort("joinedAt")}
+											className="ml-auto"
+										>
+											Joined
+										</SortButton>
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{rows.map((u) => (
+									<TableRow
+										key={u._id}
+										className="cursor-pointer transition-colors hover:bg-ink-3"
+										onClick={() => setDrawerUser(u)}
+									>
+										<TableCell className="pl-4">
+											<TraderAvatar handle={u.handle} />
+										</TableCell>
+										<TableCell>
+											<div className="font-mono font-semibold text-bone">
+												{u.handle}
+											</div>
+											{u.name ? (
+												<div className="font-mono text-bone-3 text-xs">
+													{u.name}
+												</div>
+											) : null}
+										</TableCell>
+										<TableCell className="hidden max-w-[220px] truncate font-mono text-bone-2 text-xs lg:table-cell">
+											{u.email ?? "—"}
+										</TableCell>
+										<TableCell className="text-right font-mono text-sm tabular-nums">
+											{CURRENCY_SYMBOL}
+											{Math.round(u.balance).toLocaleString()}
+										</TableCell>
+										<TableCell>
+											{u.isAdmin ? (
+												<BracketChip>ADMIN</BracketChip>
+											) : (
+												<span className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+													trader
+												</span>
+											)}
+										</TableCell>
+										<TableCell className="pr-4 text-right font-mono text-bone-3 text-xs">
+											{formatJoined(u.joinedAt)}
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+
+					<ul className="space-y-2 md:hidden">
+						{rows.map((u) => (
+							<li key={u._id}>
+								<button
+									type="button"
+									onClick={() => setDrawerUser(u)}
+									className="flex w-full items-center gap-3 border border-rule bg-ink-2 p-3 text-left transition-colors hover:border-rule-bright"
+								>
+									<TraderAvatar handle={u.handle} />
+									<div className="min-w-0 flex-1">
+										<div className="flex items-center gap-2">
+											<span className="truncate font-mono font-semibold text-bone text-sm">
+												{u.handle}
+											</span>
+											{u.isAdmin ? <BracketChip>ADMIN</BracketChip> : null}
+										</div>
+										<div className="mt-0.5 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+											{CURRENCY_SYMBOL}
+											{Math.round(u.balance).toLocaleString()} ·{" "}
+											{formatJoined(u.joinedAt)}
+										</div>
+									</div>
+								</button>
+							</li>
+						))}
+					</ul>
+				</>
 			)}
+
+			<UserDrawer user={drawerUser} onClose={() => setDrawerUser(null)} />
 		</div>
 	);
 }
 
-function UsersTable({ rows }: { rows: UserRow[] }) {
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: "joinedAt", desc: true },
-	]);
-	const updateUser = useMutation(api.admin.adminUpdateUser);
-	const deleteUserMutation = useMutation(api.admin.deleteUser);
-	const grantAdmin = useMutation(api.admin.grantAdmin);
-	const revokeAdmin = useMutation(api.admin.revokeAdmin);
+// ----------------------------------------------------------------------------
+// Sort button
+// ----------------------------------------------------------------------------
 
-	const [activityUser, setActivityUser] = useState<UserRow | null>(null);
-	const [deleteConfirm, setDeleteConfirm] = useState<UserRow | null>(null);
-
-	const handleToggleAdmin = useCallback(
-		async (user: UserRow) => {
-			try {
-				if (user.isAdmin) {
-					await revokeAdmin({ userId: user._id });
-					toast.info(`Admin revoked from ${user.handle}`);
-				} else {
-					if (!user.email) throw new Error("No email for this user");
-					await grantAdmin({ email: user.email });
-					toast.success(`Admin granted to ${user.handle}`);
-				}
-			} catch (err) {
-				toast.error("Failed to update admin status", {
-					description: err instanceof Error ? err.message : String(err),
-				});
-			}
-		},
-		[revokeAdmin, grantAdmin]
-	);
-
-	const handleUpdateField = useCallback(
-		async (userId: Id<"users">, field: "handle" | "name", value: string) => {
-			try {
-				await updateUser({ userId, [field]: value });
-				toast.success("Saved");
-			} catch (err) {
-				toast.error("Save failed", {
-					description: err instanceof Error ? err.message : String(err),
-				});
-				throw err;
-			}
-		},
-		[updateUser]
-	);
-
-	const columns = useMemo<ColumnDef<UserRow>[]>(
-		() => [
-			{
-				id: "avatar",
-				header: "",
-				cell: ({ row }) => {
-					const u = row.original;
-					const initials = u.handle.replace("@", "").slice(0, 2).toUpperCase();
-					return (
-						<div className="flex size-8 shrink-0 items-center justify-center rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
-							{initials}
-						</div>
-					);
-				},
-				size: 48,
-				enableSorting: false,
-			},
-			{
-				id: "handle",
-				header: "Handle",
-				accessorKey: "handle",
-				cell: ({ row }) => (
-					<EditableCell
-						value={row.original.handle}
-						onSave={(v) => handleUpdateField(row.original._id, "handle", v)}
-					/>
-				),
-				enableSorting: true,
-			},
-			{
-				id: "name",
-				header: "Display name",
-				accessorKey: "name",
-				cell: ({ row }) => (
-					<EditableCell
-						value={row.original.name ?? ""}
-						placeholder="No name"
-						onSave={(v) => handleUpdateField(row.original._id, "name", v)}
-					/>
-				),
-				enableSorting: true,
-			},
-			{
-				id: "email",
-				header: "Email",
-				accessorKey: "email",
-				cell: ({ row }) => (
-					<span className="max-w-[200px] truncate text-muted-foreground text-xs">
-						{row.original.email ?? "—"}
-					</span>
-				),
-				enableSorting: false,
-			},
-			{
-				id: "balance",
-				header: ({ column }) => (
-					<button
-						type="button"
-						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					>
-						Balance
-						<ChevronsUpDown className="size-3.5 opacity-50" />
-					</button>
-				),
-				accessorKey: "balance",
-				cell: ({ row }) => (
-					<span className="font-mono text-sm">
-						{CURRENCY_SYMBOL}
-						{Math.round(row.original.balance).toLocaleString()}
-					</span>
-				),
-				enableSorting: true,
-			},
-			{
-				id: "joinedAt",
-				header: ({ column }) => (
-					<button
-						type="button"
-						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					>
-						Joined
-						<ChevronsUpDown className="size-3.5 opacity-50" />
-					</button>
-				),
-				accessorFn: (row) => row.joinedAt ?? row._creationTime,
-				cell: ({ row }) => {
-					const ts = row.original.joinedAt ?? row.original._creationTime;
-					return (
-						<span className="text-muted-foreground text-xs">
-							{new Date(ts).toLocaleDateString([], {
-								month: "short",
-								day: "numeric",
-								year: "numeric",
-							})}
-						</span>
-					);
-				},
-				enableSorting: true,
-			},
-			{
-				id: "isAdmin",
-				header: "Admin",
-				accessorKey: "isAdmin",
-				cell: ({ row }) => (
-					<Switch
-						checked={row.original.isAdmin}
-						onCheckedChange={() => handleToggleAdmin(row.original)}
-						aria-label={`Toggle admin for ${row.original.handle}`}
-					/>
-				),
-				enableSorting: false,
-			},
-			{
-				id: "actions",
-				header: "",
-				cell: ({ row }) => (
-					<div className="flex items-center gap-1">
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8 text-muted-foreground hover:text-foreground"
-							title="View activity"
-							onClick={() => setActivityUser(row.original)}
-						>
-							<Activity className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8 text-muted-foreground hover:text-destructive"
-							title="Delete user"
-							onClick={() => setDeleteConfirm(row.original)}
-						>
-							<Trash2 className="size-4" />
-						</Button>
-					</div>
-				),
-				enableSorting: false,
-				size: 80,
-			},
-		],
-		[handleUpdateField, handleToggleAdmin]
-	);
-
-	const table = useReactTable({
-		data: rows,
-		columns,
-		state: { sorting },
-		onSortingChange: setSorting,
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 25 } },
-		debugTable: import.meta.env.DEV,
-	});
-
-	useRegisterTable("Users", table);
-
-	return (
-		<>
-			<div className="rounded-lg border bg-card">
-				<div className="overflow-x-auto">
-					<Table>
-						<TableHeader>
-							{table.getHeaderGroups().map((hg) => (
-								<TableRow key={hg.id} className="hover:bg-transparent">
-									{hg.headers.map((header) => (
-										<TableHead key={header.id}>
-											{header.isPlaceholder
-												? null
-												: flexRender(
-														header.column.columnDef.header,
-														header.getContext()
-													)}
-										</TableHead>
-									))}
-								</TableRow>
-							))}
-						</TableHeader>
-						<TableBody>
-							{table.getRowModel().rows.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={columns.length}
-										className="py-16 text-center text-muted-foreground text-sm"
-									>
-										No users found.
-									</TableCell>
-								</TableRow>
-							) : (
-								table.getRowModel().rows.map((row) => (
-									<TableRow key={row.id}>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell key={cell.id} className="py-3">
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</div>
-
-				{table.getPageCount() > 1 && (
-					<div className="flex items-center justify-between border-t px-4 py-3">
-						<p className="text-muted-foreground text-sm">
-							Page {table.getState().pagination.pageIndex + 1} of{" "}
-							{table.getPageCount()}
-						</p>
-						<div className="flex items-center gap-1">
-							<Button
-								variant="outline"
-								size="icon"
-								className="size-8"
-								onClick={() => table.previousPage()}
-								disabled={!table.getCanPreviousPage()}
-							>
-								<ChevronLeft className="size-4" />
-							</Button>
-							<Button
-								variant="outline"
-								size="icon"
-								className="size-8"
-								onClick={() => table.nextPage()}
-								disabled={!table.getCanNextPage()}
-							>
-								<ChevronRight className="size-4" />
-							</Button>
-						</div>
-					</div>
-				)}
-			</div>
-
-			{/* Activity Sheet */}
-			<Sheet
-				open={!!activityUser}
-				onOpenChange={(o) => !o && setActivityUser(null)}
-			>
-				<SheetContent side="right" className="w-full max-w-lg">
-					{activityUser && <UserActivityPanel user={activityUser} />}
-				</SheetContent>
-			</Sheet>
-
-			{/* Delete Confirm Dialog */}
-			{deleteConfirm && (
-				<DeleteUserDialog
-					user={deleteConfirm}
-					onConfirm={async () => {
-						try {
-							await deleteUserMutation({ userId: deleteConfirm._id });
-							toast.info(`User ${deleteConfirm.handle} deleted`);
-							setDeleteConfirm(null);
-						} catch (err) {
-							toast.error("Delete failed", {
-								description: err instanceof Error ? err.message : String(err),
-							});
-						}
-					}}
-					onCancel={() => setDeleteConfirm(null)}
-				/>
-			)}
-		</>
-	);
-}
-
-function EditableCell({
-	value,
-	placeholder,
-	onSave,
+function SortButton({
+	children,
+	active,
+	dir,
+	onClick,
+	className,
 }: {
-	value: string;
-	placeholder?: string;
-	onSave: (v: string) => Promise<void>;
+	children: React.ReactNode;
+	active: boolean;
+	dir: "asc" | "desc";
+	onClick: () => void;
+	className?: string;
 }) {
-	const [editing, setEditing] = useState(false);
-	const [draft, setDraft] = useState(value);
-	const [saving, setSaving] = useState(false);
-	const inputRef = useRef<HTMLInputElement>(null);
-
-	const startEdit = () => {
-		setDraft(value);
-		setEditing(true);
-		setTimeout(() => inputRef.current?.focus(), 0);
-	};
-
-	const cancel = () => {
-		setDraft(value);
-		setEditing(false);
-	};
-
-	const save = async () => {
-		if (draft === value) {
-			setEditing(false);
-			return;
-		}
-		setSaving(true);
-		try {
-			await onSave(draft);
-			setEditing(false);
-		} catch {
-			setDraft(value);
-			setEditing(false);
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") save();
-		if (e.key === "Escape") cancel();
-	};
-
-	if (editing) {
-		return (
-			<div className="flex items-center gap-1">
-				<Input
-					ref={inputRef}
-					value={draft}
-					onChange={(e) => setDraft(e.target.value)}
-					onBlur={save}
-					onKeyDown={onKeyDown}
-					disabled={saving}
-					className="h-7 w-36 px-2 py-0 text-sm"
-				/>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="size-6 shrink-0"
-					onClick={save}
-					disabled={saving}
-				>
-					<Check className="size-3 text-brand" />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="size-6 shrink-0"
-					onClick={cancel}
-					disabled={saving}
-				>
-					<X className="size-3 text-muted-foreground" />
-				</Button>
-			</div>
-		);
-	}
-
 	return (
 		<button
 			type="button"
-			onClick={startEdit}
+			onClick={onClick}
 			className={cn(
-				"group flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-sm transition-colors hover:bg-accent",
-				!value && "text-muted-foreground italic"
+				"inline-flex items-center gap-1 transition-colors hover:text-bone",
+				active && "text-bone",
+				className
 			)}
-			title="Click to edit"
 		>
-			<span>{value || (placeholder ?? "—")}</span>
-			<Pencil className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-50" />
+			{children}
+			{active ? (
+				dir === "asc" ? (
+					<ChevronUp className="size-3" />
+				) : (
+					<ChevronDown className="size-3" />
+				)
+			) : null}
 		</button>
 	);
 }
 
-function UserActivityPanel({ user }: { user: UserRow }) {
-	const trades = useQuery(api.admin.userTrades, { userId: user._id });
+// ----------------------------------------------------------------------------
+// User detail drawer
+// ----------------------------------------------------------------------------
+
+function UserDrawer({
+	user,
+	onClose,
+}: {
+	user: UserRow | null;
+	onClose: () => void;
+}) {
+	return (
+		<Sheet open={user != null} onOpenChange={(o) => !o && onClose()}>
+			<SheetContent
+				side="right"
+				className="w-full max-w-xl overflow-y-auto bg-ink"
+			>
+				{user ? (
+					<UserDrawerBody key={user._id} user={user} onClose={onClose} />
+				) : null}
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+function UserDrawerBody({
+	user,
+	onClose,
+}: {
+	user: UserRow;
+	onClose: () => void;
+}) {
+	const updateUser = useMutation(api.admin.adminUpdateUser);
+	const deleteUserMutation = useMutation(api.admin.deleteUser);
+	const grantAdmin = useMutation(api.admin.grantAdmin);
+	const revokeAdmin = useMutation(api.admin.revokeAdmin);
+	const adjustBalance = useMutation(api.admin.adjustBalance);
+
+	const [handle, setHandle] = useState(user.handle);
+	const [savingHandle, setSavingHandle] = useState(false);
+	const [editingHandle, setEditingHandle] = useState(false);
+	const [balanceDraft, setBalanceDraft] = useState(
+		String(Math.round(user.balance))
+	);
+	const [savingBalance, setSavingBalance] = useState(false);
+	const [confirmDelete, setConfirmDelete] = useState(false);
+
+	const saveHandle = async () => {
+		setSavingHandle(true);
+		try {
+			await updateUser({ userId: user._id, handle: handle.trim() });
+			toast.success("Handle updated");
+			setEditingHandle(false);
+		} catch (err) {
+			toast.error("Save failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSavingHandle(false);
+		}
+	};
+
+	const saveBalance = async () => {
+		const n = Number(balanceDraft);
+		if (!Number.isFinite(n) || n < 0) {
+			toast.error("Balance must be a non-negative number");
+			return;
+		}
+		setSavingBalance(true);
+		try {
+			const next = await adjustBalance({ userId: user._id, setTo: n });
+			toast.success(
+				`Balance set to ${CURRENCY_SYMBOL}${next.toLocaleString()}`
+			);
+		} catch (err) {
+			toast.error("Adjust failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSavingBalance(false);
+		}
+	};
+
+	const bump = async (delta: number) => {
+		setSavingBalance(true);
+		try {
+			const next = await adjustBalance({ userId: user._id, delta });
+			setBalanceDraft(String(next));
+			toast.success(
+				`${delta > 0 ? "+" : "−"}${CURRENCY_SYMBOL}${Math.abs(delta).toLocaleString()} · now ${CURRENCY_SYMBOL}${next.toLocaleString()}`
+			);
+		} catch (err) {
+			toast.error("Adjust failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSavingBalance(false);
+		}
+	};
+
+	const toggleAdmin = async () => {
+		try {
+			if (user.isAdmin) {
+				await revokeAdmin({ userId: user._id });
+				toast.info(`Admin revoked from ${user.handle}`);
+			} else {
+				if (!user.email) throw new Error("No email on file for this user");
+				await grantAdmin({ email: user.email });
+				toast.success(`Admin granted to ${user.handle}`);
+			}
+		} catch (err) {
+			toast.error("Permissions failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	const performDelete = async () => {
+		try {
+			await deleteUserMutation({ userId: user._id });
+			toast.info(`${user.handle} deleted`);
+			onClose();
+		} catch (err) {
+			toast.error("Delete failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
 
 	return (
 		<>
-			<SheetHeader>
-				<SheetTitle className="flex items-center gap-2">
-					<div className="flex size-8 items-center justify-center rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
-						{user.handle.replace("@", "").slice(0, 2).toUpperCase()}
+			<SheetHeader className="border-rule border-b">
+				<div className="flex items-start gap-4">
+					<Avatar className="size-12 shrink-0 rounded-[4px]">
+						<AvatarFallback className="rounded-[4px] bg-brand font-bold font-mono text-brand-foreground text-sm">
+							{user.handle.charAt(1).toUpperCase()}
+						</AvatarFallback>
+					</Avatar>
+					<div className="min-w-0">
+						<SheetTitle className="break-all font-display">
+							{user.handle}
+						</SheetTitle>
+						<SheetDescription className="font-mono text-xs">
+							{user.email ?? "no email on file"} · Joined{" "}
+							{formatJoined(user.joinedAt)}
+						</SheetDescription>
+						<div className="mt-2 flex flex-wrap gap-2">
+							{user.isAdmin ? <BracketChip>ADMIN</BracketChip> : null}
+							<Badge variant="outline">Trader</Badge>
+						</div>
 					</div>
-					{user.handle}
-				</SheetTitle>
-				<SheetDescription>
-					{user.name && <span>{user.name} · </span>}
-					{user.email ?? "No email"} ·{" "}
-					<span className="font-medium">
-						{CURRENCY_SYMBOL}
-						{Math.round(user.balance).toLocaleString()}
-					</span>
-				</SheetDescription>
+				</div>
 			</SheetHeader>
 
-			<div className="mt-6">
-				<p className="mb-3 font-medium text-sm">Recent trades</p>
-				{trades === undefined ? (
-					<div className="space-y-2">
-						{Array.from({ length: 4 }, (_, i) => `trade-skel-${i}`).map((k) => (
-							<Skeleton key={k} className="h-16 w-full rounded-lg" />
-						))}
-					</div>
-				) : trades.length === 0 ? (
-					<div className="border border-rule border-dashed py-10 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-						No trades yet.
+			<section className="mt-5 border border-rule bg-ink-2 p-4">
+				<div className="flex items-center justify-between">
+					<Kicker>HANDLE</Kicker>
+					{!editingHandle ? (
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={() => setEditingHandle(true)}
+							aria-label="Edit handle"
+						>
+							<Pencil />
+						</Button>
+					) : null}
+				</div>
+				{editingHandle ? (
+					<div className="mt-3 flex gap-2">
+						<Input
+							value={handle}
+							onChange={(e) => setHandle(e.target.value)}
+							className="mono-input"
+							maxLength={32}
+							autoFocus
+						/>
+						<Button
+							variant="default"
+							size="sm"
+							onClick={saveHandle}
+							disabled={savingHandle}
+						>
+							<Check />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								setHandle(user.handle);
+								setEditingHandle(false);
+							}}
+							disabled={savingHandle}
+						>
+							<X />
+						</Button>
 					</div>
 				) : (
-					<div className="space-y-2">
-						{trades.map((t) => (
-							<div
-								key={t._id}
-								className="rounded-lg border bg-card p-3 text-sm"
-							>
-								<div className="flex items-start justify-between gap-2">
-									<div className="min-w-0 flex-1">
-										<p className="truncate font-medium text-sm leading-snug">
-											{t.marketQuestion}
-										</p>
-										<div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-											<Badge
-												variant={t.side === "Yes" ? "yes" : "no"}
-												className="px-1.5 py-0 text-xs"
-											>
-												{t.side}
-											</Badge>
-											<span className="capitalize">{t.kind}</span>
-											<span>·</span>
-											<span>
-												{Math.round(t.shares)} shares @{" "}
-												{Math.round(t.price * 100)}%
-											</span>
-										</div>
-									</div>
-									<div className="shrink-0 text-right">
-										<p
-											className={cn(
-												"font-medium font-mono text-sm",
-												t.cost > 0 ? "text-destructive" : "text-brand"
-											)}
-										>
-											{t.cost > 0 ? "−" : "+"}
-											{CURRENCY_SYMBOL}
-											{Math.abs(Math.round(t.cost)).toLocaleString()}
-										</p>
-										<p className="text-muted-foreground text-xs">
-											{new Date(t._creationTime).toLocaleDateString([], {
-												month: "short",
-												day: "numeric",
-											})}
-										</p>
-									</div>
-								</div>
-							</div>
-						))}
+					<div className="mt-2 font-mono font-semibold text-bone text-sm">
+						{user.handle}
 					</div>
 				)}
-			</div>
+			</section>
+
+			<section className="mt-4 border border-rule bg-ink-2 p-4">
+				<Kicker>CASH BALANCE</Kicker>
+				<div className="mt-3 flex flex-wrap items-center gap-2">
+					<span className="font-mono text-bone-3 text-sm">
+						{CURRENCY_SYMBOL}
+					</span>
+					<Input
+						value={balanceDraft}
+						onChange={(e) => setBalanceDraft(e.target.value)}
+						className="mono-input max-w-[120px]"
+						inputMode="numeric"
+					/>
+					<Button
+						variant="default"
+						size="sm"
+						disabled={savingBalance}
+						onClick={saveBalance}
+					>
+						<Check /> Set
+					</Button>
+				</div>
+				<div className="mt-3 flex flex-wrap gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={savingBalance}
+						onClick={() => bump(-1000)}
+					>
+						<Minus /> {CURRENCY_SYMBOL}1k
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={savingBalance}
+						onClick={() => bump(-100)}
+					>
+						<Minus /> {CURRENCY_SYMBOL}100
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={savingBalance}
+						onClick={() => bump(100)}
+					>
+						<Plus /> {CURRENCY_SYMBOL}100
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={savingBalance}
+						onClick={() => bump(1000)}
+					>
+						<Plus /> {CURRENCY_SYMBOL}1k
+					</Button>
+				</div>
+			</section>
+
+			<section className="mt-4 border border-rule bg-ink-2 p-4">
+				<div className="flex items-center justify-between">
+					<div>
+						<Kicker>ADMIN ACCESS</Kicker>
+						<p className="mt-1 text-bone-2 text-xs">
+							{user.isAdmin
+								? "Can approve proposals, resolve and delete tickets, and manage users."
+								: "Trader-level access only."}
+						</p>
+					</div>
+					<Switch checked={user.isAdmin} onCheckedChange={toggleAdmin} />
+				</div>
+			</section>
+
+			<section className="mt-4">
+				<div className="flex items-center justify-between gap-2 border-rule border-b pb-2">
+					<Kicker>FULL ACTIVITY</Kicker>
+					<Button asChild variant="outline" size="sm">
+						<Link
+							to="/profile/$username"
+							params={{
+								username: encodeURIComponent(user.handle.replace(/^@/, "")),
+							}}
+						>
+							<ExternalLink /> Public profile
+						</Link>
+					</Button>
+				</div>
+				<UserActivity userId={user._id} />
+			</section>
+
+			<section className="mt-8 border border-magenta/30 bg-magenta-wash/40 p-4">
+				<Kicker>DANGER ZONE</Kicker>
+				{!confirmDelete ? (
+					<>
+						<p className="mt-2 text-bone-2 text-xs">
+							Permanently deletes the user record. Their positions and trades
+							remain in the database but become orphaned.
+						</p>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="mt-3 text-magenta hover:bg-magenta-wash hover:text-magenta"
+							onClick={() => setConfirmDelete(true)}
+						>
+							<Trash2 /> Delete user
+						</Button>
+					</>
+				) : (
+					<>
+						<p className="mt-2 font-mono text-[12px] text-magenta uppercase tracking-[0.1em]">
+							Confirm delete {user.handle}?
+						</p>
+						<div className="mt-3 flex gap-2">
+							<Button variant="destructive" size="sm" onClick={performDelete}>
+								<Trash2 /> Delete permanently
+							</Button>
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setConfirmDelete(false)}
+							>
+								Cancel
+							</Button>
+						</div>
+					</>
+				)}
+			</section>
 		</>
 	);
 }
 
-function DeleteUserDialog({
-	user,
-	onConfirm,
-	onCancel,
-}: {
-	user: UserRow;
-	onConfirm: () => Promise<void>;
-	onCancel: () => void;
-}) {
-	const [loading, setLoading] = useState(false);
+// ----------------------------------------------------------------------------
+// User activity feed (admin view)
+// ----------------------------------------------------------------------------
 
+type ActivityEvent = FunctionReturnType<typeof api.admin.userActivity>[number];
+
+function UserActivity({ userId }: { userId: Id<"users"> }) {
+	const events = useQuery(api.admin.userActivity, { userId, limit: 50 });
+	if (events === undefined) {
+		return <Skeleton className="mt-4 h-32 w-full" />;
+	}
+	if (events.length === 0) {
+		return (
+			<div className="mt-4 border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+				No activity yet.
+			</div>
+		);
+	}
 	return (
-		<Dialog open onOpenChange={(o) => !o && onCancel()}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Delete user?</DialogTitle>
-					<DialogDescription>
-						<span className="font-medium">{user.handle}</span>
-						{user.email && (
-							<span className="text-muted-foreground"> ({user.email})</span>
-						)}{" "}
-						will be permanently removed. This cannot be undone.
-					</DialogDescription>
-				</DialogHeader>
-				<DialogFooter>
-					<Button variant="outline" onClick={onCancel} disabled={loading}>
-						Cancel
-					</Button>
-					<Button
-						variant="destructive"
-						disabled={loading}
-						onClick={async () => {
-							setLoading(true);
-							await onConfirm();
-							setLoading(false);
-						}}
-					>
-						{loading ? "Deleting…" : "Delete"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+		<ul className="mt-4">
+			{events.map((e) => (
+				<li key={e._id}>
+					<ActivityRow event={e} />
+				</li>
+			))}
+		</ul>
 	);
+}
+
+function ActivityRow({ event }: { event: ActivityEvent }) {
+	return (
+		<div className="ledger-row grid grid-cols-[auto_1fr_auto] items-start gap-3 py-3">
+			<KindMark kind={event.kind} />
+			<div className="min-w-0">
+				<EventBody event={event} />
+				{event.kind === "comment" && event.body ? (
+					<p className="mt-1 text-bone-2 text-xs leading-relaxed">
+						{event.body}
+					</p>
+				) : null}
+				{event.kind === "proposal" && event.rejectionReason ? (
+					<p className="mt-1 text-magenta text-xs">{event.rejectionReason}</p>
+				) : null}
+			</div>
+			<span className="whitespace-nowrap font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+				{relativeTime(event.ts)}
+			</span>
+		</div>
+	);
+}
+
+function EventBody({ event }: { event: ActivityEvent }) {
+	if (event.kind === "trade") {
+		return (
+			<div className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
+				<span>{event.action === "sell" ? "sold" : "bought"}</span>
+				<Badge variant={event.side === "Yes" ? "yes" : "no"}>
+					{event.side} {money(Math.abs(event.cost))}
+				</Badge>
+				<span>@</span>
+				<span className="font-bold text-bone tabular-nums">
+					{cents(event.price)}
+				</span>
+				<span aria-hidden="true">·</span>
+				<Link
+					to="/ticket/$id"
+					params={{ id: event.marketSlug }}
+					className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
+				>
+					{event.question}
+				</Link>
+			</div>
+		);
+	}
+	if (event.kind === "comment") {
+		return (
+			<div className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
+				<span>commented on</span>
+				<Link
+					to="/ticket/$id"
+					params={{ id: event.marketSlug }}
+					className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
+				>
+					{event.question}
+				</Link>
+			</div>
+		);
+	}
+	if (event.kind === "proposal") {
+		const statusTone =
+			event.status === "approved"
+				? "text-brand"
+				: event.status === "rejected"
+					? "text-magenta"
+					: "text-bone-2";
+		return (
+			<div className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
+				<span>proposed</span>
+				{event.approvedMarketSlug ? (
+					<Link
+						to="/ticket/$id"
+						params={{ id: event.approvedMarketSlug }}
+						className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
+					>
+						{event.question}
+					</Link>
+				) : (
+					<span className="font-display font-semibold text-bone normal-case tracking-normal">
+						{event.question}
+					</span>
+				)}
+				<span aria-hidden="true">·</span>
+				<span className={cn("font-bold", statusTone)}>{event.status}</span>
+			</div>
+		);
+	}
+	return null;
+}
+
+function KindMark({ kind }: { kind: ActivityEvent["kind"] }) {
+	const map: Record<ActivityEvent["kind"], { label: string; tone: string }> = {
+		trade: { label: "TRD", tone: "border-brand/40 bg-brand-wash text-brand" },
+		comment: { label: "MSG", tone: "border-rule bg-ink text-bone-2" },
+		proposal: { label: "PRO", tone: "border-rule bg-ink-2 text-bone" },
+	};
+	const m = map[kind] ?? {
+		label: "···",
+		tone: "border-rule bg-ink text-bone-2",
+	};
+	return (
+		<div
+			className={`grid h-7 w-10 shrink-0 place-items-center border font-bold font-mono text-[10px] uppercase tracking-[0.16em] ${m.tone}`}
+		>
+			{m.label}
+		</div>
+	);
+}
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
+
+function TraderAvatar({ handle }: { handle: string }) {
+	const initial = handle.replace(/^@/, "").slice(0, 1).toUpperCase();
+	return (
+		<Avatar className="size-8 rounded-[2px]">
+			<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
+				{initial}
+			</AvatarFallback>
+		</Avatar>
+	);
+}
+
+function formatJoined(ms: number | null): string {
+	if (!ms) return "—";
+	return new Date(ms).toLocaleDateString(undefined, {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+}
+
+function relativeTime(ts: number): string {
+	const diff = Date.now() - ts;
+	if (diff < 60_000) return "now";
+	const mins = Math.floor(diff / 60_000);
+	if (mins < 60) return `${mins}m`;
+	const hours = Math.floor(diff / 3_600_000);
+	if (hours < 24) return `${hours}h`;
+	const days = Math.floor(diff / 86_400_000);
+	if (days < 7) return `${days}d`;
+	return `${Math.floor(days / 7)}w`;
 }

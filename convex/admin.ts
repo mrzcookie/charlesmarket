@@ -435,10 +435,156 @@ export const userTrades = query({
 					shares: t.shares,
 					price: t.price,
 					cost: t.cost,
-					marketQuestion: market?.question ?? "Deleted market",
+					marketQuestion: market?.question ?? "Deleted ticket",
 					marketSlug: market?.slug ?? "",
 				};
 			})
 		);
+	},
+});
+
+type UserFeedEvent =
+	| {
+			kind: "trade";
+			_id: string;
+			ts: number;
+			marketSlug: string;
+			question: string;
+			side: "Yes" | "No";
+			action: "buy" | "sell";
+			shares: number;
+			price: number;
+			cost: number;
+	  }
+	| {
+			kind: "comment";
+			_id: string;
+			ts: number;
+			marketSlug: string;
+			question: string;
+			body: string;
+	  }
+	| {
+			kind: "proposal";
+			_id: string;
+			ts: number;
+			question: string;
+			category: string;
+			status: "pending" | "approved" | "rejected";
+			rejectionReason: string | null;
+			approvedMarketSlug: string | null;
+	  };
+
+/**
+ * Per-user merged activity: trades + comments + proposals submitted.
+ * Same shape style as activity.feed but scoped to one userId.
+ */
+export const userActivity = query({
+	args: { userId: v.id("users"), limit: v.optional(v.number()) },
+	handler: async (ctx, { userId, limit = 50 }) => {
+		await requireAdmin(ctx);
+		const events: UserFeedEvent[] = [];
+
+		const seenMarkets = new Map<string, { slug: string; question: string }>();
+		const resolveMarket = async (marketId: Id<"markets">) => {
+			const cached = seenMarkets.get(marketId);
+			if (cached) return cached;
+			const m = await ctx.db.get(marketId);
+			const data = {
+				slug: m?.slug ?? "unknown",
+				question: m?.question ?? "Deleted ticket",
+			};
+			seenMarkets.set(marketId, data);
+			return data;
+		};
+
+		const trades = await ctx.db
+			.query("trades")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.order("desc")
+			.take(limit);
+		for (const t of trades) {
+			const m = await resolveMarket(t.marketId);
+			events.push({
+				kind: "trade",
+				_id: t._id,
+				ts: t._creationTime,
+				marketSlug: m.slug,
+				question: m.question,
+				side: t.side,
+				action: t.kind,
+				shares: t.shares,
+				price: t.price,
+				cost: t.cost,
+			});
+		}
+
+		const comments = await ctx.db.query("comments").order("desc").take(500);
+		for (const c of comments) {
+			if (c.userId !== userId) continue;
+			const m = await resolveMarket(c.marketId);
+			events.push({
+				kind: "comment",
+				_id: c._id,
+				ts: c._creationTime,
+				marketSlug: m.slug,
+				question: m.question,
+				body: c.body,
+			});
+		}
+
+		const proposals = await ctx.db
+			.query("marketProposals")
+			.withIndex("by_proposer", (q) => q.eq("proposerId", userId))
+			.order("desc")
+			.take(limit);
+		for (const p of proposals) {
+			let approvedSlug: string | null = null;
+			if (p.approvedMarketId) {
+				const m = await ctx.db.get(p.approvedMarketId);
+				approvedSlug = m?.slug ?? null;
+			}
+			events.push({
+				kind: "proposal",
+				_id: p._id,
+				ts: p._creationTime,
+				question: p.question,
+				category: p.category,
+				status: p.status,
+				rejectionReason: p.rejectionReason ?? null,
+				approvedMarketSlug: approvedSlug,
+			});
+		}
+
+		events.sort((a, b) => b.ts - a.ts);
+		return events.slice(0, limit);
+	},
+});
+
+/**
+ * Adjust a user's cash balance. Set absolute via `setTo`, or add/remove via
+ * `delta`. Either field must be provided.
+ */
+export const adjustBalance = mutation({
+	args: {
+		userId: v.id("users"),
+		setTo: v.optional(v.number()),
+		delta: v.optional(v.number()),
+	},
+	handler: async (ctx, { userId, setTo, delta }) => {
+		await requireAdmin(ctx);
+		const user = await ctx.db.get(userId);
+		if (!user) throw new Error("User not found");
+		let next: number;
+		if (typeof setTo === "number") {
+			if (setTo < 0) throw new Error("Balance cannot be negative");
+			next = Math.round(setTo);
+		} else if (typeof delta === "number") {
+			next = Math.max(0, Math.round((user.balance ?? 0) + delta));
+		} else {
+			throw new Error("Provide setTo or delta");
+		}
+		await ctx.db.patch(userId, { balance: next });
+		return next;
 	},
 });

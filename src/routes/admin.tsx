@@ -69,14 +69,21 @@ function AuthedAdminLayout() {
 
 function Sidebar() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? "";
+	const pendingCount = useQuery(api.proposals.pendingCount, {});
 
 	const navItems = [
 		{
-			to: "/admin/markets" as const,
-			label: "Markets",
+			to: "/admin/tickets" as const,
+			label: "Tickets",
 			icon: BarChart2,
+			badge: pendingCount && pendingCount > 0 ? pendingCount : undefined,
 		},
-		{ to: "/admin/users" as const, label: "Users", icon: Users },
+		{
+			to: "/admin/users" as const,
+			label: "Users",
+			icon: Users,
+			badge: undefined,
+		},
 	];
 
 	return (
@@ -94,7 +101,7 @@ function Sidebar() {
 			</div>
 
 			<nav className="mt-4 hidden flex-col gap-0 lg:flex">
-				{navItems.map(({ to, label, icon: Icon }) => {
+				{navItems.map(({ to, label, icon: Icon, badge }) => {
 					const isActive = pathname.startsWith(to);
 					return (
 						<Link
@@ -108,21 +115,26 @@ function Sidebar() {
 							)}
 						>
 							<Icon className="size-4 shrink-0" />
-							{label}
+							<span className="flex-1">{label}</span>
+							{badge ? (
+								<span className="grid h-5 min-w-5 place-items-center rounded-[2px] bg-brand px-1 font-bold font-mono text-[10px] text-brand-foreground tabular-nums">
+									{badge > 99 ? "99" : badge}
+								</span>
+							) : null}
 						</Link>
 					);
 				})}
 			</nav>
 
 			<nav className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:hidden">
-				{navItems.map(({ to, label, icon: Icon }) => {
+				{navItems.map(({ to, label, icon: Icon, badge }) => {
 					const isActive = pathname.startsWith(to);
 					return (
 						<Link
 							key={to}
 							to={to}
 							className={cn(
-								"flex shrink-0 items-center gap-2 border px-3 py-2 font-mono font-semibold text-[11px] uppercase tracking-[0.14em] transition-colors",
+								"relative flex shrink-0 items-center gap-2 border px-3 py-2 font-mono font-semibold text-[11px] uppercase tracking-[0.14em] transition-colors",
 								isActive
 									? "border-brand bg-brand-wash text-brand"
 									: "border-rule text-bone-2 hover:border-rule-bright hover:text-bone"
@@ -130,6 +142,11 @@ function Sidebar() {
 						>
 							<Icon className="size-3.5" />
 							{label}
+							{badge ? (
+								<span className="grid h-4 min-w-4 place-items-center rounded-[2px] bg-brand px-1 font-bold font-mono text-[10px] text-brand-foreground tabular-nums">
+									{badge > 99 ? "99" : badge}
+								</span>
+							) : null}
 						</Link>
 					);
 				})}
@@ -144,8 +161,7 @@ function NotAuthorized() {
 			<BracketChip tone="danger">ADMIN ONLY</BracketChip>
 			<h2 className="display-headline mt-4 text-3xl">No access.</h2>
 			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
-				This area is restricted to moderators. Ask an existing admin to grant
-				you access.
+				This area is admin-only. Ask an existing admin to grant you access.
 			</p>
 			<Button asChild variant="outline" className="mt-6">
 				<Link to="/tickets">Back to tickets</Link>
