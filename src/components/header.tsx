@@ -1,7 +1,16 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { Menu, Plus, Search } from "lucide-react";
+import {
+	Activity,
+	Menu,
+	Plus,
+	Search,
+	Store,
+	Trophy,
+	Wallet,
+} from "lucide-react";
 import { useState } from "react";
+import type { ComponentType, SVGProps } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +28,14 @@ import { useBalance } from "@/lib/wallet";
 import { AuthControls, SignInButton } from "./auth-controls";
 import { ThemeToggle } from "./theme-toggle";
 
-const navLinks = [
-	{ to: "/markets", label: "Markets" },
-	{ to: "/activity", label: "Activity" },
-	{ to: "/leaderboard", label: "Leaderboard" },
-	{ to: "/portfolio", label: "Portfolio" },
-] as const;
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+const navLinks: { to: string; label: string; icon: IconType }[] = [
+	{ to: "/markets", label: "Markets", icon: Store },
+	{ to: "/activity", label: "Activity", icon: Activity },
+	{ to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+	{ to: "/portfolio", label: "Portfolio", icon: Wallet },
+];
 
 export function Header() {
 	const { location } = useRouterState();
@@ -69,17 +80,19 @@ export function Header() {
 						<nav className="flex flex-col gap-1 px-3">
 							{navLinks.map((l) => {
 								const active = pathname.startsWith(l.to);
+								const Icon = l.icon;
 								return (
 									<SheetClose asChild key={l.to}>
 										<Link
 											to={l.to}
 											className={cn(
-												"rounded-md px-3 py-2 font-medium text-sm",
+												"flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm",
 												active
 													? "bg-accent text-accent-foreground"
 													: "text-foreground hover:bg-muted"
 											)}
 										>
+											<Icon className="size-4" />
 											{l.label}
 										</Link>
 									</SheetClose>
@@ -100,16 +113,6 @@ export function Header() {
 										<Link to="/propose">
 											<Plus /> Propose a market
 										</Link>
-									</Button>
-								</SheetClose>
-								<SheetClose asChild>
-									<Button
-										asChild
-										size="sm"
-										variant="outline"
-										className="w-full"
-									>
-										<Link to="/profile">Top up</Link>
 									</Button>
 								</SheetClose>
 							</Authenticated>
@@ -156,6 +159,7 @@ export function Header() {
 				<nav className="hidden items-center gap-1 lg:flex">
 					{navLinks.map((l) => {
 						const active = pathname.startsWith(l.to);
+						const Icon = l.icon;
 						return (
 							<Button
 								key={l.to}
@@ -167,7 +171,10 @@ export function Header() {
 									active && "text-primary hover:text-primary"
 								)}
 							>
-								<Link to={l.to}>{l.label}</Link>
+								<Link to={l.to}>
+									<Icon />
+									{l.label}
+								</Link>
 							</Button>
 						);
 					})}
@@ -176,16 +183,6 @@ export function Header() {
 				<div className="ml-auto flex items-center gap-2">
 					<ThemeToggle />
 					<Authenticated>
-						<Button
-							asChild
-							variant="outline"
-							size="sm"
-							className="hidden sm:inline-flex"
-						>
-							<Link to="/propose">
-								<Plus /> Propose
-							</Link>
-						</Button>
 						<Badge
 							variant="brand"
 							className="hidden h-9 gap-1.5 rounded-md px-3 font-mono text-sm sm:inline-flex"
@@ -196,11 +193,6 @@ export function Header() {
 						</Badge>
 					</Authenticated>
 					<AuthControls />
-					<Authenticated>
-						<Button asChild size="sm" className="hidden sm:inline-flex">
-							<Link to="/profile">Top up</Link>
-						</Button>
-					</Authenticated>
 					<Unauthenticated>
 						<SignInButton
 							variant="default"

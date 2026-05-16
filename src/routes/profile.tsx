@@ -31,9 +31,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { CURRENCY_SYMBOL, money, STARTING_BALANCE } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
@@ -235,13 +233,6 @@ function ProfileBody() {
 							</div>
 						}
 					/>
-					<Separator />
-					<Pref
-						label="Push notifications"
-						control={<Switch defaultChecked />}
-					/>
-					<Separator />
-					<Pref label="Email digests" control={<Switch />} />
 				</CardContent>
 			</Card>
 
