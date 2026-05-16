@@ -126,9 +126,9 @@ function ProposePage() {
 					Pitch the next ticket
 				</h1>
 				<p className="mt-3 max-w-2xl text-bone-2 text-sm sm:text-base">
-					Submit a question, set the closing date, and the moderators will
-					approve, reject, or send notes. Approved tickets go live with your
-					starting Yes price.
+					Submit a question, set the closing date, and the admins will approve,
+					reject, or send notes. Approved tickets go live with your starting Yes
+					price.
 				</p>
 			</header>
 

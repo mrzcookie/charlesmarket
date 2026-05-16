@@ -134,7 +134,7 @@ function PortfolioBody() {
 								<TableHeader>
 									<TableRow>
 										<TableHead className="pl-4">ID</TableHead>
-										<TableHead>Market</TableHead>
+										<TableHead>Ticket</TableHead>
 										<TableHead>Side</TableHead>
 										<TableHead className="text-right">Shares</TableHead>
 										<TableHead className="text-right">Avg</TableHead>

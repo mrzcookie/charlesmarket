@@ -826,7 +826,7 @@ function Row({
 function Stats({ market }: { market: UIMarket }) {
 	return (
 		<div className="border border-rule bg-ink-2 p-5">
-			<div className="kicker border-rule border-b pb-3">MARKET STATS</div>
+			<div className="kicker border-rule border-b pb-3">TICKET STATS</div>
 			<div className="mt-3 space-y-0 font-mono text-sm">
 				<KV label="Volume" value={money(market.volume)} />
 				<KV label="Liquidity" value={money(market.liquidity)} />

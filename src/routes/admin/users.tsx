@@ -589,7 +589,7 @@ function UserActivityPanel({ user }: { user: UserRow }) {
 						))}
 					</div>
 				) : trades.length === 0 ? (
-					<div className="rounded-lg border border-dashed py-10 text-center text-muted-foreground text-sm">
+					<div className="border border-rule border-dashed py-10 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
 						No trades yet.
 					</div>
 				) : (

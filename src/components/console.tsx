@@ -170,29 +170,3 @@ export function Stat({
 		</div>
 	);
 }
-
-/**
- * Section header: a tabloid-headline `// KICKER` + Display M heading
- * with an optional right-side action slot.
- */
-export function SectionHead({
-	kicker,
-	title,
-	action,
-}: {
-	kicker: string;
-	title: string;
-	action?: ReactNode;
-}) {
-	return (
-		<header className="flex flex-wrap items-end justify-between gap-3">
-			<div className="min-w-0">
-				<Kicker>{kicker}</Kicker>
-				<h2 className="display-headline mt-1.5 text-2xl sm:text-3xl md:text-[2.25rem]">
-					{title}
-				</h2>
-			</div>
-			{action ? <div className="shrink-0">{action}</div> : null}
-		</header>
-	);
-}

@@ -204,7 +204,7 @@ function MarketsHeader({
 							"border-brand/60 text-brand hover:bg-brand-wash dark:text-brand dark:hover:bg-brand-wash"
 					)}
 					onClick={() => setBellOpen(true)}
-					title={`${endedCount} market${endedCount !== 1 ? "s" : ""} need attention`}
+					title={`${endedCount} ticket${endedCount !== 1 ? "s" : ""} need attention`}
 				>
 					<Bell className="size-4" />
 					{endedCount > 0 && (
@@ -218,12 +218,12 @@ function MarketsHeader({
 					<DialogTrigger asChild>
 						<Button className="gap-2">
 							<Plus className="size-4" />
-							Create market
+							Create ticket
 						</Button>
 					</DialogTrigger>
 					<DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Create market</DialogTitle>
+							<DialogTitle>Create ticket</DialogTitle>
 							<DialogDescription>
 								Skips the proposal flow. Use for editorial picks or trusted
 								markets.
@@ -239,19 +239,19 @@ function MarketsHeader({
 					<SheetHeader>
 						<SheetTitle className="flex items-center gap-2">
 							<Bell className="size-4 text-brand" />
-							Markets needing attention
+							Tickets needing attention
 						</SheetTitle>
 						<SheetDescription>
 							{endedCount === 0
-								? "All markets are up to date."
+								? "All tickets are up to date."
 								: `${endedCount} market${endedCount !== 1 ? "s" : ""} require resolution.`}
 						</SheetDescription>
 					</SheetHeader>
 					<div className="mt-4 space-y-3">
 						{endedCount === 0 ? (
-							<div className="rounded-lg border border-dashed py-10 text-center text-muted-foreground text-sm">
+							<div className="border border-rule border-dashed py-10 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
 								<CheckCircle2 className="mx-auto mb-2 size-6 opacity-40" />
-								No markets need attention right now.
+								No tickets need attention right now.
 							</div>
 						) : (
 							(endedMarkets ?? []).map((m) => (
@@ -294,7 +294,7 @@ function EndedMarketCard({
 	const handleClose = async () => {
 		try {
 			await close({ marketId: market._id });
-			toast.info("Market closed");
+			toast.info("Ticket closed");
 		} catch (err) {
 			toast.error("Close failed", {
 				description: err instanceof Error ? err.message : String(err),
@@ -401,7 +401,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 		async (id: Id<"markets">) => {
 			try {
 				await close({ marketId: id });
-				toast.info("Market closed to trading");
+				toast.info("Ticket closed to trading");
 			} catch (err) {
 				toast.error("Close failed", {
 					description: err instanceof Error ? err.message : String(err),
@@ -415,7 +415,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 		async (id: Id<"markets">) => {
 			try {
 				await reopen({ marketId: id });
-				toast.info("Market reopened");
+				toast.info("Ticket reopened");
 			} catch (err) {
 				toast.error("Reopen failed", {
 					description: err instanceof Error ? err.message : String(err),
@@ -429,11 +429,11 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 		async (id: Id<"markets">, question: string) => {
 			setConfirmDialog({
 				open: true,
-				title: "Delete market?",
+				title: "Delete ticket?",
 				description: `"${question}" — All trades, positions, and comments will be permanently removed.`,
 				onConfirm: async () => {
 					await deleteMarket({ marketId: id });
-					toast.info("Market deleted");
+					toast.info("Ticket deleted");
 				},
 			});
 		},
@@ -444,8 +444,8 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 		async (id: Id<"marketProposals">) => {
 			try {
 				const r = await approve({ proposalId: id });
-				toast.success("Market created", {
-					description: `Live at /market/${r.slug}`,
+				toast.success("Ticket created", {
+					description: `Live at /ticket/${r.slug}`,
 				});
 			} catch (err) {
 				toast.error("Approve failed", {
@@ -914,7 +914,7 @@ function ActionsCell({
 												className="flex items-center gap-2"
 											>
 												<ExternalLink className="size-3.5" />
-												View market
+												View ticket
 											</Link>
 										</DropdownMenuItem>
 									)}
@@ -969,7 +969,7 @@ function ActionsCell({
 										onClick={() => onDeleteMarket(marketId, row.question)}
 									>
 										<Trash2 className="size-3.5" />
-										Delete market
+										Delete ticket
 									</DropdownMenuItem>
 								</>
 							);
@@ -1007,7 +1007,7 @@ function ActionsCell({
 												className="flex items-center gap-2"
 											>
 												<ExternalLink className="size-3.5" />
-												View market
+												View ticket
 											</Link>
 										</DropdownMenuItem>
 									)}
@@ -1186,7 +1186,7 @@ function RejectProposalDialog({
 						id="reject-reason"
 						value={reason}
 						onChange={(e) => setReason(e.target.value)}
-						placeholder="e.g. Too vague, or already covered by an existing market."
+						placeholder="e.g. Too vague, or already covered by an existing ticket."
 						rows={3}
 					/>
 				</div>
@@ -1253,8 +1253,8 @@ function CreateMarketForm({ onSuccess }: { onSuccess: () => void }) {
 				initialLiquidity: liquidity,
 				slugOverride: slug.trim() || undefined,
 			});
-			toast.success("Market created", {
-				description: `/market/${r.slug}`,
+			toast.success("Ticket created", {
+				description: `/ticket/${r.slug}`,
 			});
 			onSuccess();
 		} catch (err) {
@@ -1388,7 +1388,7 @@ function CreateMarketForm({ onSuccess }: { onSuccess: () => void }) {
 					) : (
 						<>
 							<Plus className="size-4" />
-							Create market
+							Create ticket
 						</>
 					)}
 				</Button>

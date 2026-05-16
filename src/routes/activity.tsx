@@ -29,7 +29,7 @@ function ActivityPage() {
 						Live activity
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
-						Every trade, comment, and resolution on the console. Newest first.
+						Every trade, comment, and resolution on Charles. Newest first.
 					</p>
 				</div>
 				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">

@@ -38,7 +38,7 @@ function LeaderboardPage() {
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						Ranked by lifetime P&L in shekels ({CURRENCY_SYMBOL}). Realized plus
-						unrealized. Tap a handle to see their book.
+						unrealized. Tap a handle to view their profile.
 					</p>
 				</div>
 				<ToggleGroup
