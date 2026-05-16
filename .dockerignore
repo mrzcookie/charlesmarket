@@ -1,0 +1,33 @@
+.git
+.gitignore
+.github
+
+node_modules
+.pnpm-store
+
+# Build / framework outputs (rebuilt inside the image)
+.output
+.nitro
+.tanstack
+.vinxi
+.wrangler
+dist
+dist-ssr
+
+# Local env / secrets — Dokploy injects env vars at runtime
+.env
+.env.*
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+*.local
+__unconfig*
+
+# Docs / dev-only files not needed in the image
+README.md
+CLAUDE.md
+.claude
+biome.json
+lefthook.yml
