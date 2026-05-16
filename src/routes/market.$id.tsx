@@ -4,14 +4,13 @@ import { LogIn } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
-import { PriceBar, TrendBadge } from "@/components/market-card";
+import { BracketChip, marketId } from "@/components/console";
+import { PriceBar, QuickBuyDialog, TrendBadge } from "@/components/market-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -44,46 +43,95 @@ export const Route = createFileRoute("/market/$id")({
 function MarketDetail() {
 	const { id } = useParams({ from: "/market/$id" });
 	const doc = useQuery(api.markets.getBySlug, { slug: id });
+	const [quickBuyOpen, setQuickBuyOpen] = useState(false);
+	const [quickBuySide, setQuickBuySide] = useState<"Yes" | "No">("Yes");
 
 	if (doc === undefined) return <MarketDetailSkeleton />;
 	if (doc === null) return <MarketNotFound id={id} />;
 
 	const market = toUIMarket(doc);
+	const isClosed = doc.status !== "open";
+
+	const openQuick = (side: "Yes" | "No") => {
+		setQuickBuySide(side);
+		setQuickBuyOpen(true);
+	};
 
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-			<Breadcrumbs market={market} />
-			<div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1.7fr_1fr] lg:gap-8">
-				<MarketHeader market={market} />
-				<aside className="space-y-4 lg:sticky lg:top-20 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
-					<OrderTicket market={market} />
-					<Stats market={market} />
-				</aside>
-				<PriceChartCard market={market} />
-				<MarketTabs market={market} />
-			</div>
-		</main>
+		<>
+			<main className="mx-auto w-full max-w-[1280px] px-4 py-8 pb-28 sm:px-6 sm:py-12 lg:pb-12">
+				<Breadcrumbs market={market} />
+				<div className="mt-5 grid grid-cols-1 gap-6 sm:mt-6 lg:grid-cols-[1.7fr_380px] lg:gap-10">
+					<MarketHeader market={market} />
+					<aside className="hidden space-y-4 lg:sticky lg:top-20 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
+						<OrderTicket market={market} />
+						<Stats market={market} />
+					</aside>
+					<PriceChartCard market={market} />
+					<div className="lg:hidden">
+						<Stats market={market} />
+					</div>
+					<MarketTabs market={market} />
+				</div>
+			</main>
+
+			{!isClosed ? (
+				<div className="sticky bottom-0 z-20 border-rule border-t bg-ink/95 px-4 py-3 backdrop-blur lg:hidden">
+					<div className="mx-auto flex w-full max-w-[1280px] items-center gap-2">
+						<button
+							type="button"
+							onClick={() => openQuick("Yes")}
+							className="bezel flex flex-1 items-center justify-between rounded-[4px] border border-brand bg-brand px-4 py-3 text-brand-foreground transition-colors hover:bg-brand-deep active:translate-y-[1px]"
+						>
+							<span className="font-bold font-mono text-[11px] uppercase tracking-[0.14em]">
+								Buy Yes
+							</span>
+							<span className="font-bold font-mono text-base tabular-nums">
+								{cents(market.yesPrice)}
+							</span>
+						</button>
+						<button
+							type="button"
+							onClick={() => openQuick("No")}
+							className="bezel flex flex-1 items-center justify-between rounded-[4px] border border-magenta bg-magenta px-4 py-3 text-magenta-foreground transition-colors hover:bg-magenta-deep active:translate-y-[1px]"
+						>
+							<span className="font-bold font-mono text-[11px] uppercase tracking-[0.14em]">
+								Buy No
+							</span>
+							<span className="font-bold font-mono text-base tabular-nums">
+								{cents(1 - market.yesPrice)}
+							</span>
+						</button>
+					</div>
+				</div>
+			) : null}
+
+			<QuickBuyDialog
+				market={market}
+				open={quickBuyOpen}
+				onOpenChange={setQuickBuyOpen}
+				initialSide={quickBuySide}
+			/>
+		</>
 	);
 }
 
 function Breadcrumbs({ market }: { market: UIMarket }) {
 	return (
-		<nav className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-muted-foreground text-xs sm:gap-2 sm:text-sm">
-			<Link to="/markets" className="shrink-0 hover:text-foreground">
-				Markets
+		<nav className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
+			<Link to="/markets" className="shrink-0 hover:text-brand">
+				Board
 			</Link>
-			<span>/</span>
+			<span aria-hidden="true">/</span>
 			<Link
 				to="/markets"
 				search={{ category: market.category }}
-				className="shrink-0 hover:text-foreground"
+				className="shrink-0 hover:text-brand"
 			>
 				{market.category}
 			</Link>
-			<span className="hidden sm:inline">/</span>
-			<span className="hidden truncate text-foreground sm:inline">
-				{market.question}
-			</span>
+			<span aria-hidden="true">/</span>
+			<span className="text-bone">{marketId(market.slug)}</span>
 		</nav>
 	);
 }
@@ -91,29 +139,37 @@ function Breadcrumbs({ market }: { market: UIMarket }) {
 function MarketHeader({ market }: { market: UIMarket }) {
 	return (
 		<div>
-			<div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-				<Badge variant="secondary" className="text-[10px] uppercase">
-					{market.category}
-				</Badge>
-				{market.tags.map((t) => (
-					<Badge key={t} variant="brand" className="text-[10px]">
-						#{t}
-					</Badge>
-				))}
+			<div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
+				<span className="font-bold text-bone">{marketId(market.slug)}</span>
+				<span className="text-bone-3">·</span>
+				<span className="text-bone-2">{market.category}</span>
+				{market.tags.length > 0 ? (
+					<>
+						<span className="text-bone-3">·</span>
+						{market.tags.map((t) => (
+							<span key={t} className="text-bone-3">
+								#{t}
+							</span>
+						))}
+					</>
+				) : null}
+				<BracketChip pulse className="ml-auto">
+					LIVE
+				</BracketChip>
 			</div>
-			<h1 className="mt-3 font-bold text-2xl leading-tight tracking-tight sm:text-3xl md:text-4xl">
+			<h1 className="display-headline mt-4 text-3xl leading-[0.98] sm:text-4xl md:text-[3.25rem]">
 				{market.question}
 			</h1>
-			<div className="mt-4 flex items-end justify-between">
+			<div className="mt-6 flex items-end justify-between">
 				<div>
-					<div className="font-mono font-semibold text-2xl text-yes sm:text-3xl">
+					<div className="label">Yes price</div>
+					<div className="mt-1 font-bold font-mono text-4xl text-brand tabular-nums leading-none sm:text-5xl">
 						{cents(market.yesPrice)}
 					</div>
-					<div className="text-muted-foreground text-sm">Yes price</div>
 				</div>
 				<TrendBadge trend={market.trend} delta={market.delta} />
 			</div>
-			<div className="mt-3 max-w-xl">
+			<div className="mt-5 max-w-xl">
 				<PriceBar yes={market.yesPrice} no={1 - market.yesPrice} />
 			</div>
 		</div>
@@ -145,19 +201,19 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 	const last = points[points.length - 1].yes;
 	const first = points[0].yes;
 	const upward = last >= first;
-	const color = upward ? "var(--yes)" : "var(--no)";
+	const color = upward ? "var(--brand)" : "var(--magenta)";
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-				<CardTitle className="text-base sm:text-lg">
-					Yes price · history
+		<div className="border border-rule bg-ink-2 p-5">
+			<header className="flex flex-col items-start gap-2 border-rule border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex items-center gap-3">
+					<span className="kicker">YES PRICE / HISTORY</span>
 					{liveHistory === undefined ? null : liveHistory.length < 2 ? (
-						<span className="ml-2 font-normal text-muted-foreground text-xs">
-							(synthetic — trade to start tracking)
+						<span className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							(synthetic, trade to start tracking)
 						</span>
 					) : null}
-				</CardTitle>
+				</div>
 				<ToggleGroup
 					type="single"
 					size="sm"
@@ -166,79 +222,92 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 					className="self-end sm:self-auto"
 				>
 					{(["1H", "6H", "1D", "1W", "ALL"] as const).map((r) => (
-						<ToggleGroupItem key={r} value={r} className="px-2 text-xs">
+						<ToggleGroupItem key={r} value={r}>
 							{r}
 						</ToggleGroupItem>
 					))}
 				</ToggleGroup>
-			</CardHeader>
-			<CardContent>
-				<svg
-					viewBox={`0 0 ${w} ${h}`}
-					className="h-40 w-full sm:h-56"
-					preserveAspectRatio="none"
-					aria-label="Yes price history"
-				>
-					<title>Yes price history</title>
-					<defs>
-						<linearGradient id="chart-grad" x1="0" x2="0" y1="0" y2="1">
-							<stop offset="0%" stopColor={color} stopOpacity="0.25" />
-							<stop offset="100%" stopColor={color} stopOpacity="0" />
-						</linearGradient>
-					</defs>
-					<path d={`${path} L${w},${h} L0,${h} Z`} fill="url(#chart-grad)" />
-					<path d={path} fill="none" stroke={color} strokeWidth="2" />
-				</svg>
-			</CardContent>
-		</Card>
+			</header>
+			<svg
+				viewBox={`0 0 ${w} ${h}`}
+				className="mt-4 h-44 w-full sm:h-60"
+				preserveAspectRatio="none"
+				aria-label="Yes price history"
+			>
+				<title>Yes price history</title>
+				<defs>
+					<linearGradient id="chart-grad" x1="0" x2="0" y1="0" y2="1">
+						<stop offset="0%" stopColor={color} stopOpacity="0.18" />
+						<stop offset="100%" stopColor={color} stopOpacity="0" />
+					</linearGradient>
+					<pattern
+						id="chart-grid"
+						width="80"
+						height="44"
+						patternUnits="userSpaceOnUse"
+					>
+						<path
+							d="M 80 0 L 0 0 0 44"
+							fill="none"
+							stroke="var(--rule)"
+							strokeWidth="0.5"
+						/>
+					</pattern>
+				</defs>
+				<rect width="100%" height="100%" fill="url(#chart-grid)" />
+				<path d={`${path} L${w},${h} L0,${h} Z`} fill="url(#chart-grad)" />
+				<path
+					d={path}
+					fill="none"
+					stroke={color}
+					strokeWidth="1.75"
+					strokeLinejoin="round"
+					strokeLinecap="round"
+				/>
+			</svg>
+		</div>
 	);
 }
 
 function MarketTabs({ market }: { market: UIMarket }) {
 	return (
-		<Card>
+		<div className="border border-rule bg-ink-2 p-5">
 			<Tabs defaultValue="about" className="w-full">
-				<CardHeader className="pb-0">
-					<div className="-mx-6 overflow-x-auto px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-						<TabsList>
-							<TabsTrigger value="about">About</TabsTrigger>
-							<TabsTrigger value="trades">Trades</TabsTrigger>
-							<TabsTrigger value="orderbook">Book</TabsTrigger>
-							<TabsTrigger value="comments">Comments</TabsTrigger>
-						</TabsList>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<TabsContent value="about">
-						<AboutTab market={market} />
-					</TabsContent>
-					<TabsContent value="trades">
-						<TradesTab marketId={market._id as Id<"markets">} />
-					</TabsContent>
-					<TabsContent value="orderbook">
-						<OrderBookTab market={market} />
-					</TabsContent>
-					<TabsContent value="comments">
-						<CommentsTab marketId={market._id as Id<"markets">} />
-					</TabsContent>
-				</CardContent>
+				<TabsList>
+					<TabsTrigger value="about">About</TabsTrigger>
+					<TabsTrigger value="trades">Trades</TabsTrigger>
+					<TabsTrigger value="orderbook">Book</TabsTrigger>
+					<TabsTrigger value="comments">Comments</TabsTrigger>
+				</TabsList>
+				<TabsContent value="about">
+					<AboutTab market={market} />
+				</TabsContent>
+				<TabsContent value="trades">
+					<TradesTab marketId={market._id as Id<"markets">} />
+				</TabsContent>
+				<TabsContent value="orderbook">
+					<OrderBookTab market={market} />
+				</TabsContent>
+				<TabsContent value="comments">
+					<CommentsTab marketId={market._id as Id<"markets">} />
+				</TabsContent>
 			</Tabs>
-		</Card>
+		</div>
 	);
 }
 
 function AboutTab({ market }: { market: UIMarket }) {
 	return (
-		<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+		<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 			{market.description && (
 				<div>
-					<h3 className="font-semibold text-sm">Description</h3>
-					<p className="mt-2 whitespace-pre-line text-muted-foreground text-sm leading-relaxed">
+					<div className="kicker">RESOLVES</div>
+					<p className="mt-3 whitespace-pre-line text-bone-2 text-sm leading-relaxed">
 						{market.description}
 					</p>
 				</div>
 			)}
-			<div className="space-y-2 text-sm">
+			<div className="space-y-0 font-mono text-sm">
 				<KV label="Closes" value={market.closesAt} />
 				<KV label="Open interest" value={money(market.openInterest)} />
 				<KV label="Volume" value={money(market.volume)} />
@@ -250,9 +319,9 @@ function AboutTab({ market }: { market: UIMarket }) {
 
 function KV({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="flex items-center justify-between border-b py-2 last:border-b-0">
-			<span className="text-muted-foreground">{label}</span>
-			<span className="font-medium">{value}</span>
+		<div className="flex items-center justify-between border-rule border-b py-2.5 font-mono text-[12px] uppercase tracking-[0.1em] last:border-b-0">
+			<span className="text-bone-3">{label}</span>
+			<span className="text-bone tabular-nums">{value}</span>
 		</div>
 	);
 }
@@ -271,13 +340,13 @@ function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
 	}
 	if (trades.length === 0) {
 		return (
-			<p className="py-6 text-center text-muted-foreground text-sm">
+			<p className="py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
 				No trades yet. Be the first.
 			</p>
 		);
 	}
 	return (
-		<div className="-mx-6 overflow-x-auto px-6">
+		<div className="-mx-5 overflow-x-auto px-5">
 			<Table className="min-w-[460px]">
 				<TableHeader>
 					<TableRow>
@@ -292,26 +361,26 @@ function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
 					{trades.map((t) => (
 						<TableRow key={t._id}>
 							<TableCell className="flex items-center gap-2">
-								<Avatar className="size-6">
-									<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 text-[10px] text-primary-foreground">
+								<Avatar className="size-6 rounded-[2px]">
+									<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
 										{t.handle.charAt(1).toUpperCase()}
 									</AvatarFallback>
 								</Avatar>
-								<span className="truncate">{t.handle}</span>
+								<span className="truncate font-mono text-xs">{t.handle}</span>
 							</TableCell>
 							<TableCell>
 								<Badge variant={t.side === "Yes" ? "yes" : "no"}>
-									{t.kind === "sell" ? "↓" : ""}
+									{t.kind === "sell" ? "↓ " : ""}
 									{t.side}
 								</Badge>
 							</TableCell>
-							<TableCell className="text-right">
+							<TableCell className="text-right font-mono tabular-nums">
 								{t.shares.toFixed(2)}
 							</TableCell>
-							<TableCell className="text-right font-mono">
+							<TableCell className="text-right font-mono tabular-nums">
 								{cents(t.price)}
 							</TableCell>
-							<TableCell className="whitespace-nowrap text-right text-muted-foreground">
+							<TableCell className="whitespace-nowrap text-right font-mono text-bone-3 text-xs">
 								{relativeTime(t._creationTime)}
 							</TableCell>
 						</TableRow>
@@ -337,24 +406,24 @@ function OrderBookTab({ market }: { market: UIMarket }) {
 	return (
 		<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<div>
-				<h3 className="mb-2 font-semibold text-sm">Asks (sell Yes)</h3>
-				<ul className="space-y-1">
+				<div className="kicker text-magenta">ASKS / SELL YES</div>
+				<ul className="mt-3 space-y-1">
 					{asks.map((a) => (
 						<BookRow key={a.price} {...a} max={max} side="ask" />
 					))}
 				</ul>
 			</div>
 			<div>
-				<h3 className="mb-2 font-semibold text-sm">Bids (buy Yes)</h3>
-				<ul className="space-y-1">
+				<div className="kicker">BIDS / BUY YES</div>
+				<ul className="mt-3 space-y-1">
 					{bids.map((b) => (
 						<BookRow key={b.price} {...b} max={max} side="bid" />
 					))}
 				</ul>
 			</div>
-			<p className="text-muted-foreground text-xs md:col-span-2">
-				Synthetic order book — derived from current Yes price. Real book lands
-				with the matching engine.
+			<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em] md:col-span-2">
+				Synthetic book — derived from current Yes price. Real book lands with
+				the matching engine.
 			</p>
 		</div>
 	);
@@ -373,24 +442,24 @@ function BookRow({
 }) {
 	const pct = (size / max) * 100;
 	return (
-		<li className="relative flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
+		<li className="relative flex items-center justify-between border border-rule px-3 py-1.5 font-mono text-sm">
 			<span
 				aria-hidden="true"
 				className={cn(
-					"absolute inset-y-0 left-0 rounded-md",
-					side === "ask" ? "bg-no/10" : "bg-yes/10"
+					"absolute inset-y-0 left-0",
+					side === "ask" ? "bg-magenta-wash" : "bg-brand-wash"
 				)}
 				style={{ width: `${pct}%` }}
 			/>
 			<span
 				className={cn(
-					"relative font-mono font-semibold",
-					side === "ask" ? "text-no" : "text-yes"
+					"relative font-bold tabular-nums",
+					side === "ask" ? "text-magenta" : "text-brand"
 				)}
 			>
 				{cents(price)}
 			</span>
-			<span className="relative text-muted-foreground">{money(size)}</span>
+			<span className="relative text-bone-2 tabular-nums">{money(size)}</span>
 		</li>
 	);
 }
@@ -420,7 +489,7 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-5">
 			{comments === undefined ? (
 				<div className="space-y-2">
 					{Array.from({ length: 2 }).map((_, i) => (
@@ -429,31 +498,36 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 					))}
 				</div>
 			) : comments.length === 0 ? (
-				<p className="py-4 text-center text-muted-foreground text-sm">
+				<p className="py-6 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
 					No comments yet.
 				</p>
 			) : (
 				comments.map((c) => (
-					<div key={c._id} className="rounded-lg border bg-muted/40 p-3">
-						<div className="flex items-center gap-2 text-xs">
-							<Avatar className="size-6">
-								<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 text-[10px] text-primary-foreground">
+					<div key={c._id} className="border border-rule bg-ink p-4">
+						<div className="flex items-center gap-2 font-mono text-xs">
+							<Avatar className="size-6 rounded-[2px]">
+								<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
 									{c.handle.charAt(1).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
-							<span className="font-semibold">{c.handle}</span>
-							<span className="text-muted-foreground">
+							<span className="font-bold text-bone">{c.handle}</span>
+							<span className="text-bone-3 uppercase tracking-[0.12em]">
 								{relativeTime(c._creationTime)}
 							</span>
 						</div>
-						<p className="mt-2 text-sm">{c.body}</p>
+						<p className="mt-3 text-bone-2 text-sm leading-relaxed">{c.body}</p>
 					</div>
 				))
 			)}
 
 			{isAuthenticated ? (
-				<div className="space-y-2">
-					<Label htmlFor="comment">Add your take</Label>
+				<div className="space-y-2 border-rule border-t pt-5">
+					<Label
+						htmlFor="comment"
+						className="font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.14em]"
+					>
+						Add your take
+					</Label>
 					<Textarea
 						id="comment"
 						rows={3}
@@ -472,11 +546,9 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 					</div>
 				</div>
 			) : (
-				<div className="rounded-lg border border-dashed p-4 text-center">
-					<p className="text-muted-foreground text-sm">
-						Sign in to join the discussion.
-					</p>
-					<SignInButton className="mt-3" />
+				<div className="border border-rule border-dashed p-5 text-center">
+					<p className="text-bone-2 text-sm">Sign in to join the discussion.</p>
+					<SignInButton className="mt-4" />
 				</div>
 			)}
 		</div>
@@ -497,6 +569,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 	const shares = price > 0 ? cost / price : 0;
 	const payout = shares;
 	const insufficient = isAuthenticated && cost > balance;
+	const id = marketId(market.slug);
 
 	const submit = async () => {
 		if (cost <= 0) return;
@@ -531,122 +604,135 @@ function OrderTicket({ market }: { market: UIMarket }) {
 
 	if (isLoading) {
 		return (
-			<Card>
-				<CardContent className="space-y-3">
+			<div className="border border-rule bg-ink-2 p-5">
+				<div className="space-y-3">
 					<Skeleton className="h-10 w-full" />
 					<Skeleton className="h-10 w-full" />
 					<Skeleton className="h-32 w-full" />
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 		);
 	}
 
 	if (!isAuthenticated) {
 		return (
-			<Card className="border-primary/30 bg-accent/30">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<LogIn className="size-4" /> Sign in to bid
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<p className="text-muted-foreground text-sm">
-						You need an account to place orders on Charlesmarket. Everyone
-						starts with {CURRENCY_SYMBOL}1,000 in play-money shekels.
-					</p>
-					<div className="grid grid-cols-2 gap-2">
-						<div className="rounded-md border bg-yes/10 px-3 py-2 text-center">
-							<div className="text-muted-foreground text-xs">Yes</div>
-							<div className="font-mono font-semibold text-yes">
-								{cents(market.yesPrice)}
-							</div>
-						</div>
-						<div className="rounded-md border bg-no/10 px-3 py-2 text-center">
-							<div className="text-muted-foreground text-xs">No</div>
-							<div className="font-mono font-semibold text-no">
-								{cents(1 - market.yesPrice)}
-							</div>
-						</div>
+			<div className="border border-rule bg-ink-2 p-5">
+				<div className="flex items-center justify-between">
+					<span className="kicker">ORDER · {id}</span>
+					<BracketChip tone="neutral">SIGNED OUT</BracketChip>
+				</div>
+				<h3 className="display-headline mt-3 text-lg">Sign in to bid</h3>
+				<p className="mt-2 text-bone-2 text-sm">
+					Trading needs an account. Everyone starts with {CURRENCY_SYMBOL}1,000
+					in play-money shekels.
+				</p>
+				<div className="mt-4 grid grid-cols-2 gap-2">
+					<div className="price-slab" data-side="yes" data-active="true">
+						<span className="font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							YES
+						</span>
+						<span className="font-bold text-base text-brand">
+							{cents(market.yesPrice)}
+						</span>
 					</div>
-					<SignInButton
-						variant="default"
-						size="lg"
-						className="w-full"
-						label="Sign in with Google"
-					/>
-				</CardContent>
-			</Card>
+					<div className="price-slab" data-side="no" data-active="true">
+						<span className="font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							NO
+						</span>
+						<span className="font-bold text-base text-magenta">
+							{cents(1 - market.yesPrice)}
+						</span>
+					</div>
+				</div>
+				<SignInButton
+					variant="default"
+					size="lg"
+					className="mt-4 w-full"
+					label="Sign in with Google"
+				/>
+				<div className="mt-3 flex items-center gap-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+					<LogIn className="size-3.5" />
+					Google sign-in
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<Card>
-			<CardContent className="space-y-4 px-4 sm:px-6">
+		<div className="border border-rule bg-ink-2 p-5">
+			<div className="flex items-center justify-between border-rule border-b pb-3">
+				<span className="kicker">ORDER · {id}</span>
+				<span className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+					Cash{" "}
+					<span className="font-bold text-bone tabular-nums">
+						{CURRENCY_SYMBOL}
+						{mounted ? Math.round(balance).toLocaleString() : "—"}
+					</span>
+				</span>
+			</div>
+
+			<div className="mt-4 space-y-4">
 				<div className="grid grid-cols-2 gap-2">
 					<button
 						type="button"
 						onClick={() => setSide("Yes")}
-						className={cn(
-							"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
-							side === "Yes"
-								? "border-yes bg-yes/10 ring-1 ring-yes"
-								: "border-border bg-muted/40 hover:bg-muted"
-						)}
+						data-side="yes"
+						data-active={side === "Yes" ? "true" : undefined}
+						className="price-slab"
 					>
-						<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
-							Yes
+						<span className="font-mono font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							YES
 						</span>
-						<span className="font-mono font-semibold text-lg text-yes">
+						<span
+							className={cn(
+								"font-bold font-mono text-lg tabular-nums",
+								side === "Yes" ? "text-brand" : "text-bone"
+							)}
+						>
 							{cents(market.yesPrice)}
 						</span>
 					</button>
 					<button
 						type="button"
 						onClick={() => setSide("No")}
-						className={cn(
-							"flex flex-col items-start rounded-md border px-3 py-2.5 text-left transition-colors",
-							side === "No"
-								? "border-no bg-no/10 ring-1 ring-no"
-								: "border-border bg-muted/40 hover:bg-muted"
-						)}
+						data-side="no"
+						data-active={side === "No" ? "true" : undefined}
+						className="price-slab"
 					>
-						<span className="text-[11px] text-muted-foreground uppercase tracking-wide">
-							No
+						<span className="font-mono font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							NO
 						</span>
-						<span className="font-mono font-semibold text-lg text-no">
+						<span
+							className={cn(
+								"font-bold font-mono text-lg tabular-nums",
+								side === "No" ? "text-magenta" : "text-bone"
+							)}
+						>
 							{cents(1 - market.yesPrice)}
 						</span>
 					</button>
 				</div>
 
-				<div className="space-y-1.5">
-					<div className="flex items-center justify-between">
-						<Label htmlFor="amount" className="text-muted-foreground text-xs">
-							Amount
-						</Label>
-						<span className="text-muted-foreground text-xs">
-							Balance{" "}
-							<span className="font-mono text-foreground">
-								{CURRENCY_SYMBOL}
-								{mounted ? Math.round(balance).toLocaleString() : "—"}
-							</span>
-						</span>
-					</div>
+				<div className="space-y-2">
+					<Label
+						htmlFor="amount"
+						className="font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.14em]"
+					>
+						Amount
+					</Label>
 					<div
 						className={cn(
-							"flex items-center gap-2 rounded-md border bg-muted px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
-							insufficient && "border-no/60 focus-within:border-no"
+							"flex items-center gap-2 rounded-[4px] border border-rule bg-ink px-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/30",
+							insufficient && "border-magenta/60 focus-within:border-magenta"
 						)}
 					>
-						<span className="font-mono text-muted-foreground">
-							{CURRENCY_SYMBOL}
-						</span>
+						<span className="font-mono text-bone-3">{CURRENCY_SYMBOL}</span>
 						<Input
 							id="amount"
 							inputMode="decimal"
 							value={amount}
 							onChange={(e) => setAmount(e.target.value)}
-							className="h-11 border-0 bg-transparent p-0 font-semibold text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
+							className="mono-input h-11 border-0 bg-transparent p-0 text-lg shadow-none focus-visible:border-0 focus-visible:ring-0"
 						/>
 					</div>
 					<div className="grid grid-cols-4 gap-1.5 pt-1">
@@ -656,7 +742,6 @@ function OrderTicket({ market }: { market: UIMarket }) {
 								variant="outline"
 								size="sm"
 								onClick={() => setAmount(v)}
-								className="font-mono"
 							>
 								{CURRENCY_SYMBOL}
 								{v}
@@ -665,13 +750,13 @@ function OrderTicket({ market }: { market: UIMarket }) {
 					</div>
 				</div>
 
-				<div className="space-y-1.5 rounded-md bg-muted/50 px-3 py-2.5 text-sm">
-					<Row label="Avg price" value={cents(price)} />
-					<Row label="Shares" value={shares.toFixed(2)} />
-					<div className="border-t pt-1.5">
+				<div className="space-y-1.5 border border-rule bg-ink p-3 font-mono text-[12px] tabular-nums">
+					<Row label="AVG PRICE" value={cents(price)} />
+					<Row label="SHARES" value={shares.toFixed(2)} />
+					<div className="border-rule border-t pt-1.5">
 						<Row
-							label="Max payout"
-							value={`${CURRENCY_SYMBOL}${Math.round(payout)}`}
+							label="MAX PAYOUT"
+							value={`${CURRENCY_SYMBOL}${Math.round(payout).toLocaleString()}`}
 							accent
 						/>
 					</div>
@@ -680,24 +765,24 @@ function OrderTicket({ market }: { market: UIMarket }) {
 				<Button
 					variant={side === "Yes" ? "yes" : "no"}
 					size="lg"
-					className="h-12 w-full text-base"
+					className="h-12 w-full text-sm"
 					disabled={submitting || insufficient || cost <= 0}
 					onClick={submit}
 				>
 					{submitting
-						? "Placing…"
+						? "PLACING…"
 						: insufficient
-							? "Not enough shekels"
+							? "NOT ENOUGH SHEKELS"
 							: cost <= 0
-								? "Enter an amount"
-								: `Buy ${side} · ${CURRENCY_SYMBOL}${Math.round(cost).toLocaleString()}`}
+								? "ENTER AN AMOUNT"
+								: `BUY ${side.toUpperCase()} · ${CURRENCY_SYMBOL}${Math.round(cost).toLocaleString()}`}
 				</Button>
 
-				<p className="text-center text-muted-foreground text-xs">
-					Play-money shekels. Everyone starts with {CURRENCY_SYMBOL}1,000.
+				<p className="text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+					Play money · Everyone starts with {CURRENCY_SYMBOL}1,000
 				</p>
-			</CardContent>
-		</Card>
+			</div>
+		</div>
 	);
 }
 
@@ -711,43 +796,42 @@ function Row({
 	accent?: boolean;
 }) {
 	return (
-		<div className="flex items-center justify-between">
-			<span className="text-muted-foreground">{label}</span>
-			<span className={cn(accent ? "font-semibold" : "")}>{value}</span>
+		<div className="flex items-center justify-between text-[12px]">
+			<span className="text-bone-3 tracking-[0.12em]">{label}</span>
+			<span className={cn(accent ? "font-bold text-brand" : "text-bone")}>
+				{value}
+			</span>
 		</div>
 	);
 }
 
 function Stats({ market }: { market: UIMarket }) {
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="text-sm">Market stats</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-2 text-sm">
-				<Row label="Volume" value={money(market.volume)} />
-				<Row label="Liquidity" value={money(market.liquidity)} />
-				<Row label="Open interest" value={money(market.openInterest)} />
-				<Separator className="my-2" />
-				<Row label="Closes" value={market.closesAt} />
-			</CardContent>
-		</Card>
+		<div className="border border-rule bg-ink-2 p-5">
+			<div className="kicker border-rule border-b pb-3">MARKET STATS</div>
+			<div className="mt-3 space-y-0 font-mono text-sm">
+				<KV label="Volume" value={money(market.volume)} />
+				<KV label="Liquidity" value={money(market.liquidity)} />
+				<KV label="Open interest" value={money(market.openInterest)} />
+				<KV label="Closes" value={market.closesAt} />
+			</div>
+		</div>
 	);
 }
 
 function MarketDetailSkeleton() {
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
+		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
 			<Skeleton className="h-4 w-72" />
-			<div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-[1.7fr_1fr]">
+			<div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.7fr_380px] lg:gap-10">
 				<div className="space-y-6">
 					<div>
 						<Skeleton className="h-4 w-20" />
-						<Skeleton className="mt-3 h-12 w-full" />
-						<Skeleton className="mt-4 h-10 w-40" />
-						<Skeleton className="mt-3 h-2 w-full" />
+						<Skeleton className="mt-4 h-14 w-full" />
+						<Skeleton className="mt-4 h-12 w-40" />
+						<Skeleton className="mt-3 h-2 w-full max-w-md" />
 					</div>
-					<Skeleton className="h-64 w-full" />
+					<Skeleton className="h-72 w-full" />
 					<Skeleton className="h-80 w-full" />
 				</div>
 				<div className="space-y-4">
@@ -762,10 +846,13 @@ function MarketDetailSkeleton() {
 function MarketNotFound({ id }: { id: string }) {
 	return (
 		<main className="mx-auto w-full max-w-3xl px-4 py-24 text-center sm:px-6">
-			<h1 className="font-bold text-3xl">Market not found</h1>
-			<p className="mt-2 text-muted-foreground">No market matches “{id}”.</p>
-			<Button asChild className="mt-6">
-				<Link to="/markets">Browse all markets</Link>
+			<BracketChip tone="danger">404 / NO SUCH TICKET</BracketChip>
+			<h1 className="display-headline mt-6 text-4xl">Ticket not found</h1>
+			<p className="mt-3 text-bone-2">
+				Nothing matches "{id}". Probably Charles deleted it.
+			</p>
+			<Button asChild className="mt-8">
+				<Link to="/markets">Open the board</Link>
 			</Button>
 		</main>
 	);

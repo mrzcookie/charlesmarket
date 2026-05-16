@@ -45,10 +45,11 @@ const themeInitScript = `
 (function() {
   try {
     var stored = localStorage.getItem('theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var theme = stored || (prefersDark ? 'dark' : 'light');
+    var theme = stored || 'dark';
     if (theme === 'dark') document.documentElement.classList.add('dark');
-  } catch (e) {}
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+  }
 })();
 `;
 
@@ -57,16 +58,40 @@ export const Route = createRootRoute({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "Charlesmarket — Bet on Charles" },
+			{ title: "CHARLES.MARKET / Bet on Charles" },
 			{
 				name: "description",
 				content:
-					"The prediction market for Charles. Trade contracts on his next move, mishap, or milestone.",
+					"The prediction console for Charles. Trade Yes/No tickets on his next mishap, milestone, or antic.",
 			},
-			{ name: "theme-color", content: "#76b900" },
+			{ name: "theme-color", content: "#bcf03d" },
+			{ name: "color-scheme", content: "dark light" },
+			{
+				property: "og:title",
+				content: "CHARLES.MARKET / Bet on Charles",
+			},
+			{
+				property: "og:description",
+				content:
+					"A near-future prediction console built for one chaotic friend. Play-money shekels, real consequences for his reputation.",
+			},
+			{ property: "og:type", content: "website" },
+			{ property: "og:site_name", content: "CHARLES.MARKET" },
+			{ name: "twitter:card", content: "summary_large_image" },
+			{
+				name: "twitter:title",
+				content: "CHARLES.MARKET / Bet on Charles",
+			},
+			{
+				name: "twitter:description",
+				content:
+					"A near-future prediction console built for one chaotic friend. Play-money shekels, real consequences.",
+			},
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
+			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+			{ rel: "apple-touch-icon", href: "/favicon.svg" },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
 			{
 				rel: "preconnect",
@@ -75,13 +100,14 @@ export const Route = createRootRoute({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap",
+				href: "https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Funnel+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@500;700&display=swap",
 			},
 		],
 		scripts: [{ children: themeInitScript }],
 	}),
 	shellComponent: RootDocument,
 	notFoundComponent: GlobalNotFound,
+	errorComponent: GlobalError,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -95,7 +121,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 					<ConvexAuthProvider client={convex}>
 						<a
 							href="#main-content"
-							className="absolute top-0 left-2 z-50 -translate-y-full rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground text-sm shadow focus:top-2 focus:translate-y-0"
+							className="absolute top-0 left-2 z-50 -translate-y-full rounded-[4px] bg-brand px-3 py-1.5 font-mono font-semibold text-brand-foreground text-xs uppercase tracking-widest focus:top-2 focus:translate-y-0"
 						>
 							Skip to content
 						</a>
@@ -118,25 +144,51 @@ function RootDocument({ children }: { children: ReactNode }) {
 	);
 }
 
+function GlobalError({ error }: { error: Error }) {
+	return (
+		<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
+			<div className="bracket-chip" data-tone="danger">
+				FAULT / UNHANDLED
+			</div>
+			<h1 className="display-headline mt-6 text-5xl sm:text-7xl">
+				The console crashed.
+			</h1>
+			<p className="mt-4 max-w-lg text-bone-2">
+				Something blew up rendering this page. Probably Charles's fault. Try
+				reloading; if it keeps happening, head back to the board.
+			</p>
+			<pre className="mt-6 max-w-xl overflow-x-auto border border-rule bg-ink-2 p-3 text-left font-mono text-[11px] text-magenta">
+				{error.message}
+			</pre>
+			<div className="mt-8 flex gap-3">
+				<Button onClick={() => window.location.reload()}>Reload</Button>
+				<Button asChild variant="outline">
+					<Link to="/markets">Open the board</Link>
+				</Button>
+			</div>
+		</main>
+	);
+}
+
 function GlobalNotFound() {
 	return (
 		<main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
-			<div className="rounded-full bg-accent px-4 py-1 font-medium text-accent-foreground text-xs uppercase tracking-wide">
-				404
+			<div className="bracket-chip" data-tone="danger">
+				404 / NOT FOUND
 			</div>
-			<h1 className="mt-4 font-bold text-4xl tracking-tight">
-				Charles couldn't find that.
+			<h1 className="display-headline mt-6 text-5xl sm:text-7xl">
+				Charles lost it.
 			</h1>
-			<p className="mt-3 max-w-md text-muted-foreground">
-				The page you're looking for doesn't exist, or Charles forgot where he
-				put it. Either way — back to the markets.
+			<p className="mt-4 max-w-md text-bone-2">
+				That page does not exist, or Charles forgot where he put it. Either way,
+				back to the board.
 			</p>
-			<div className="mt-6 flex gap-3">
+			<div className="mt-8 flex gap-3">
 				<Button asChild>
-					<Link to="/markets">Browse markets</Link>
+					<Link to="/markets">Open the board</Link>
 				</Button>
 				<Button asChild variant="outline">
-					<Link to="/">Go home</Link>
+					<Link to="/">Console home</Link>
 				</Button>
 			</div>
 		</main>

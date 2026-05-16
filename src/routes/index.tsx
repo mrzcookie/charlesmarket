@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { ArrowRight, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { BracketChip, Kicker, Stat } from "@/components/console";
 import { MarketCard } from "@/components/market-card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { categories, money, toUIMarket } from "@/lib/markets";
+import { CURRENCY_SYMBOL, categories, money, toUIMarket } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/")({
@@ -25,14 +24,19 @@ function Home() {
 	const yesResolved = resolved.filter((m) => m.resolution === "Yes").length;
 	const hitRate =
 		resolved.length > 0
-			? `${Math.round((yesResolved / resolved.length) * 100)}% Yes`
+			? `${Math.round((yesResolved / resolved.length) * 100)}%`
 			: "—";
 	const topTrader =
 		leaders && leaders.length > 0
-			? `${leaders[0].handle} · ${money(leaders[0].pnl)}`
+			? `${leaders[0].handle.replace(/^@/, "")}`
 			: "—";
-	const trending = [...markets].sort((a, b) => b.volume - a.volume).slice(0, 4);
-	const featured = markets.slice(0, 6);
+	const topTraderPnl =
+		leaders && leaders.length > 0 ? money(leaders[0].pnl) : "";
+
+	const sortedByVolume = [...markets].sort((a, b) => b.volume - a.volume);
+	const featured = sortedByVolume[0];
+	const trending = sortedByVolume.slice(1, 4);
+	const rest = sortedByVolume.slice(4);
 
 	return (
 		<main className="flex-1">
@@ -42,58 +46,97 @@ function Home() {
 				marketCount={markets.length}
 				hitRate={hitRate}
 				topTrader={topTrader}
+				topTraderPnl={topTraderPnl}
 				loading={isLoading}
 			/>
 
-			<section className="mx-auto w-full max-w-7xl px-4 pt-8 pb-6 sm:px-6 sm:pt-10">
-				<SectionHeader
-					eyebrow="Hot right now"
-					title="Trending Charles markets"
-					href="/markets"
-				/>
-				<div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-					{isLoading
-						? Array.from({ length: 4 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-								<MarketCardSkeleton key={i} />
-							))
-						: trending.map((m) => <MarketCard key={m._id} market={m} />)}
-				</div>
-			</section>
-
-			<section className="mx-auto w-full max-w-7xl px-4 pb-6 sm:px-6">
-				<CategoryStrip />
-			</section>
-
-			<section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-20">
-				<SectionHeader eyebrow="All markets" title="Featured" href="/markets" />
-				{isLoading ? (
-					<div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{Array.from({ length: 6 }).map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-							<MarketCardSkeleton key={i} />
-						))}
+			<div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+				<section className="py-12 sm:py-16">
+					<SectionHead
+						kicker="TODAY'S BOARD"
+						title="The big ticket"
+						href="/markets"
+					/>
+					<div className="mt-6">
+						{isLoading ? (
+							<FeaturedSkeleton />
+						) : featured ? (
+							<MarketCard market={featured} variant="featured" />
+						) : (
+							<EmptyMarkets />
+						)}
 					</div>
-				) : markets.length === 0 ? (
-					<EmptyMarkets />
-				) : (
-					<>
-						<div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{featured.map((m) => (
+				</section>
+
+				{!isLoading && trending.length > 0 ? (
+					<section className="border-rule border-t py-12 sm:py-16">
+						<SectionHead
+							kicker="HEAVY VOLUME"
+							title="Where the shekels are"
+							href="/markets"
+						/>
+						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+							{trending.map((m) => (
 								<MarketCard key={m._id} market={m} />
 							))}
 						</div>
+					</section>
+				) : null}
+
+				<section className="border-rule border-t py-12 sm:py-16">
+					<SectionHead
+						kicker="THE REST OF THE BOARD"
+						title="Open tickets"
+						href="/markets"
+					/>
+					<div className="mt-6 border border-rule">
+						{isLoading ? (
+							<div className="space-y-0">
+								{Array.from({ length: 6 }, (_, i) => `row-skel-${i}`).map(
+									(k) => (
+										<RowSkeleton key={k} />
+									)
+								)}
+							</div>
+						) : rest.length === 0 ? (
+							<div className="px-4 py-12 text-center text-bone-2 text-sm">
+								That's the whole board for now. Pitch the next one.
+							</div>
+						) : (
+							rest.map((m) => (
+								<MarketCard key={m._id} market={m} variant="compact" />
+							))
+						)}
+					</div>
+					{!isLoading && markets.length > 0 ? (
 						<div className="mt-8 flex justify-center">
 							<Button asChild variant="outline">
 								<Link to="/markets">
-									See all {markets.length} markets
+									Open the full board · {markets.length} tickets
 									<ArrowRight />
 								</Link>
 							</Button>
 						</div>
-					</>
-				)}
-			</section>
+					) : null}
+				</section>
+
+				<section className="border-rule border-t py-12 sm:py-16">
+					<SectionHead kicker="FILTER" title="By category" />
+					<div className="mt-6 flex flex-wrap gap-2">
+						{categories.map((c) => (
+							<Link
+								key={c}
+								to="/markets"
+								search={{ category: c }}
+								className="flex items-center gap-2 border border-rule px-3 py-2 font-mono font-semibold text-[11px] text-bone-2 uppercase tracking-[0.14em] transition-colors hover:border-brand hover:text-brand"
+							>
+								<span className="text-bone-3">▸</span>
+								{c}
+							</Link>
+						))}
+					</div>
+				</section>
+			</div>
 		</main>
 	);
 }
@@ -104,6 +147,7 @@ function Hero({
 	marketCount,
 	hitRate,
 	topTrader,
+	topTraderPnl,
 	loading,
 }: {
 	totalVolume: number;
@@ -111,37 +155,42 @@ function Hero({
 	marketCount: number;
 	hitRate: string;
 	topTrader: string;
+	topTraderPnl: string;
 	loading: boolean;
 }) {
 	return (
-		<section className="border-b bg-gradient-to-b from-accent/40 to-background">
-			<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 sm:py-14 md:grid-cols-[1.4fr_1fr] md:gap-10 md:py-20">
+		<section className="relative overflow-hidden border-rule border-b">
+			<HeroBackdrop />
+			<div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-10 px-4 pt-10 pb-14 sm:px-6 sm:pt-14 sm:pb-20 lg:grid-cols-[1.6fr_1fr] lg:gap-16 lg:pt-20 lg:pb-24">
 				<div>
-					<Badge variant="brand" className="gap-2">
-						<span className="relative flex h-2 w-2">
-							<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-							<span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-						</span>
-						Live · {loading ? "—" : marketCount} markets open
-					</Badge>
-					<h1 className="mt-4 font-bold text-3xl leading-tight tracking-tight sm:text-4xl md:text-5xl">
-						The prediction market for{" "}
-						<span className="text-primary">Charles</span>.
+					<BracketChip pulse>
+						LIVE · {loading ? "—" : marketCount} TICKETS
+					</BracketChip>
+					<h1 className="display-headline mt-5 text-[clamp(2.25rem,7vw,5.5rem)] sm:mt-6">
+						The prediction console for{" "}
+						<span className="text-brand">Charles</span>.
 					</h1>
-					<p className="mt-3 max-w-xl text-base text-muted-foreground sm:mt-4 sm:text-lg">
-						Will he show up on time? Get the job? Lock himself out again? Trade
-						Yes/No contracts and let the wisdom of the friend group decide.
+					<p className="mt-5 max-w-xl text-base text-bone-2 leading-relaxed sm:mt-6 sm:text-lg">
+						Will he show up on time. Get the job. Lock himself out again. Trade
+						Yes / No tickets in shekels and let the friend group price the
+						outcome.
 					</p>
-					<div className="mt-5 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
-						<Button asChild className="flex-1 sm:flex-none">
-							<Link to="/markets">Browse markets</Link>
+					<div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+						<Button asChild size="lg" className="w-full sm:w-auto">
+							<Link to="/markets">Open the board</Link>
 						</Button>
-						<Button asChild variant="outline" className="flex-1 sm:flex-none">
-							<Link to="/propose">Propose a market</Link>
+						<Button
+							asChild
+							variant="outline"
+							size="lg"
+							className="w-full sm:w-auto"
+						>
+							<Link to="/propose">+ Propose a ticket</Link>
 						</Button>
 					</div>
 				</div>
-				<div className="grid grid-cols-2 gap-2 self-end sm:gap-3">
+
+				<aside className="grid grid-cols-2 gap-x-6 gap-y-6 self-end border-rule sm:gap-x-10 lg:border-l lg:pl-12">
 					<Stat
 						label="Total volume"
 						value={loading ? "—" : money(totalVolume)}
@@ -150,109 +199,136 @@ function Hero({
 						label="Open liquidity"
 						value={loading ? "—" : money(totalLiquidity)}
 					/>
-					<Stat label="Charles's hit rate" value={loading ? "—" : hitRate} />
-					<Stat label="Top trader" value={loading ? "—" : topTrader} />
-				</div>
+					<Stat
+						label="Yes hit rate"
+						value={loading ? "—" : hitRate}
+						tone="brand"
+					/>
+					<div className="flex flex-col gap-1">
+						<div className="label">Top desk</div>
+						<div className="flex items-baseline gap-2">
+							<span className="font-bold font-mono text-bone text-lg leading-none">
+								{loading ? "—" : topTrader}
+							</span>
+							{topTraderPnl ? (
+								<span className="font-mono font-semibold text-brand text-xs tabular-nums">
+									+{topTraderPnl}
+								</span>
+							) : null}
+						</div>
+					</div>
+					<div className="col-span-2 flex flex-wrap items-center gap-2 border-rule border-t pt-4 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+						<span>Starting cash</span>
+						<span className="font-bold text-brand tabular-nums">
+							{CURRENCY_SYMBOL}1,000
+						</span>
+						<span aria-hidden="true">·</span>
+						<span>Play money, real consequences for his reputation</span>
+					</div>
+				</aside>
 			</div>
 		</section>
 	);
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function HeroBackdrop() {
 	return (
-		<Card>
-			<CardContent className="px-4 sm:px-6">
-				<div className="text-[10px] text-muted-foreground uppercase tracking-wide sm:text-xs">
-					{label}
-				</div>
-				<div className="mt-1 font-semibold text-lg sm:text-xl">{value}</div>
-			</CardContent>
-		</Card>
+		<svg
+			aria-hidden="true"
+			className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.06]"
+			preserveAspectRatio="none"
+		>
+			<title>Grid backdrop</title>
+			<defs>
+				<pattern
+					id="hero-grid"
+					width="40"
+					height="40"
+					patternUnits="userSpaceOnUse"
+				>
+					<path
+						d="M 40 0 L 0 0 0 40"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="0.5"
+					/>
+				</pattern>
+			</defs>
+			<rect width="100%" height="100%" fill="url(#hero-grid)" />
+		</svg>
 	);
 }
 
-function SectionHeader({
-	eyebrow,
+function SectionHead({
+	kicker,
 	title,
 	href,
 }: {
-	eyebrow: string;
+	kicker: string;
 	title: string;
 	href?: string;
 }) {
 	return (
-		<div className="flex items-end justify-between gap-2">
+		<header className="flex flex-wrap items-end justify-between gap-3">
 			<div className="min-w-0">
-				<div className="flex items-center gap-1.5 text-primary text-xs uppercase tracking-wide">
-					<TrendingUp className="size-3.5" />
-					{eyebrow}
-				</div>
-				<h2 className="mt-1 font-bold text-xl tracking-tight sm:text-2xl">
+				<Kicker>{kicker}</Kicker>
+				<h2 className="display-headline mt-2 text-3xl sm:text-4xl md:text-[2.5rem]">
 					{title}
 				</h2>
 			</div>
-			{href && (
-				<Button asChild variant="link" size="sm" className="shrink-0">
-					<Link to={href}>View all →</Link>
-				</Button>
-			)}
-		</div>
-	);
-}
-
-function CategoryStrip() {
-	return (
-		<div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
-			<span className="shrink-0 font-medium text-muted-foreground text-sm">
-				Categories:
-			</span>
-			{categories.map((c) => (
-				<Badge
-					key={c}
-					asChild
-					variant="outline"
-					className="shrink-0 rounded-full"
+			{href ? (
+				<Link
+					to={href}
+					className="group inline-flex items-center gap-1.5 font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.16em] transition-colors hover:text-brand"
 				>
-					<Link to="/markets" search={{ category: c }}>
-						{c}
-					</Link>
-				</Badge>
-			))}
+					Open all
+					<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+				</Link>
+			) : null}
+		</header>
+	);
+}
+
+function FeaturedSkeleton() {
+	return (
+		<div className="border border-rule bg-ink-2 p-8">
+			<Skeleton className="h-3 w-40" />
+			<Skeleton className="mt-6 h-14 w-full" />
+			<Skeleton className="mt-2 h-14 w-3/4" />
+			<div className="mt-8 grid grid-cols-[1fr_320px] gap-6">
+				<Skeleton className="h-40 w-full" />
+				<div className="grid grid-cols-2 gap-2">
+					<Skeleton className="h-20" />
+					<Skeleton className="h-20" />
+				</div>
+			</div>
 		</div>
 	);
 }
 
-function MarketCardSkeleton() {
+function RowSkeleton() {
 	return (
-		<Card>
-			<CardContent className="space-y-4">
-				<Skeleton className="h-4 w-16" />
-				<Skeleton className="h-6 w-full" />
-				<Skeleton className="h-6 w-3/4" />
-				<Skeleton className="h-2 w-full" />
-				<div className="grid grid-cols-2 gap-2">
-					<Skeleton className="h-9" />
-					<Skeleton className="h-9" />
-				</div>
-				<Skeleton className="h-4 w-full" />
-			</CardContent>
-		</Card>
+		<div className="ledger-row flex items-center gap-4 px-4 py-4">
+			<Skeleton className="h-3 w-12" />
+			<Skeleton className="h-4 flex-1" />
+			<Skeleton className="hidden h-5 w-16 sm:block" />
+			<Skeleton className="h-4 w-20" />
+		</div>
 	);
 }
 
 function EmptyMarkets() {
 	return (
-		<Card className="mt-8 border-dashed">
-			<CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-				<h3 className="font-semibold text-lg">No markets yet</h3>
-				<p className="max-w-md text-muted-foreground text-sm">
-					Be the first to pitch one. Submit a question, set the resolution
-					criteria, and let the friend group trade it out.
-				</p>
-				<Button asChild>
-					<Link to="/propose">Propose a market</Link>
-				</Button>
-			</CardContent>
-		</Card>
+		<div className="border border-rule border-dashed bg-ink-2 px-6 py-16 text-center">
+			<Kicker>EMPTY BOARD</Kicker>
+			<h3 className="display-headline mt-3 text-2xl">No tickets yet.</h3>
+			<p className="mx-auto mt-2 max-w-md text-bone-2 text-sm">
+				Pitch the first one. Frame a question Charles could fail at, set the
+				close time, let the friend group price it.
+			</p>
+			<Button asChild className="mt-6">
+				<Link to="/propose">+ Propose the first ticket</Link>
+			</Button>
+		</div>
 	);
 }

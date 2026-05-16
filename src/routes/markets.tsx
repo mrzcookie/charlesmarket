@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Kicker } from "@/components/console";
 import { MarketCard } from "@/components/market-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -19,8 +19,9 @@ import { type Category, categories, toUIMarket } from "@/lib/markets";
 import { api } from "../../convex/_generated/api";
 
 type Sort = "volume" | "closing" | "trending" | "new";
+type View = "board" | "tiles";
 
-type Search = {
+type SearchParams = {
 	category?: Category | "All";
 	sort?: Sort;
 	q?: string;
@@ -28,7 +29,7 @@ type Search = {
 
 export const Route = createFileRoute("/markets")({
 	component: MarketsPage,
-	validateSearch: (search: Record<string, unknown>): Search => {
+	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		const cat = search.category;
 		const sort = search.sort;
 		const q = search.q;
@@ -56,6 +57,7 @@ function MarketsPage() {
 	const sort: Sort = search.sort ?? "volume";
 	const navigate = Route.useNavigate();
 	const [query, setQuery] = useState(search.q ?? "");
+	const [view, setView] = useState<View>("board");
 
 	useEffect(() => {
 		setQuery(search.q ?? "");
@@ -89,26 +91,27 @@ function MarketsPage() {
 	}, [markets, search.q, query, sort]);
 
 	return (
-		<main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div className="flex flex-col gap-1">
-					<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
-						Markets
+		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
+			<header className="flex flex-wrap items-end justify-between gap-4">
+				<div>
+					<Kicker>THE BOARD</Kicker>
+					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
+						All Charles tickets
 					</h1>
-					<p className="text-muted-foreground text-sm sm:text-base">
+					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						{isLoading
-							? "Loading markets…"
-							: `${filtered.length} of ${markets.length} markets open for trading.`}
+							? "Loading the board…"
+							: `${filtered.length} of ${markets.length} open for trading. Sorted by ${sortLabel(sort)}.`}
 					</p>
 				</div>
-				<Button asChild variant="outline" size="sm">
+				<Button asChild>
 					<Link to="/propose">
-						<Plus /> Propose
+						<Plus /> Propose ticket
 					</Link>
 				</Button>
-			</div>
+			</header>
 
-			<div className="sticky top-[53px] z-10 -mx-4 mt-4 flex flex-col gap-3 border-b bg-background/85 px-4 py-3 backdrop-blur sm:top-[57px] sm:mx-0 sm:px-0 sm:py-4 md:flex-row md:items-center md:justify-between">
+			<div className="z-10 -mx-4 mt-8 flex flex-col gap-3 border-rule border-b bg-ink/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-[56px] md:flex-row md:items-center md:justify-between md:py-4">
 				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
 					<ToggleGroup
 						type="single"
@@ -143,13 +146,16 @@ function MarketsPage() {
 						});
 					}}
 				>
-					<Input
-						type="search"
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						placeholder="Search…"
-						className="min-w-0 flex-1 md:max-w-xs"
-					/>
+					<div className="relative min-w-0 flex-1 md:max-w-xs">
+						<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
+						<Input
+							type="search"
+							value={query}
+							onChange={(e) => setQuery(e.target.value)}
+							placeholder="Find a ticket…"
+							className="pl-9"
+						/>
+					</div>
 					<Select
 						value={sort}
 						onValueChange={(v) =>
@@ -168,35 +174,48 @@ function MarketsPage() {
 							<SelectItem value="new">Newest</SelectItem>
 						</SelectContent>
 					</Select>
+					<ToggleGroup
+						type="single"
+						value={view}
+						onValueChange={(v) => v && setView(v as View)}
+						className="hidden md:flex"
+					>
+						<ToggleGroupItem value="board">Board</ToggleGroupItem>
+						<ToggleGroupItem value="tiles">Tiles</ToggleGroupItem>
+					</ToggleGroup>
 				</form>
 			</div>
 
 			{isLoading ? (
-				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{Array.from({ length: 6 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-						<MarketSkeletonCard key={i} />
+				<div className="mt-8 border border-rule">
+					{Array.from({ length: 8 }, (_, i) => `mkt-row-${i}`).map((k) => (
+						<RowSkeleton key={k} />
 					))}
 				</div>
 			) : filtered.length === 0 ? (
-				<Card className="mt-12 border-dashed">
-					<CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-						<p className="text-muted-foreground">
-							{markets.length === 0
-								? "No markets yet — pitch the first one."
-								: "No markets match those filters."}
-						</p>
-						<Button asChild size="sm">
-							<Link to="/propose">
-								<Plus /> Propose a market
-							</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			) : (
-				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="mt-12 border border-rule border-dashed bg-ink-2 px-6 py-16 text-center">
+					<Kicker>EMPTY</Kicker>
+					<h3 className="display-headline mt-3 text-2xl">
+						{markets.length === 0
+							? "No tickets yet."
+							: "Nothing matches that filter."}
+					</h3>
+					<Button asChild size="sm" className="mt-6">
+						<Link to="/propose">
+							<Plus /> Propose a ticket
+						</Link>
+					</Button>
+				</div>
+			) : view === "tiles" ? (
+				<div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{filtered.map((m) => (
 						<MarketCard key={m._id} market={m} />
+					))}
+				</div>
+			) : (
+				<div className="mt-8 border border-rule">
+					{filtered.map((m) => (
+						<MarketCard key={m._id} market={m} variant="compact" />
 					))}
 				</div>
 			)}
@@ -204,22 +223,22 @@ function MarketsPage() {
 	);
 }
 
-function MarketSkeletonCard() {
+function RowSkeleton() {
 	return (
-		<Card>
-			<CardContent className="space-y-4">
-				<Skeleton className="h-4 w-16" />
-				<Skeleton className="h-6 w-full" />
-				<Skeleton className="h-6 w-3/4" />
-				<Skeleton className="h-2 w-full" />
-				<div className="grid grid-cols-2 gap-2">
-					<Skeleton className="h-9" />
-					<Skeleton className="h-9" />
-				</div>
-				<Skeleton className="h-4 w-full" />
-			</CardContent>
-		</Card>
+		<div className="ledger-row flex items-center gap-4 px-4 py-4">
+			<Skeleton className="h-3 w-12" />
+			<Skeleton className="h-4 flex-1" />
+			<Skeleton className="hidden h-5 w-16 sm:block" />
+			<Skeleton className="h-4 w-20" />
+		</div>
 	);
+}
+
+function sortLabel(s: Sort): string {
+	if (s === "trending") return "biggest 24h moves";
+	if (s === "closing") return "closing soonest";
+	if (s === "new") return "newest";
+	return "highest volume";
 }
 
 function parseClosesIn(s: string): number {

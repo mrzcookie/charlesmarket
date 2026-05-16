@@ -5,19 +5,13 @@ import {
 	Unauthenticated,
 	useMutation,
 } from "convex/react";
-import { ArrowRight, Lightbulb, Send, Sparkles } from "lucide-react";
+import { ArrowRight, Lightbulb, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
+import { Kicker } from "@/components/console";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,7 +21,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { CURRENCY_SYMBOL, categories } from "@/lib/markets";
@@ -126,18 +119,16 @@ function formatCloseLabel(ms: number): string {
 
 function ProposePage() {
 	return (
-		<main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-			<header className="flex flex-col gap-2">
-				<Badge variant="brand" className="w-fit gap-1.5">
-					<Sparkles className="size-3.5" /> Propose a market
-				</Badge>
-				<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
-					Pitch your next Charles market
+		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
+			<header>
+				<Kicker>PROPOSE</Kicker>
+				<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
+					Pitch the next ticket
 				</h1>
-				<p className="max-w-2xl text-muted-foreground text-sm sm:text-base">
+				<p className="mt-3 max-w-2xl text-bone-2 text-sm sm:text-base">
 					Submit a question, set the closing date, and the moderators will
-					approve, reject, or send notes. Approved markets go live with your
-					starting Yes price and liquidity.
+					approve, reject, or send notes. Approved tickets go live on the board
+					with your starting Yes price.
 				</p>
 			</header>
 
@@ -241,255 +232,240 @@ function AuthedBody() {
 	};
 
 	return (
-		<div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
-			<Card>
-				<CardHeader>
-					<CardTitle>Market details</CardTitle>
-					<CardDescription>
-						Be specific. Vague questions get rejected — the question itself
+		<div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr]">
+			<section className="border border-rule bg-ink-2 p-6">
+				<div className="border-rule border-b pb-3">
+					<Kicker>TICKET DETAILS</Kicker>
+					<p className="mt-2 text-bone-2 text-sm">
+						Be specific. Vague questions get rejected, the question itself
 						should make the YES/NO call unambiguous.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form className="space-y-6" onSubmit={handleSubmit}>
-						<div className="space-y-2">
-							<Label htmlFor="question">Question</Label>
-							<Input
-								id="question"
-								placeholder="Will Charles…?"
-								value={question}
-								onChange={(e) => setQuestion(e.target.value)}
-								maxLength={140}
-								aria-invalid={question.length > 0 && !questionOk}
-							/>
-							<div className="flex justify-between text-muted-foreground text-xs">
-								<span>Must end with '?' and be 12–140 characters.</span>
-								<span className="font-mono">{question.length}/140</span>
-							</div>
+					</p>
+				</div>
+				<form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+					<div className="space-y-2">
+						<Label htmlFor="question">Question</Label>
+						<Input
+							id="question"
+							placeholder="Will Charles…?"
+							value={question}
+							onChange={(e) => setQuestion(e.target.value)}
+							maxLength={140}
+							aria-invalid={question.length > 0 && !questionOk}
+						/>
+						<div className="flex justify-between font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+							<span>Must end with '?' and be 12–140 characters.</span>
+							<span className="tabular-nums">{question.length}/140</span>
 						</div>
+					</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="description">Description (optional)</Label>
-							<Textarea
-								id="description"
-								placeholder="How does it resolve? Add any context traders should know."
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-								maxLength={1_000}
-								rows={3}
-								aria-invalid={!descriptionOk}
-							/>
-							<div className="flex justify-between text-muted-foreground text-xs">
-								<span>Up to 1,000 characters.</span>
-								<span className="font-mono">{description.length}/1000</span>
-							</div>
+					<div className="space-y-2">
+						<Label htmlFor="description">Description (optional)</Label>
+						<Textarea
+							id="description"
+							placeholder="How does it resolve? Any context traders should know."
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							maxLength={1_000}
+							rows={3}
+							aria-invalid={!descriptionOk}
+						/>
+						<div className="flex justify-between font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+							<span>Up to 1,000 characters.</span>
+							<span className="tabular-nums">{description.length}/1000</span>
 						</div>
+					</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="category">Category</Label>
-							<Select value={category} onValueChange={setCategory}>
-								<SelectTrigger id="category">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{categories.map((c) => (
-										<SelectItem key={c} value={c}>
-											{c}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+					<div className="space-y-2">
+						<Label htmlFor="category">Category</Label>
+						<Select value={category} onValueChange={setCategory}>
+							<SelectTrigger id="category">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{categories.map((c) => (
+									<SelectItem key={c} value={c}>
+										{c}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="tags">Tags (optional)</Label>
-							<Input
-								id="tags"
-								placeholder="weekend, dating, fitness"
-								value={tagInput}
-								onChange={(e) => setTagInput(e.target.value)}
-							/>
-							{tags.length > 0 && (
-								<div className="flex flex-wrap gap-1.5 pt-1">
-									{tags.map((t) => (
-										<Badge
-											key={t}
-											variant="outline"
-											className="font-mono text-xs"
-										>
-											#{t}
-										</Badge>
-									))}
-								</div>
-							)}
-						</div>
-
-						<Separator />
-
-						<div className="space-y-3">
-							<Label>Closes</Label>
-							<div className="flex flex-wrap gap-2">
-								{PRESETS.map((p) => (
-									<Button
-										key={p.value}
-										type="button"
-										variant={preset === p.value ? "default" : "outline"}
-										size="sm"
-										onClick={() => setPreset(p.value)}
-									>
-										{p.label}
-									</Button>
+					<div className="space-y-2">
+						<Label htmlFor="tags">Tags (optional)</Label>
+						<Input
+							id="tags"
+							placeholder="weekend, dating, fitness"
+							value={tagInput}
+							onChange={(e) => setTagInput(e.target.value)}
+						/>
+						{tags.length > 0 && (
+							<div className="flex flex-wrap gap-1.5 pt-1">
+								{tags.map((t) => (
+									<Badge key={t} variant="outline">
+										#{t}
+									</Badge>
 								))}
 							</div>
-							{preset === "custom" && (
-								<Input
-									type="datetime-local"
-									value={customAt}
-									onChange={(e) => setCustomAt(e.target.value)}
-									className="max-w-xs"
-								/>
-							)}
-							<div className="text-muted-foreground text-xs">
-								{futureOk ? (
-									<>
-										Will close{" "}
-										<span className="font-medium text-foreground">
-											{closesAtLabel}
-										</span>{" "}
+						)}
+					</div>
+
+					<div className="border-rule border-t pt-6">
+						<Label>Closes</Label>
+						<div className="mt-2 flex flex-wrap gap-2">
+							{PRESETS.map((p) => (
+								<Button
+									key={p.value}
+									type="button"
+									variant={preset === p.value ? "default" : "outline"}
+									size="sm"
+									onClick={() => setPreset(p.value)}
+								>
+									{p.label}
+								</Button>
+							))}
+						</div>
+						{preset === "custom" && (
+							<Input
+								type="datetime-local"
+								value={customAt}
+								onChange={(e) => setCustomAt(e.target.value)}
+								className="mt-3 max-w-xs"
+							/>
+						)}
+						<div className="mt-3 font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+							{futureOk ? (
+								<>
+									CLOSES{" "}
+									<span className="font-bold text-bone">{closesAtLabel}</span>
+									<span className="ml-2 text-bone-3 normal-case tracking-normal">
 										({new Date(closesAtMs).toLocaleString()})
-									</>
-								) : (
-									<span className="text-destructive">
-										Closing time must be at least 5 minutes from now.
 									</span>
-								)}
-							</div>
+								</>
+							) : (
+								<span className="text-magenta">
+									Closing time must be at least 5 minutes from now.
+								</span>
+							)}
 						</div>
+					</div>
 
-						<Separator />
-
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="yes">
-									Starting Yes price{" "}
-									<span className="text-muted-foreground">(0.02 – 0.98)</span>
-								</Label>
-								<div className="flex items-center gap-3">
-									<input
-										id="yes"
-										type="range"
-										min={0.02}
-										max={0.98}
-										step={0.01}
-										value={yesPrice}
-										onChange={(e) => setYesPrice(Number(e.target.value))}
-										className="flex-1 accent-primary"
-									/>
-									<Badge
-										variant="brand"
-										className="w-16 justify-center font-mono"
-									>
-										{CURRENCY_SYMBOL}
-										{Math.round(yesPrice * 100)}
-									</Badge>
+					<div className="grid grid-cols-1 gap-6 border-rule border-t pt-6 sm:grid-cols-2">
+						<div className="space-y-2">
+							<Label htmlFor="yes">
+								Starting Yes price{" "}
+								<span className="text-bone-3">(0.02 – 0.98)</span>
+							</Label>
+							<div className="flex items-center gap-3">
+								<input
+									id="yes"
+									type="range"
+									min={0.02}
+									max={0.98}
+									step={0.01}
+									value={yesPrice}
+									onChange={(e) => setYesPrice(Number(e.target.value))}
+									className="flex-1 accent-brand"
+								/>
+								<div className="flex h-9 w-20 items-center justify-center border border-rule bg-ink font-bold font-mono text-brand text-sm tabular-nums">
+									{CURRENCY_SYMBOL}
+									{Math.round(yesPrice * 100)}
 								</div>
-								<p className="text-muted-foreground text-xs">
-									Your hunch on the implied probability.
-								</p>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="liq">Initial liquidity</Label>
-								<div className="flex items-center gap-2">
-									<Input
-										id="liq"
-										type="number"
-										min={100}
-										max={50_000}
-										step={50}
-										value={liquidity}
-										onChange={(e) => setLiquidity(Number(e.target.value))}
-										className="font-mono"
-									/>
-									<span className="font-mono text-muted-foreground text-sm">
-										{CURRENCY_SYMBOL}
-									</span>
-								</div>
-								<p className="text-muted-foreground text-xs">
-									Bigger liquidity = smaller price swings per trade.
-								</p>
+							<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+								Your hunch on the implied probability.
+							</p>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="liq">Initial liquidity</Label>
+							<div className="flex items-center gap-2">
+								<Input
+									id="liq"
+									type="number"
+									min={100}
+									max={50_000}
+									step={50}
+									value={liquidity}
+									onChange={(e) => setLiquidity(Number(e.target.value))}
+									className="mono-input"
+								/>
+								<span className="font-mono text-bone-3 text-sm">
+									{CURRENCY_SYMBOL}
+								</span>
 							</div>
+							<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+								Bigger liquidity = smaller swings per trade.
+							</p>
 						</div>
+					</div>
 
-						<Separator />
+					<div className="flex flex-col-reverse items-stretch gap-3 border-rule border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+						<Button asChild type="button" variant="ghost">
+							<Link to="/markets">Cancel</Link>
+						</Button>
+						<Button type="submit" disabled={!formValid || submitting}>
+							{submitting ? (
+								"SUBMITTING…"
+							) : (
+								<>
+									<Send /> Submit for review
+								</>
+							)}
+						</Button>
+					</div>
+				</form>
+			</section>
 
-						<div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-							<Button asChild type="button" variant="ghost">
-								<Link to="/markets">Cancel</Link>
-							</Button>
-							<Button type="submit" disabled={!formValid || submitting}>
-								{submitting ? (
-									"Submitting…"
-								) : (
-									<>
-										<Send /> Submit for review
-									</>
-								)}
-							</Button>
-						</div>
-					</form>
-				</CardContent>
-			</Card>
-
-			<aside className="space-y-4">
-				<Card className="bg-gradient-to-br from-accent/40 to-card">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-base">
-							<Lightbulb className="size-4 text-primary" />
-							Tips for great markets
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-2 text-muted-foreground text-sm">
+			<aside className="space-y-6">
+				<section className="border border-rule bg-ink-2 p-5">
+					<div className="flex items-center gap-2 border-rule border-b pb-3">
+						<Lightbulb className="size-4 text-brand" />
+						<Kicker>SHIPPING RULES</Kicker>
+					</div>
+					<div className="mt-3 space-y-3 text-bone-2 text-sm leading-relaxed">
 						<p>
-							<strong className="text-foreground">Be specific.</strong> "Will
-							Charles flake?" is too vague. "Will Charles cancel Friday's hang
-							less than 6h before?" is testable.
+							<strong className="text-bone">Be specific.</strong> "Will Charles
+							flake?" is too vague. "Will Charles cancel Friday's hang less than
+							6h before?" is testable.
 						</p>
 						<p>
-							<strong className="text-foreground">Pick a source.</strong> Group
-							chat receipts, Venmo, photo evidence. Without a source, traders
-							argue forever.
+							<strong className="text-bone">Pick a source.</strong> Group chat
+							receipts, Venmo, photo evidence. Without a source, traders argue
+							forever.
 						</p>
 						<p>
-							<strong className="text-foreground">Set a deadline.</strong>{" "}
-							Open-ended markets never settle.
+							<strong className="text-bone">Set a deadline.</strong> Open ended
+							markets never settle.
 						</p>
-					</CardContent>
-				</Card>
+					</div>
+				</section>
 
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">Examples</CardTitle>
-						<CardDescription>Click to autofill.</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-2">
+				<section className="border border-rule bg-ink-2 p-5">
+					<div className="border-rule border-b pb-3">
+						<Kicker>EXAMPLES</Kicker>
+						<p className="mt-2 text-bone-3 text-xs">Click to autofill.</p>
+					</div>
+					<div className="mt-3 space-y-2">
 						{EXAMPLES.map((ex) => (
 							<button
 								key={ex.question}
 								type="button"
 								onClick={() => fillExample(ex)}
-								className="block w-full rounded-md border border-transparent bg-muted/50 p-3 text-left text-sm transition hover:border-primary/40 hover:bg-accent"
+								className="group block w-full border border-rule bg-ink p-3 text-left text-sm transition hover:border-brand hover:bg-brand-wash"
 							>
 								<div className="flex items-start justify-between gap-2">
-									<span className="font-medium">{ex.question}</span>
-									<ArrowRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+									<span className="font-display font-semibold text-bone group-hover:text-brand">
+										{ex.question}
+									</span>
+									<ArrowRight className="mt-0.5 size-3.5 shrink-0 text-bone-3 group-hover:text-brand" />
 								</div>
-								<div className="mt-1 text-muted-foreground text-xs">
+								<div className="mt-1 font-mono text-[10px] text-bone-3 uppercase tracking-[0.14em]">
 									{ex.category}
 								</div>
 							</button>
 						))}
-					</CardContent>
-				</Card>
+					</div>
+				</section>
 			</aside>
 		</div>
 	);
@@ -497,15 +473,16 @@ function AuthedBody() {
 
 function SignInPanel() {
 	return (
-		<Card className="mt-8 border-primary/30 bg-accent/30">
-			<CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-				<h2 className="font-semibold text-xl">Sign in to propose a market</h2>
-				<p className="max-w-md text-muted-foreground text-sm">
-					You need an account to submit a proposal. It's free and your first
-					1,000 shekels are on us.
-				</p>
-				<SignInButton size="lg" label="Sign in with Google" />
-			</CardContent>
-		</Card>
+		<div className="mt-12 border border-rule bg-ink-2 px-6 py-16 text-center">
+			<Kicker>SIGNED OUT</Kicker>
+			<h2 className="display-headline mt-3 text-2xl">
+				Sign in to propose a ticket
+			</h2>
+			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
+				You need an account to submit a proposal. It's free and your first
+				{CURRENCY_SYMBOL}1,000 in play-money shekels are on us.
+			</p>
+			<SignInButton size="lg" className="mt-6" label="Sign in with Google" />
+		</div>
 	);
 }

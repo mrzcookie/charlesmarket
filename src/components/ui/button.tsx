@@ -5,34 +5,38 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-	"inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+	"inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[4px] font-mono font-bold text-sm uppercase tracking-[0.08em] transition-[background-color,color,border-color,transform,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-magenta aria-invalid:ring-magenta/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/90",
+				default:
+					"bezel bg-brand text-brand-foreground hover:bg-brand-deep active:translate-y-[1px]",
 				destructive:
-					"bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
+					"bezel bg-magenta text-magenta-foreground hover:bg-magenta-deep active:translate-y-[1px]",
 				outline:
-					"border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+					"border border-rule bg-transparent text-bone hover:border-rule-bright hover:bg-ink-3",
 				secondary:
-					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
-				ghost:
-					"hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-				link: "text-primary underline-offset-4 hover:underline",
-				yes: "bg-yes text-yes-foreground hover:bg-yes/90",
-				no: "bg-no text-no-foreground hover:bg-no/90",
-				"yes-soft": "bg-yes-soft text-yes hover:bg-yes/15 dark:text-yes",
-				"no-soft": "bg-no-soft text-no hover:bg-no/15 dark:text-no",
+					"border border-rule bg-ink-2 text-bone hover:border-rule-bright hover:bg-ink-3",
+				ghost: "bg-transparent text-bone-2 hover:bg-ink-3 hover:text-bone",
+				link: "rounded-none px-0 normal-case tracking-normal text-brand underline-offset-4 hover:underline",
+				yes: "bezel bg-brand text-brand-foreground hover:bg-brand-deep active:translate-y-[1px]",
+				no: "bezel bg-magenta text-magenta-foreground hover:bg-magenta-deep active:translate-y-[1px]",
+				"yes-soft":
+					"border border-brand/40 bg-brand-wash text-brand hover:border-brand hover:bg-brand-wash/80",
+				"no-soft":
+					"border border-magenta/40 bg-magenta-wash text-magenta hover:border-magenta hover:bg-magenta-wash/80",
+				prose:
+					"rounded-[4px] border border-rule bg-ink-2 font-sans normal-case tracking-normal text-bone hover:border-rule-bright hover:bg-ink-3",
 			},
 			size: {
-				default: "h-9 px-4 py-2 has-[>svg]:px-3",
-				xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+				default: "h-9 px-4 has-[>svg]:px-3 text-xs",
+				xs: "h-6 gap-1 px-2 text-[10px] has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
+				sm: "h-8 gap-1.5 px-3 text-[11px] has-[>svg]:px-2.5",
+				lg: "h-11 px-6 text-sm has-[>svg]:px-4",
 				icon: "size-9",
-				"icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
+				"icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
 				"icon-sm": "size-8",
-				"icon-lg": "size-10",
+				"icon-lg": "size-11",
 			},
 		},
 		defaultVariants: {

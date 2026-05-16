@@ -54,25 +54,30 @@ export function UserMenu() {
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="ghost"
-					className="h-9 gap-2 rounded-full p-1 pr-3"
+					className="h-9 gap-2 rounded-[4px] p-1 pr-3"
 					aria-label="Account menu"
 				>
-					<Avatar className="size-7">
+					<Avatar className="size-7 rounded-[2px]">
 						{me?.image ? <AvatarImage src={me.image} alt="" /> : null}
-						<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 font-semibold text-primary-foreground text-xs">
+						<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
 							{initial.toUpperCase()}
 						</AvatarFallback>
 					</Avatar>
-					<span className="hidden font-medium text-sm sm:inline">
+					<span className="hidden font-mono font-semibold text-[12px] text-bone tracking-[0.06em] sm:inline">
 						{me?.handle ?? "@you"}
 					</span>
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="w-56">
+			<DropdownMenuContent
+				align="end"
+				className="w-56 rounded-[4px] border-rule bg-ink-2"
+			>
 				<DropdownMenuLabel className="flex flex-col">
-					<span className="font-semibold text-sm">{me?.handle ?? "@you"}</span>
+					<span className="font-bold font-mono text-bone text-sm">
+						{me?.handle ?? "@you"}
+					</span>
 					{me?.email && (
-						<span className="truncate font-normal text-muted-foreground text-xs">
+						<span className="truncate font-normal font-sans text-bone-3 text-xs">
 							{me.email}
 						</span>
 					)}
@@ -90,7 +95,7 @@ export function UserMenu() {
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
 					<a href="/propose">
-						<Plus /> Propose a market
+						<Plus /> Propose a ticket
 					</a>
 				</DropdownMenuItem>
 				{me?.isAdmin && (

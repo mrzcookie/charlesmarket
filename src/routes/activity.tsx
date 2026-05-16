@@ -1,15 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Check, MessageSquare, ShoppingCart, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { Kicker, marketId } from "@/components/console";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cents, money } from "@/lib/markets";
-import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/activity")({
@@ -23,14 +21,15 @@ function ActivityPage() {
 	const events = useQuery(api.activity.feed, { filter, limit: 50 });
 
 	return (
-		<main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
+			<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 				<div>
-					<h1 className="font-bold text-2xl tracking-tight sm:text-3xl">
-						Activity
+					<Kicker>THE TAPE</Kicker>
+					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
+						Live activity
 					</h1>
-					<p className="mt-1 text-muted-foreground text-sm sm:text-base">
-						Every trade, comment, and resolution on Charlesmarket.
+					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
+						Every trade, comment, and resolution on the console. Newest first.
 					</p>
 				</div>
 				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
@@ -46,30 +45,24 @@ function ActivityPage() {
 						<ToggleGroupItem value="comments">Comments</ToggleGroupItem>
 					</ToggleGroup>
 				</div>
-			</div>
+			</header>
 
 			{events === undefined ? (
-				<div className="mt-8 space-y-3">
+				<div className="mt-10 border border-rule">
 					{Array.from({ length: 5 }).map((_, i) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-						<Skeleton key={i} className="h-20 w-full" />
+						<Skeleton key={i} className="ledger-row h-16 w-full" />
 					))}
 				</div>
 			) : events.length === 0 ? (
-				<Card className="mt-8 border-dashed">
-					<CardContent className="py-12 text-center text-muted-foreground">
-						Quiet around here. Once trades start flowing, they'll show up live.
-					</CardContent>
-				</Card>
+				<div className="mt-12 border border-rule border-dashed bg-ink-2 px-6 py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+					Quiet on the tape. Trades will show up live as they hit the book.
+				</div>
 			) : (
-				<ol className="mt-8 space-y-3">
+				<ol className="mt-10 border border-rule">
 					{events.map((e) => (
 						<li key={e._id}>
-							<Card>
-								<CardContent>
-									<EventRow event={e} />
-								</CardContent>
-							</Card>
+							<EventRow event={e} />
 						</li>
 					))}
 				</ol>
@@ -82,36 +75,43 @@ type FeedEvent = FunctionReturnType<typeof api.activity.feed>[number];
 
 function EventRow({ event }: { event: FeedEvent }) {
 	return (
-		<div className="flex items-start gap-3">
-			<EventIcon kind={event.kind} />
-			<div className="min-w-0 flex-1">
+		<div className="ledger-row grid grid-cols-[auto_auto_1fr_auto] items-start gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
+			<KindMark kind={event.kind} />
+			<span className="font-bold font-mono text-bone-3 text-xs tabular-nums leading-6">
+				{marketId(event.marketSlug)}
+			</span>
+			<div className="min-w-0">
 				<div className="flex flex-wrap items-center gap-2 text-sm">
 					{event.kind !== "resolve" && (
 						<>
-							<Avatar className="size-6">
-								<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 text-[10px] text-primary-foreground">
+							<Avatar className="size-6 rounded-[2px]">
+								<AvatarFallback className="rounded-[2px] bg-brand font-bold font-mono text-[10px] text-brand-foreground">
 									{event.handle.charAt(1).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
-							<span className="font-semibold">{event.handle}</span>
+							<span className="font-mono font-semibold text-bone">
+								{event.handle}
+							</span>
 						</>
 					)}
 					<EventVerb event={event} />
 					<Link
 						to="/market/$id"
 						params={{ id: event.marketSlug }}
-						className="font-medium text-primary hover:underline"
+						className="font-display font-semibold text-bone hover:text-brand"
 					>
 						{event.question}
 					</Link>
 				</div>
 				{event.kind === "comment" && (
-					<p className="mt-1 text-muted-foreground text-sm">{event.body}</p>
+					<p className="mt-1.5 text-bone-2 text-sm leading-relaxed">
+						{event.body}
+					</p>
 				)}
-				<div className="mt-1 text-muted-foreground text-xs">
-					{relativeTime(event.ts)}
-				</div>
 			</div>
+			<span className="whitespace-nowrap font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+				{relativeTime(event.ts)}
+			</span>
 		</div>
 	);
 }
@@ -119,24 +119,28 @@ function EventRow({ event }: { event: FeedEvent }) {
 function EventVerb({ event }: { event: FeedEvent }) {
 	if (event.kind === "trade") {
 		return (
-			<span className="text-muted-foreground">
+			<span className="font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
 				{event.action === "sell" ? "sold" : "bought"}{" "}
-				<Badge
-					variant={event.side === "Yes" ? "yes" : "no"}
-					className="text-xs"
-				>
+				<Badge variant={event.side === "Yes" ? "yes" : "no"}>
 					{event.side} {money(Math.abs(event.cost))}
 				</Badge>{" "}
-				@ <span className="font-mono">{cents(event.price)}</span>
+				@{" "}
+				<span className="font-bold text-bone tabular-nums">
+					{cents(event.price)}
+				</span>
 			</span>
 		);
 	}
 	if (event.kind === "comment") {
-		return <span className="text-muted-foreground">commented on</span>;
+		return (
+			<span className="font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
+				commented on
+			</span>
+		);
 	}
 	if (event.kind === "resolve") {
 		return (
-			<span className="text-muted-foreground">
+			<span className="font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
 				resolved{" "}
 				<Badge variant={event.resolution === "Yes" ? "yes" : "no"}>
 					{event.resolution}
@@ -148,28 +152,24 @@ function EventVerb({ event }: { event: FeedEvent }) {
 	return null;
 }
 
-function EventIcon({ kind }: { kind: FeedEvent["kind"] }) {
-	const map: Record<string, { Icon: typeof ShoppingCart; className: string }> =
-		{
-			trade: { Icon: ShoppingCart, className: "bg-yes-soft text-yes" },
-			comment: {
-				Icon: MessageSquare,
-				className: "bg-muted text-muted-foreground",
-			},
-			resolve: { Icon: Check, className: "bg-accent text-accent-foreground" },
-		};
-	const { Icon, className } = map[kind] ?? {
-		Icon: Sparkles,
-		className: "bg-muted text-muted-foreground",
+function KindMark({ kind }: { kind: FeedEvent["kind"] }) {
+	const map: Record<string, { label: string; tone: string }> = {
+		trade: { label: "TRD", tone: "border-brand/40 bg-brand-wash text-brand" },
+		comment: { label: "MSG", tone: "border-rule bg-ink text-bone-2" },
+		resolve: {
+			label: "RES",
+			tone: "border-magenta/40 bg-magenta-wash text-magenta",
+		},
+	};
+	const m = map[kind] ?? {
+		label: "···",
+		tone: "border-rule bg-ink text-bone-2",
 	};
 	return (
 		<div
-			className={cn(
-				"grid size-9 shrink-0 place-items-center rounded-full",
-				className
-			)}
+			className={`grid h-7 w-12 shrink-0 place-items-center border font-bold font-mono text-[10px] uppercase tracking-[0.16em] ${m.tone}`}
 		>
-			<Icon className="size-4" />
+			{m.label}
 		</div>
 	);
 }

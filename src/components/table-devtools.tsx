@@ -191,9 +191,7 @@ export function TableDevtoolsPanel() {
 								</div>
 								<div style={rowStyle}>
 									<span style={labelStyle}>page size</span>
-									<span style={valueStyle}>
-										{state.pagination.pageSize}
-									</span>
+									<span style={valueStyle}>{state.pagination.pageSize}</span>
 								</div>
 								<div style={rowStyle}>
 									<span style={labelStyle}>sorting</span>
@@ -202,7 +200,15 @@ export function TableDevtoolsPanel() {
 								{filters && (
 									<div style={rowStyle}>
 										<span style={labelStyle}>col filters</span>
-										<span style={{ ...valueStyle, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+										<span
+											style={{
+												...valueStyle,
+												maxWidth: 200,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap",
+											}}
+										>
 											{filters}
 										</span>
 									</div>
@@ -215,9 +221,7 @@ export function TableDevtoolsPanel() {
 								)}
 								<div style={{ ...rowStyle, borderBottom: "none" }}>
 									<span style={labelStyle}>columns</span>
-									<span style={valueStyle}>
-										{t.getAllColumns().length}
-									</span>
+									<span style={valueStyle}>{t.getAllColumns().length}</span>
 								</div>
 							</div>
 						</div>

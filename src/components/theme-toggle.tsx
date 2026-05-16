@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 type Theme = "light" | "dark";
 
 function getInitialTheme(): Theme {
-	if (typeof document === "undefined") return "light";
+	if (typeof document === "undefined") return "dark";
 	return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
@@ -18,7 +18,7 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-	const [theme, setTheme] = useState<Theme>("light");
+	const [theme, setTheme] = useState<Theme>("dark");
 	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
@@ -31,7 +31,7 @@ export function ThemeToggle() {
 	return (
 		<Button
 			variant="outline"
-			size="icon"
+			size="icon-sm"
 			aria-label={`Switch to ${next} mode`}
 			title={`Switch to ${next} mode`}
 			onClick={() => {

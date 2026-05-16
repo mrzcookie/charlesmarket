@@ -6,29 +6,14 @@ import {
 	useMutation,
 	useQuery,
 } from "convex/react";
-import {
-	ArrowRight,
-	Check,
-	CheckCircle2,
-	Clock,
-	Pencil,
-	Plus,
-	X,
-	XCircle,
-} from "lucide-react";
+import { ArrowRight, Check, Clock, Pencil, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
+import { BracketChip, Kicker } from "@/components/console";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +26,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
 	return (
-		<main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
 			<AuthLoading>
 				<ProfileSkeleton />
 			</AuthLoading>
@@ -103,66 +88,57 @@ function ProfileBody() {
 
 	return (
 		<>
-			<Card className="bg-gradient-to-br from-accent/40 to-card">
-				<CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
-					<div className="flex items-center gap-4 md:contents">
-						<Avatar className="size-16 shrink-0 sm:size-20">
+			<section className="border border-rule bg-ink-2 p-6 sm:p-8">
+				<div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-8">
+					<div className="flex items-center gap-5">
+						<Avatar className="size-16 shrink-0 rounded-[4px] sm:size-20">
 							{me.image ? <AvatarImage src={me.image} alt="" /> : null}
-							<AvatarFallback className="bg-gradient-to-br from-primary to-brand-700 font-bold text-2xl text-primary-foreground">
+							<AvatarFallback className="rounded-[4px] bg-brand font-display font-extrabold text-3xl text-brand-foreground">
 								{initial.toUpperCase()}
 							</AvatarFallback>
 						</Avatar>
-						<div className="flex-1">
-							<h1 className="font-bold text-xl tracking-tight sm:text-2xl">
+						<div>
+							<Kicker>ACCOUNT</Kicker>
+							<h1 className="display-headline mt-1 text-3xl tracking-[-0.03em] sm:text-4xl">
 								{me.handle}
 							</h1>
-							<p className="truncate text-muted-foreground text-sm">
+							<p className="mt-1 font-mono text-bone-3 text-xs uppercase tracking-[0.12em]">
 								{me.email ?? "Signed in"}
 							</p>
-							<div className="mt-2 flex flex-wrap gap-2">
-								<Badge variant="brand">Trader</Badge>
-								{me.isAdmin && (
-									<Badge
-										variant="outline"
-										className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300"
-									>
-										Moderator
-									</Badge>
-								)}
+							<div className="mt-3 flex flex-wrap gap-2">
+								<Badge>Trader</Badge>
+								{me.isAdmin && <BracketChip>MODERATOR</BracketChip>}
 							</div>
 						</div>
 					</div>
-					<div className="flex flex-col items-start border-t pt-3 md:items-end md:border-t-0 md:pt-0">
-						<div className="text-muted-foreground text-xs uppercase tracking-wide">
-							Balance
-						</div>
-						<div className="font-bold font-mono text-2xl sm:text-3xl">
+					<div className="flex flex-col items-start border-rule border-t pt-5 md:items-end md:border-t-0 md:border-l md:pt-0 md:pl-8">
+						<div className="label">Cash on hand</div>
+						<div className="mt-1 font-bold font-mono text-3xl text-brand tabular-nums sm:text-4xl">
 							{CURRENCY_SYMBOL}
 							{Math.round(me.balance).toLocaleString()}
 						</div>
-						<div className="text-muted-foreground text-xs">
+						<div className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
 							in play-money shekels
 						</div>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 
-			<Card className="mt-6">
-				<CardHeader>
-					<CardTitle>Profile</CardTitle>
-					<CardDescription>
-						Visible to other traders across activity, comments, and the
-						leaderboard.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="text-sm">
+			<section className="mt-10 border border-rule bg-ink-2 p-6">
+				<div className="border-rule border-b pb-3">
+					<Kicker>PROFILE</Kicker>
+					<p className="mt-2 text-bone-2 text-sm">
+						Visible to other traders across activity, comments, and the desk.
+					</p>
+				</div>
+				<div className="mt-3 text-sm">
 					<Pref
 						label="Display name"
 						control={
 							<div className="flex items-center gap-2">
 								{nameDraft == null ? (
 									<>
-										<span className="max-w-[16rem] truncate">
+										<span className="max-w-[16rem] truncate font-mono text-bone">
 											{me.name ?? "—"}
 										</span>
 										<Button
@@ -212,7 +188,7 @@ function ProfileBody() {
 							<div className="flex items-center gap-2">
 								{handleDraft == null ? (
 									<>
-										<span className="font-mono">{me.handle}</span>
+										<span className="font-mono text-bone">{me.handle}</span>
 										<Button
 											variant="ghost"
 											size="icon-sm"
@@ -227,7 +203,7 @@ function ProfileBody() {
 										<Input
 											value={handleDraft}
 											onChange={(e) => setHandleDraft(e.target.value)}
-											className="h-8 w-40 font-mono"
+											className="mono-input h-8 w-40"
 											maxLength={32}
 										/>
 										<Button
@@ -253,42 +229,35 @@ function ProfileBody() {
 							</div>
 						}
 					/>
-				</CardContent>
-			</Card>
-
-			<Card className="mt-6">
-				<CardHeader>
-					<CardTitle>Account</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<dl className="space-y-3 text-sm">
-						<Stat label="Joined" value={formatJoined(me.joinedAt)} />
-						<Stat label="Email" value={me.email ?? "—"} />
-					</dl>
-				</CardContent>
-			</Card>
+					<Pref
+						label="Joined"
+						control={<StaticVal value={formatJoined(me.joinedAt)} />}
+					/>
+					<Pref label="Email" control={<StaticVal value={me.email ?? "—"} />} />
+				</div>
+			</section>
 
 			<MyProposals />
 
-			<Card className="mt-6">
-				<CardHeader>
-					<CardTitle>Activity</CardTitle>
-					<CardDescription>
-						Your trades, comments, and resolutions show up here. Lifetime volume
-						tracks every order.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="flex items-center justify-between">
-					<span className="text-muted-foreground text-sm">
-						Estimated lifetime volume: {money(0)}
+			<section className="mt-10 border border-rule bg-ink-2 p-6">
+				<div className="border-rule border-b pb-3">
+					<Kicker>ACTIVITY</Kicker>
+					<p className="mt-2 text-bone-2 text-sm">
+						Your trades, comments, and resolutions show up on the tape.
+					</p>
+				</div>
+				<div className="mt-3 flex items-center justify-between">
+					<span className="font-mono text-[12px] text-bone-3 uppercase tracking-[0.1em]">
+						Lifetime volume{" "}
+						<span className="font-bold text-bone tabular-nums">{money(0)}</span>
 					</span>
-					<Button asChild variant="link" size="sm" className="px-0">
+					<Button asChild variant="link" size="sm">
 						<Link to="/activity">
-							View global activity <ArrowRight />
+							Global tape <ArrowRight />
 						</Link>
 					</Button>
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 		</>
 	);
 }
@@ -310,53 +279,48 @@ function MyProposals() {
 	};
 
 	return (
-		<Card className="mt-6">
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<div>
-						<CardTitle>Your proposals</CardTitle>
-						<CardDescription>
-							Markets you've pitched. Approved ones go live; rejected ones show
-							reviewer notes.
-						</CardDescription>
-					</div>
-					<Button asChild size="sm">
-						<Link to="/propose">
-							<Plus /> New
-						</Link>
-					</Button>
+		<section className="mt-10 border border-rule bg-ink-2 p-6">
+			<div className="flex items-center justify-between border-rule border-b pb-3">
+				<div>
+					<Kicker>YOUR PROPOSALS</Kicker>
+					<p className="mt-2 text-bone-2 text-sm">
+						Tickets you've pitched. Approved ones go live; rejected ones show
+						reviewer notes.
+					</p>
 				</div>
-			</CardHeader>
-			<CardContent>
+				<Button asChild size="sm">
+					<Link to="/propose">
+						<Plus /> New
+					</Link>
+				</Button>
+			</div>
+			<div className="mt-4">
 				{proposals === undefined ? (
 					<Skeleton className="h-24" />
 				) : proposals.length === 0 ? (
-					<div className="rounded-md border border-dashed py-8 text-center text-muted-foreground text-sm">
+					<div className="border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
 						No proposals yet.{" "}
-						<Link to="/propose" className="text-primary underline">
-							Pitch your first market
+						<Link to="/propose" className="text-brand underline">
+							Pitch your first ticket
 						</Link>
-						.
 					</div>
 				) : (
-					<ul className="space-y-2">
+					<ul>
 						{proposals.map((p) => (
 							<li
 								key={p._id}
-								className="flex flex-wrap items-start justify-between gap-2 rounded-md border bg-card px-3 py-2"
+								className="ledger-row flex flex-wrap items-start justify-between gap-2 py-4"
 							>
 								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-2">
+									<div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
 										<ProposalStatusBadge status={p.status} />
-										<span className="text-muted-foreground text-xs">
-											{p.category}
-										</span>
+										<span className="text-bone-3">{p.category}</span>
 									</div>
-									<div className="mt-1 truncate font-medium text-sm">
+									<div className="mt-2 font-display font-semibold text-bone">
 										{p.question}
 									</div>
 									{p.rejectionReason && (
-										<div className="mt-1 text-destructive text-xs">
+										<div className="mt-2 font-mono text-[11px] text-magenta uppercase tracking-[0.1em]">
 											{p.rejectionReason}
 										</div>
 									)}
@@ -364,9 +328,9 @@ function MyProposals() {
 										<Link
 											to="/market/$id"
 											params={{ id: p.approvedMarketSlug }}
-											className="mt-1 inline-flex items-center gap-1 text-primary text-xs hover:underline"
+											className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-brand uppercase tracking-[0.12em] hover:underline"
 										>
-											View market <ArrowRight className="size-3" />
+											OPEN TICKET <ArrowRight className="size-3" />
 										</Link>
 									)}
 								</div>
@@ -383,8 +347,8 @@ function MyProposals() {
 						))}
 					</ul>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }
 
@@ -395,36 +359,24 @@ function ProposalStatusBadge({
 }) {
 	if (status === "pending")
 		return (
-			<Badge variant="outline" className="gap-1">
-				<Clock className="size-3" /> Pending
+			<Badge variant="outline">
+				<Clock className="size-3" /> PENDING
 			</Badge>
 		);
-	if (status === "approved")
-		return (
-			<Badge variant="yes" className="gap-1">
-				<CheckCircle2 className="size-3" /> Approved
-			</Badge>
-		);
-	return (
-		<Badge variant="no" className="gap-1">
-			<XCircle className="size-3" /> Rejected
-		</Badge>
-	);
+	if (status === "approved") return <Badge variant="yes">APPROVED</Badge>;
+	return <Badge variant="no">REJECTED</Badge>;
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="flex items-center justify-between">
-			<dt className="text-muted-foreground">{label}</dt>
-			<dd className="font-medium">{value}</dd>
-		</div>
-	);
+function StaticVal({ value }: { value: string }) {
+	return <span className="font-mono text-bone">{value}</span>;
 }
 
 function Pref({ label, control }: { label: string; control: React.ReactNode }) {
 	return (
-		<div className="flex items-center justify-between py-3">
-			<Label className="font-normal">{label}</Label>
+		<div className="ledger-row flex items-center justify-between py-3.5">
+			<Label className="font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.14em]">
+				{label}
+			</Label>
 			{control}
 		</div>
 	);
@@ -441,19 +393,17 @@ function formatJoined(ms?: number): string {
 
 function SignInPanel() {
 	return (
-		<Card className="mt-8 border-primary/30 bg-accent/30">
-			<CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-				<h2 className="font-semibold text-xl">
-					Sign in to manage your profile
-				</h2>
-				<p className="max-w-md text-muted-foreground text-sm">
-					Sign in with Google to claim a handle, get a {CURRENCY_SYMBOL}
-					{STARTING_BALANCE.toLocaleString()} starter balance, and start
-					trading.
-				</p>
-				<SignInButton size="lg" label="Sign in with Google" />
-			</CardContent>
-		</Card>
+		<div className="mt-12 border border-rule bg-ink-2 px-6 py-16 text-center">
+			<Kicker>SIGNED OUT</Kicker>
+			<h2 className="display-headline mt-3 text-2xl">
+				Sign in to manage your profile
+			</h2>
+			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
+				Sign in with Google to claim a handle, get a {CURRENCY_SYMBOL}
+				{STARTING_BALANCE.toLocaleString()} starter balance, and start trading.
+			</p>
+			<SignInButton size="lg" className="mt-6" label="Sign in with Google" />
+		</div>
 	);
 }
 

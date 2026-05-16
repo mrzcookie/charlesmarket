@@ -1,43 +1,50 @@
 import { Link } from "@tanstack/react-router";
-import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
 	return (
-		<footer className="border-t bg-muted/40">
-			<div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
-				<div className="col-span-2 md:col-span-1">
-					<div className="flex items-center gap-2">
-						<div className="grid h-7 w-7 place-items-center rounded-md bg-primary font-black text-primary-foreground text-xs">
-							C
-						</div>
-						<span className="font-semibold text-sm">Charlesmarket</span>
+		<footer className="mt-12 border-rule border-t bg-ink">
+			<div className="mx-auto grid w-full max-w-[1280px] grid-cols-2 gap-10 px-4 py-12 sm:grid-cols-[1.4fr_1fr_1fr] sm:px-6">
+				<div>
+					<div className="font-display font-extrabold text-bone text-lg leading-none tracking-[-0.04em]">
+						CHARLES<span className="text-brand">.</span>MARKET
 					</div>
-					<p className="mt-3 text-muted-foreground text-sm">
-						A prediction market for one chaotic friend. Trade the future of
-						Charles.
+					<p className="mt-4 max-w-xs text-bone-2 text-sm leading-relaxed">
+						The prediction console for one chaotic friend. Play-money shekels,
+						real consequences for his reputation.
 					</p>
+					<div className="mt-5 inline-flex items-center gap-2 border border-rule px-3 py-1.5">
+						<span className="label leading-none">Session</span>
+						<span className="font-bold font-mono text-bone text-xs tabular-nums">
+							{new Date().getFullYear()}.
+							{String(new Date().getMonth() + 1).padStart(2, "0")}
+						</span>
+					</div>
 				</div>
 
 				<FooterCol
 					title="Trade"
 					links={[
-						{ label: "Markets", to: "/markets" },
-						{ label: "Activity", to: "/activity" },
-						{ label: "Leaderboard", to: "/leaderboard" },
-						{ label: "Propose a market", to: "/propose" },
+						{ label: "Board", to: "/markets" },
+						{ label: "Tape", to: "/activity" },
+						{ label: "Desk", to: "/leaderboard" },
+						{ label: "Propose", to: "/propose" },
 					]}
 				/>
 				<FooterCol
 					title="Account"
 					links={[
-						{ label: "Portfolio", to: "/portfolio" },
+						{ label: "Book", to: "/portfolio" },
 						{ label: "Profile", to: "/profile" },
 					]}
 				/>
 			</div>
-			<Separator />
-			<div className="mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-4 text-muted-foreground text-xs sm:px-6">
-				© {new Date().getFullYear()} Charlesmarket · Play money, real feelings.
+			<div className="border-rule border-t">
+				<div className="mx-auto flex w-full max-w-[1280px] flex-col items-start justify-between gap-2 px-4 py-4 font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em] sm:flex-row sm:items-center sm:px-6">
+					<span>© {new Date().getFullYear()} CHARLES.MARKET</span>
+					<span className="text-bone-2">
+						Play money <span className="text-brand">/</span> real feelings
+					</span>
+				</div>
 			</div>
 		</footer>
 	);
@@ -52,13 +59,15 @@ function FooterCol({
 }) {
 	return (
 		<div>
-			<h4 className="font-semibold text-sm">{title}</h4>
-			<ul className="mt-3 space-y-2">
+			<h4 className="font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.16em]">
+				{title}
+			</h4>
+			<ul className="mt-4 space-y-3">
 				{links.map((l) => (
 					<li key={l.label}>
 						<Link
 							to={l.to}
-							className="text-muted-foreground text-sm hover:text-foreground"
+							className="font-mono text-[12px] text-bone-2 uppercase tracking-[0.12em] transition-colors hover:text-brand"
 						>
 							{l.label}
 						</Link>

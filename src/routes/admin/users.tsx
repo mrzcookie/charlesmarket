@@ -21,13 +21,14 @@ import {
 	X,
 } from "lucide-react";
 import {
+	type KeyboardEvent,
 	useCallback,
 	useMemo,
 	useRef,
 	useState,
-	type KeyboardEvent,
 } from "react";
 import { toast } from "sonner";
+import { Kicker } from "@/components/console";
 import { useRegisterTable } from "@/components/table-devtools";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -89,28 +90,29 @@ function UsersPage() {
 			(u) =>
 				u.handle.toLowerCase().includes(q) ||
 				(u.name ?? "").toLowerCase().includes(q) ||
-				(u.email ?? "").toLowerCase().includes(q),
+				(u.email ?? "").toLowerCase().includes(q)
 		);
 	}, [users, globalFilter]);
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-wrap items-start justify-between gap-4">
+			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<h1 className="font-bold text-2xl tracking-tight">Users</h1>
-					<p className="mt-1 text-muted-foreground text-sm">
+					<Kicker>ACCOUNTS</Kicker>
+					<h1 className="display-headline mt-2 text-3xl sm:text-4xl">Users</h1>
+					<p className="mt-2 max-w-xl text-bone-2 text-sm">
 						Manage handles, display names, admin access, and account status.
 					</p>
 				</div>
 				{users !== undefined && (
-					<Badge variant="outline" className="text-sm">
-						{users.length} user{users.length !== 1 ? "s" : ""}
+					<Badge variant="outline">
+						{users.length} {users.length === 1 ? "USER" : "USERS"}
 					</Badge>
 				)}
 			</div>
 
 			<div className="relative">
-				<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+				<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					className="pl-9"
 					placeholder="Search by handle, name, or email…"
@@ -121,7 +123,7 @@ function UsersPage() {
 					<button
 						type="button"
 						onClick={() => setGlobalFilter("")}
-						className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 					>
 						<X className="size-4" />
 					</button>
@@ -130,8 +132,8 @@ function UsersPage() {
 
 			{users === undefined ? (
 				<div className="space-y-3">
-					{Array.from({ length: 6 }).map((_, i) => (
-						<Skeleton key={i} className="h-14 w-full rounded-lg" />
+					{Array.from({ length: 6 }, (_, i) => `user-skel-${i}`).map((k) => (
+						<Skeleton key={k} className="h-14 w-full rounded-lg" />
 					))}
 				</div>
 			) : (
@@ -170,15 +172,11 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 				});
 			}
 		},
-		[revokeAdmin, grantAdmin],
+		[revokeAdmin, grantAdmin]
 	);
 
 	const handleUpdateField = useCallback(
-		async (
-			userId: Id<"users">,
-			field: "handle" | "name",
-			value: string,
-		) => {
+		async (userId: Id<"users">, field: "handle" | "name", value: string) => {
 			try {
 				await updateUser({ userId, [field]: value });
 				toast.success("Saved");
@@ -189,7 +187,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 				throw err;
 			}
 		},
-		[updateUser],
+		[updateUser]
 	);
 
 	const columns = useMemo<ColumnDef<UserRow>[]>(
@@ -201,7 +199,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 					const u = row.original;
 					const initials = u.handle.replace("@", "").slice(0, 2).toUpperCase();
 					return (
-						<div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent font-medium text-foreground text-sm">
+						<div className="flex size-8 shrink-0 items-center justify-center rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
 							{initials}
 						</div>
 					);
@@ -216,9 +214,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 				cell: ({ row }) => (
 					<EditableCell
 						value={row.original.handle}
-						onSave={(v) =>
-							handleUpdateField(row.original._id, "handle", v)
-						}
+						onSave={(v) => handleUpdateField(row.original._id, "handle", v)}
 					/>
 				),
 				enableSorting: true,
@@ -231,9 +227,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 					<EditableCell
 						value={row.original.name ?? ""}
 						placeholder="No name"
-						onSave={(v) =>
-							handleUpdateField(row.original._id, "name", v)
-						}
+						onSave={(v) => handleUpdateField(row.original._id, "name", v)}
 					/>
 				),
 				enableSorting: true,
@@ -255,9 +249,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Balance
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -278,9 +270,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Joined
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -343,7 +333,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 				size: 80,
 			},
 		],
-		[handleUpdateField, handleToggleAdmin],
+		[handleUpdateField, handleToggleAdmin]
 	);
 
 	const table = useReactTable({
@@ -374,7 +364,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 												? null
 												: flexRender(
 														header.column.columnDef.header,
-														header.getContext(),
+														header.getContext()
 													)}
 										</TableHead>
 									))}
@@ -398,7 +388,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 											<TableCell key={cell.id} className="py-3">
 												{flexRender(
 													cell.column.columnDef.cell,
-													cell.getContext(),
+													cell.getContext()
 												)}
 											</TableCell>
 										))}
@@ -445,9 +435,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 				onOpenChange={(o) => !o && setActivityUser(null)}
 			>
 				<SheetContent side="right" className="w-full max-w-lg">
-					{activityUser && (
-						<UserActivityPanel user={activityUser} />
-					)}
+					{activityUser && <UserActivityPanel user={activityUser} />}
 				</SheetContent>
 			</Sheet>
 
@@ -462,8 +450,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 							setDeleteConfirm(null);
 						} catch (err) {
 							toast.error("Delete failed", {
-								description:
-									err instanceof Error ? err.message : String(err),
+								description: err instanceof Error ? err.message : String(err),
 							});
 						}
 					}}
@@ -540,7 +527,7 @@ function EditableCell({
 					onClick={save}
 					disabled={saving}
 				>
-					<Check className="size-3 text-emerald-600" />
+					<Check className="size-3 text-brand" />
 				</Button>
 				<Button
 					variant="ghost"
@@ -561,7 +548,7 @@ function EditableCell({
 			onClick={startEdit}
 			className={cn(
 				"group flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-sm transition-colors hover:bg-accent",
-				!value && "text-muted-foreground italic",
+				!value && "text-muted-foreground italic"
 			)}
 			title="Click to edit"
 		>
@@ -578,7 +565,7 @@ function UserActivityPanel({ user }: { user: UserRow }) {
 		<>
 			<SheetHeader>
 				<SheetTitle className="flex items-center gap-2">
-					<div className="flex size-8 items-center justify-center rounded-full bg-accent font-medium text-sm">
+					<div className="flex size-8 items-center justify-center rounded-[2px] bg-brand font-bold font-mono text-brand-foreground text-xs">
 						{user.handle.replace("@", "").slice(0, 2).toUpperCase()}
 					</div>
 					{user.handle}
@@ -597,8 +584,8 @@ function UserActivityPanel({ user }: { user: UserRow }) {
 				<p className="mb-3 font-medium text-sm">Recent trades</p>
 				{trades === undefined ? (
 					<div className="space-y-2">
-						{Array.from({ length: 4 }).map((_, i) => (
-							<Skeleton key={i} className="h-16 w-full rounded-lg" />
+						{Array.from({ length: 4 }, (_, i) => `trade-skel-${i}`).map((k) => (
+							<Skeleton key={k} className="h-16 w-full rounded-lg" />
 						))}
 					</div>
 				) : trades.length === 0 ? (
@@ -613,11 +600,11 @@ function UserActivityPanel({ user }: { user: UserRow }) {
 								className="rounded-lg border bg-card p-3 text-sm"
 							>
 								<div className="flex items-start justify-between gap-2">
-									<div className="flex-1 min-w-0">
+									<div className="min-w-0 flex-1">
 										<p className="truncate font-medium text-sm leading-snug">
 											{t.marketQuestion}
 										</p>
-										<div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+										<div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
 											<Badge
 												variant={t.side === "Yes" ? "yes" : "no"}
 												className="px-1.5 py-0 text-xs"
@@ -632,13 +619,11 @@ function UserActivityPanel({ user }: { user: UserRow }) {
 											</span>
 										</div>
 									</div>
-									<div className="text-right shrink-0">
+									<div className="shrink-0 text-right">
 										<p
 											className={cn(
-												"font-mono font-medium text-sm",
-												t.cost > 0
-													? "text-destructive"
-													: "text-emerald-600",
+												"font-medium font-mono text-sm",
+												t.cost > 0 ? "text-destructive" : "text-brand"
 											)}
 										>
 											{t.cost > 0 ? "−" : "+"}

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import {
 	Activity,
 	Menu,
@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,16 +24,18 @@ import {
 import { CURRENCY_SYMBOL } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { useBalance } from "@/lib/wallet";
+import { api } from "../../convex/_generated/api";
 import { AuthControls, SignInButton } from "./auth-controls";
+import { BracketChip } from "./console";
 import { ThemeToggle } from "./theme-toggle";
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 const navLinks: { to: string; label: string; icon: IconType }[] = [
-	{ to: "/markets", label: "Markets", icon: Store },
-	{ to: "/activity", label: "Activity", icon: Activity },
-	{ to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-	{ to: "/portfolio", label: "Portfolio", icon: Wallet },
+	{ to: "/markets", label: "Board", icon: Store },
+	{ to: "/activity", label: "Tape", icon: Activity },
+	{ to: "/leaderboard", label: "Desk", icon: Trophy },
+	{ to: "/portfolio", label: "Book", icon: Wallet },
 ];
 
 export function Header() {
@@ -43,6 +44,8 @@ export function Header() {
 	const { balance, mounted } = useBalance();
 	const navigate = useNavigate();
 	const [query, setQuery] = useState("");
+	const openMarkets = useQuery(api.markets.list, {});
+	const liveCount = openMarkets?.filter((m) => m.status === "open").length;
 
 	const submitSearch = () => {
 		const q = query.trim();
@@ -55,29 +58,29 @@ export function Header() {
 	const balanceText = mounted ? Math.round(balance).toLocaleString() : "1,000";
 
 	return (
-		<header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
-			<div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-6 sm:px-6 sm:py-3">
+		<header className="sticky top-0 z-30 border-rule border-b bg-ink/90 backdrop-blur">
+			<div className="mx-auto flex w-full max-w-[1280px] items-center gap-3 px-4 py-3 sm:gap-5 sm:px-6">
 				<Sheet>
 					<SheetTrigger asChild>
 						<Button
 							variant="ghost"
-							size="icon"
+							size="icon-sm"
 							className="lg:hidden"
 							aria-label="Open menu"
 						>
 							<Menu />
 						</Button>
 					</SheetTrigger>
-					<SheetContent side="left" className="w-72 p-0">
-						<SheetHeader>
-							<SheetTitle className="flex items-center gap-2">
-								<div className="grid h-8 w-8 place-items-center rounded-lg bg-primary font-black text-primary-foreground text-sm">
-									C
-								</div>
-								Charlesmarket
+					<SheetContent
+						side="left"
+						className="w-72 border-rule border-r bg-ink p-0"
+					>
+						<SheetHeader className="border-rule border-b px-5 py-4">
+							<SheetTitle>
+								<Wordmark />
 							</SheetTitle>
 						</SheetHeader>
-						<nav className="flex flex-col gap-1 px-3">
+						<nav className="flex flex-col">
 							{navLinks.map((l) => {
 								const active = pathname.startsWith(l.to);
 								const Icon = l.icon;
@@ -86,10 +89,10 @@ export function Header() {
 										<Link
 											to={l.to}
 											className={cn(
-												"flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm",
+												"flex items-center gap-3 border-rule border-b px-5 py-4 font-mono text-[12px] uppercase tracking-[0.14em] transition-colors",
 												active
-													? "bg-accent text-accent-foreground"
-													: "text-foreground hover:bg-muted"
+													? "bg-brand-wash text-brand"
+													: "text-bone-2 hover:bg-ink-2 hover:text-bone"
 											)}
 										>
 											<Icon className="size-4" />
@@ -99,26 +102,27 @@ export function Header() {
 								);
 							})}
 						</nav>
-						<div className="mt-auto space-y-3 border-t p-4">
+						<div className="mt-auto space-y-3 border-rule border-t p-5">
 							<Authenticated>
-								<div className="flex items-center justify-between">
-									<span className="text-muted-foreground text-sm">Balance</span>
-									<Badge variant="brand" className="font-mono">
+								<div className="flex items-center justify-between border border-rule bg-ink-2 px-3 py-2">
+									<span className="label">Balance</span>
+									<span className="font-bold font-mono text-brand text-sm tabular-nums">
 										{CURRENCY_SYMBOL}
 										{balanceText}
-									</Badge>
+									</span>
 								</div>
 								<SheetClose asChild>
 									<Button asChild size="sm" className="w-full">
 										<Link to="/propose">
-											<Plus /> Propose a market
+											<Plus /> Propose ticket
 										</Link>
 									</Button>
 								</SheetClose>
 							</Authenticated>
 							<Unauthenticated>
-								<p className="text-muted-foreground text-sm">
-									Sign in to trade and start with {CURRENCY_SYMBOL}1,000.
+								<p className="text-bone-2 text-sm">
+									Sign in to trade. Everyone starts with {CURRENCY_SYMBOL}1,000
+									in play-money shekels.
 								</p>
 								<SignInButton className="w-full" label="Sign in with Google" />
 							</Unauthenticated>
@@ -126,14 +130,15 @@ export function Header() {
 					</SheetContent>
 				</Sheet>
 
-				<Link to="/" className="flex shrink-0 items-center gap-2">
-					<div className="grid h-8 w-8 place-items-center rounded-lg bg-primary font-black text-primary-foreground text-sm">
-						C
-					</div>
-					<span className="hidden font-semibold text-base tracking-tight sm:inline">
-						Charlesmarket
-					</span>
+				<Link to="/" className="flex shrink-0 items-center gap-2.5">
+					<Wordmark />
 				</Link>
+
+				{liveCount !== undefined && liveCount > 0 ? (
+					<BracketChip pulse className="hidden md:inline-flex">
+						LIVE · {liveCount}
+					</BracketChip>
+				) : null}
 
 				<search className="hidden flex-1 md:block">
 					<form
@@ -143,13 +148,13 @@ export function Header() {
 						}}
 					>
 						<div className="relative max-w-md">
-							<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
 							<Input
 								type="search"
 								value={query}
 								onChange={(e) => setQuery(e.target.value)}
-								placeholder="Search Charles markets…"
-								className="bg-muted pl-9"
+								placeholder="Find a ticket on Charles…"
+								className="pl-9 font-sans"
 								aria-label="Search markets"
 							/>
 						</div>
@@ -161,43 +166,42 @@ export function Header() {
 						const active = pathname.startsWith(l.to);
 						const Icon = l.icon;
 						return (
-							<Button
+							<Link
 								key={l.to}
-								variant="ghost"
-								size="sm"
-								asChild
+								to={l.to}
 								className={cn(
-									"font-medium text-muted-foreground",
-									active && "text-primary hover:text-primary"
+									"flex items-center gap-1.5 rounded-[4px] px-3 py-2 font-mono font-semibold text-[11px] uppercase tracking-[0.14em] transition-colors",
+									active
+										? "bg-brand-wash text-brand"
+										: "text-bone-2 hover:bg-ink-3 hover:text-bone"
 								)}
 							>
-								<Link to={l.to}>
-									<Icon />
-									{l.label}
-								</Link>
-							</Button>
+								<Icon className="size-3.5" strokeWidth={2} />
+								{l.label}
+							</Link>
 						);
 					})}
 				</nav>
 
-				<div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+				<div className="ml-auto flex items-center gap-2 sm:gap-3">
 					<ThemeToggle />
 					<Authenticated>
-						<Badge
-							variant="brand"
-							className="h-9 gap-1 rounded-md px-2 font-mono text-xs sm:gap-1.5 sm:px-3 sm:text-sm"
+						<div
+							className="hidden h-9 items-center gap-2 rounded-[4px] border border-rule bg-ink-2 px-3 sm:flex"
 							title="Your shekel balance"
 						>
-							<span className="text-sm leading-none sm:text-base">
+							<span className="label leading-none">Cash</span>
+							<span className="font-bold font-mono text-bone text-sm tabular-nums">
 								{CURRENCY_SYMBOL}
+								{balanceText}
 							</span>
-							<span className="tabular-nums">{balanceText}</span>
-						</Badge>
+						</div>
 					</Authenticated>
 					<AuthControls />
 					<Unauthenticated>
 						<SignInButton
 							variant="default"
+							size="sm"
 							className="md:hidden"
 							label="Sign in"
 						/>
@@ -205,5 +209,17 @@ export function Header() {
 				</div>
 			</div>
 		</header>
+	);
+}
+
+function Wordmark() {
+	return (
+		<span className="flex items-baseline gap-0 font-display font-extrabold text-bone text-lg leading-none tracking-[-0.04em] sm:text-xl">
+			<span>CHARLES</span>
+			<span className="text-brand" aria-hidden="true">
+				.
+			</span>
+			<span>MARKET</span>
+		</span>
 	);
 }

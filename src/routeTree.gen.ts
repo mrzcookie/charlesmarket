@@ -15,12 +15,12 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
 
 const ProposeRoute = ProposeRouteImport.update({
   id: '/propose',
@@ -52,21 +52,6 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMarketsRoute = AdminMarketsRouteImport.update({
-  id: '/admin/markets',
-  path: '/markets',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const ActivityRoute = ActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
@@ -77,54 +62,68 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const MarketIdRoute = MarketIdRouteImport.update({
   id: '/market/$id',
   path: '/market/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarketsRoute = AdminMarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/markets': typeof AdminMarketsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin': typeof AdminRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/propose': typeof ProposeRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/markets': typeof AdminMarketsRoute
-  '/admin/users': typeof AdminUsersRoute
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/propose': typeof ProposeRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/markets': typeof AdminMarketsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin': typeof AdminRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRoute
   '/propose': typeof ProposeRoute
+  '/admin/markets': typeof AdminMarketsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/market/$id': typeof MarketIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,60 +131,44 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
-    | '/admin/'
-    | '/admin/markets'
-    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
     | '/profile'
     | '/propose'
+    | '/admin/markets'
+    | '/admin/users'
     | '/market/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/activity'
-    | '/admin'
-    | '/admin/'
-    | '/admin/markets'
-    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
     | '/profile'
     | '/propose'
+    | '/admin/markets'
+    | '/admin/users'
     | '/market/$id'
+    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/activity'
     | '/admin'
-    | '/admin/'
-    | '/admin/markets'
-    | '/admin/users'
     | '/leaderboard'
     | '/markets'
     | '/portfolio'
     | '/profile'
     | '/propose'
+    | '/admin/markets'
+    | '/admin/users'
     | '/market/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
-
-interface AdminRouteChildren {
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminMarketsRoute: typeof AdminMarketsRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-}
-
-const adminRouteChildren: AdminRouteChildren = {
-  AdminIndexRoute: AdminIndexRoute,
-  AdminMarketsRoute: AdminMarketsRoute,
-  AdminUsersRoute: AdminUsersRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(adminRouteChildren)
-
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivityRoute: typeof ActivityRoute
@@ -242,27 +225,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRouteImport
-    }
-    '/admin/markets': {
-      id: '/admin/markets'
-      path: '/markets'
-      fullPath: '/admin/markets'
-      preLoaderRoute: typeof AdminMarketsRouteImport
-      parentRoute: typeof AdminRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRouteImport
-    }
     '/activity': {
       id: '/activity'
       path: '/activity'
@@ -277,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/market/$id': {
       id: '/market/$id'
       path: '/market/$id'
@@ -284,8 +253,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/markets': {
+      id: '/admin/markets'
+      path: '/markets'
+      fullPath: '/admin/markets'
+      preLoaderRoute: typeof AdminMarketsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminMarketsRoute: typeof AdminMarketsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminMarketsRoute: AdminMarketsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,

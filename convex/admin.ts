@@ -438,7 +438,7 @@ export const userTrades = query({
 					marketQuestion: market?.question ?? "Deleted market",
 					marketSlug: market?.slug ?? "",
 				};
-			}),
+			})
 		);
 	},
 });

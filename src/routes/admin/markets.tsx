@@ -11,10 +11,10 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import {
 	Bell,
+	CheckCircle2,
 	ChevronLeft,
 	ChevronRight,
 	ChevronsUpDown,
-	CheckCircle2,
 	Clock,
 	ExternalLink,
 	Filter,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Kicker } from "@/components/console";
 import { useRegisterTable } from "@/components/table-devtools";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -138,7 +139,7 @@ function MarketsPage() {
 			}));
 
 		return [...marketRows, ...proposalRows].sort(
-			(a, b) => b.closesAtMs - a.closesAtMs,
+			(a, b) => b.closesAtMs - a.closesAtMs
 		);
 	}, [markets, proposals]);
 
@@ -146,7 +147,7 @@ function MarketsPage() {
 		const now = Date.now();
 		return (markets ?? []).filter(
 			(m) =>
-				(m.status === "open" && m.closesAtMs < now) || m.status === "closed",
+				(m.status === "open" && m.closesAtMs < now) || m.status === "closed"
 		);
 	}, [markets]);
 
@@ -154,11 +155,14 @@ function MarketsPage() {
 
 	return (
 		<div className="space-y-6">
-			<MarketsHeader endedCount={endedMarkets.length} endedMarkets={endedMarkets} />
+			<MarketsHeader
+				endedCount={endedMarkets.length}
+				endedMarkets={endedMarkets}
+			/>
 			{isLoading ? (
 				<div className="space-y-3">
-					{Array.from({ length: 5 }).map((_, i) => (
-						<Skeleton key={i} className="h-12 w-full rounded-lg" />
+					{Array.from({ length: 5 }, (_, i) => `mkt-skel-${i}`).map((k) => (
+						<Skeleton key={k} className="h-12 w-full rounded-lg" />
 					))}
 				</div>
 			) : (
@@ -179,13 +183,14 @@ function MarketsHeader({
 	const [bellOpen, setBellOpen] = useState(false);
 
 	return (
-		<div className="flex flex-wrap items-start justify-between gap-4">
+		<div className="flex flex-wrap items-end justify-between gap-4">
 			<div>
-				<h1 className="font-bold text-2xl tracking-tight">
-					Markets &amp; Proposals
+				<Kicker>TICKETS &amp; PROPOSALS</Kicker>
+				<h1 className="display-headline mt-2 text-3xl sm:text-4xl">
+					Ticket management
 				</h1>
-				<p className="mt-1 text-muted-foreground text-sm">
-					Approve proposals, resolve markets, and manage the full lifecycle.
+				<p className="mt-2 max-w-xl text-bone-2 text-sm">
+					Approve proposals, resolve tickets, and manage the full lifecycle.
 				</p>
 			</div>
 
@@ -196,14 +201,14 @@ function MarketsHeader({
 					className={cn(
 						"relative",
 						endedCount > 0 &&
-							"border-amber-500/60 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20",
+							"border-brand/60 text-brand hover:bg-brand-wash dark:text-brand dark:hover:bg-brand-wash"
 					)}
 					onClick={() => setBellOpen(true)}
 					title={`${endedCount} market${endedCount !== 1 ? "s" : ""} need attention`}
 				>
 					<Bell className="size-4" />
 					{endedCount > 0 && (
-						<span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-amber-500 font-bold text-[10px] text-white">
+						<span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-brand font-bold text-[10px] text-white">
 							{endedCount > 9 ? "9+" : endedCount}
 						</span>
 					)}
@@ -233,7 +238,7 @@ function MarketsHeader({
 				<SheetContent side="right" className="w-full max-w-md">
 					<SheetHeader>
 						<SheetTitle className="flex items-center gap-2">
-							<Bell className="size-4 text-amber-500" />
+							<Bell className="size-4 text-brand" />
 							Markets needing attention
 						</SheetTitle>
 						<SheetDescription>
@@ -306,10 +311,12 @@ function EndedMarketCard({
 				{isOverdue ? (
 					<Badge
 						variant="outline"
-						className="shrink-0 border-amber-500/40 text-amber-600 text-xs dark:text-amber-400"
+						className="shrink-0 border-brand/40 text-brand text-xs dark:text-brand"
 					>
 						<Clock className="mr-1 size-3" />
-						{overdueDays > 0 ? `${overdueDays}d overdue` : `${overdueHours}h overdue`}
+						{overdueDays > 0
+							? `${overdueDays}d overdue`
+							: `${overdueHours}h overdue`}
 					</Badge>
 				) : (
 					<Badge variant="outline" className="shrink-0 text-xs">
@@ -387,7 +394,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				},
 			});
 		},
-		[resolve],
+		[resolve]
 	);
 
 	const handleClose = useCallback(
@@ -401,7 +408,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				});
 			}
 		},
-		[close],
+		[close]
 	);
 
 	const handleReopen = useCallback(
@@ -415,7 +422,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				});
 			}
 		},
-		[reopen],
+		[reopen]
 	);
 
 	const handleDeleteMarket = useCallback(
@@ -430,7 +437,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				},
 			});
 		},
-		[deleteMarket],
+		[deleteMarket]
 	);
 
 	const handleApprove = useCallback(
@@ -446,7 +453,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				});
 			}
 		},
-		[approve],
+		[approve]
 	);
 
 	const handleDeleteProposal = useCallback(
@@ -461,7 +468,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 				},
 			});
 		},
-		[removeProposal],
+		[removeProposal]
 	);
 
 	const filteredRows = useMemo(() => {
@@ -503,9 +510,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Question
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -572,9 +577,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Yes%
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -597,9 +600,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Volume
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -622,9 +623,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 					<button
 						type="button"
 						className="flex items-center gap-1 hover:text-foreground"
-						onClick={() =>
-							column.toggleSorting(column.getIsSorted() === "asc")
-						}
+						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					>
 						Closes
 						<ChevronsUpDown className="size-3.5 opacity-50" />
@@ -639,7 +638,9 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 						<span
 							className={cn(
 								"text-xs",
-								isOverdue ? "font-medium text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+								isOverdue
+									? "font-medium text-brand dark:text-brand"
+									: "text-muted-foreground"
 							)}
 						>
 							{isOverdue && <Clock className="mr-1 inline size-3" />}
@@ -660,9 +661,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 						onReopen={handleReopen}
 						onDeleteMarket={handleDeleteMarket}
 						onApprove={handleApprove}
-						onReject={(id) =>
-							setRejectDialog({ open: true, proposalId: id })
-						}
+						onReject={(id) => setRejectDialog({ open: true, proposalId: id })}
 						onDeleteProposal={handleDeleteProposal}
 					/>
 				),
@@ -677,7 +676,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 			handleDeleteMarket,
 			handleApprove,
 			handleDeleteProposal,
-		],
+		]
 	);
 
 	const table = useReactTable({
@@ -698,8 +697,8 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 		<>
 			{/* Filters */}
 			<div className="flex flex-wrap items-center gap-2">
-				<div className="relative flex-1 min-w-48">
-					<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+				<div className="relative min-w-48 flex-1">
+					<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						className="pl-9"
 						placeholder="Search questions…"
@@ -710,7 +709,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 						<button
 							type="button"
 							onClick={() => setGlobalFilter("")}
-							className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 						>
 							<X className="size-4" />
 						</button>
@@ -777,7 +776,7 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 												? null
 												: flexRender(
 														header.column.columnDef.header,
-														header.getContext(),
+														header.getContext()
 													)}
 										</TableHead>
 									))}
@@ -799,15 +798,12 @@ function MarketsTable({ rows }: { rows: UnifiedRow[] }) {
 								</TableRow>
 							) : (
 								table.getRowModel().rows.map((row) => (
-									<TableRow
-										key={row.id}
-										className="group"
-									>
+									<TableRow key={row.id} className="group">
 										{row.getVisibleCells().map((cell) => (
 											<TableCell key={cell.id} className="py-3">
 												{flexRender(
 													cell.column.columnDef.cell,
-													cell.getContext(),
+													cell.getContext()
 												)}
 											</TableCell>
 										))}
@@ -889,20 +885,13 @@ function ActionsCell({
 	onDeleteProposal,
 }: {
 	row: UnifiedRow;
-	onResolve: (
-		id: Id<"markets">,
-		side: "Yes" | "No",
-		question: string,
-	) => void;
+	onResolve: (id: Id<"markets">, side: "Yes" | "No", question: string) => void;
 	onClose: (id: Id<"markets">) => void;
 	onReopen: (id: Id<"markets">) => void;
 	onDeleteMarket: (id: Id<"markets">, question: string) => void;
 	onApprove: (id: Id<"marketProposals">) => void;
 	onReject: (id: Id<"marketProposals">) => void;
-	onDeleteProposal: (
-		id: Id<"marketProposals">,
-		question: string,
-	) => void;
+	onDeleteProposal: (id: Id<"marketProposals">, question: string) => void;
 }) {
 	return (
 		<DropdownMenu>
@@ -912,134 +901,128 @@ function ActionsCell({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-48">
-				{row.rowType === "market" && row.marketId && (
-					<>
-						{row.slug && (
-							<DropdownMenuItem asChild>
-								<Link
-									to="/market/$id"
-									params={{ id: row.slug }}
-									className="flex items-center gap-2"
-								>
-									<ExternalLink className="size-3.5" />
-									View market
-								</Link>
-							</DropdownMenuItem>
-						)}
-						{row.status === "open" && (
-							<>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									onClick={() => onClose(row.marketId!)}
-								>
-									<Lock className="size-3.5" />
-									Close trading
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-emerald-600 focus:text-emerald-600"
-									onClick={() =>
-										onResolve(row.marketId!, "Yes", row.question)
-									}
-								>
-									<CheckCircle2 className="size-3.5" />
-									Resolve Yes
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-red-600 focus:text-red-600"
-									onClick={() =>
-										onResolve(row.marketId!, "No", row.question)
-									}
-								>
-									<XCircle className="size-3.5" />
-									Resolve No
-								</DropdownMenuItem>
-							</>
-						)}
-						{row.status === "closed" && (
-							<>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									onClick={() => onReopen(row.marketId!)}
-								>
-									Reopen trading
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-emerald-600 focus:text-emerald-600"
-									onClick={() =>
-										onResolve(row.marketId!, "Yes", row.question)
-									}
-								>
-									<CheckCircle2 className="size-3.5" />
-									Resolve Yes
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-red-600 focus:text-red-600"
-									onClick={() =>
-										onResolve(row.marketId!, "No", row.question)
-									}
-								>
-									<XCircle className="size-3.5" />
-									Resolve No
-								</DropdownMenuItem>
-							</>
-						)}
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							className="text-destructive focus:text-destructive"
-							onClick={() =>
-								onDeleteMarket(row.marketId!, row.question)
-							}
-						>
-							<Trash2 className="size-3.5" />
-							Delete market
-						</DropdownMenuItem>
-					</>
-				)}
+				{row.rowType === "market" && row.marketId
+					? (() => {
+							const marketId = row.marketId;
+							return (
+								<>
+									{row.slug && (
+										<DropdownMenuItem asChild>
+											<Link
+												to="/market/$id"
+												params={{ id: row.slug }}
+												className="flex items-center gap-2"
+											>
+												<ExternalLink className="size-3.5" />
+												View market
+											</Link>
+										</DropdownMenuItem>
+									)}
+									{row.status === "open" && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem onClick={() => onClose(marketId)}>
+												<Lock className="size-3.5" />
+												Close trading
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-brand focus:text-brand"
+												onClick={() => onResolve(marketId, "Yes", row.question)}
+											>
+												<CheckCircle2 className="size-3.5" />
+												Resolve Yes
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-magenta focus:text-magenta"
+												onClick={() => onResolve(marketId, "No", row.question)}
+											>
+												<XCircle className="size-3.5" />
+												Resolve No
+											</DropdownMenuItem>
+										</>
+									)}
+									{row.status === "closed" && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem onClick={() => onReopen(marketId)}>
+												Reopen trading
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-brand focus:text-brand"
+												onClick={() => onResolve(marketId, "Yes", row.question)}
+											>
+												<CheckCircle2 className="size-3.5" />
+												Resolve Yes
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-magenta focus:text-magenta"
+												onClick={() => onResolve(marketId, "No", row.question)}
+											>
+												<XCircle className="size-3.5" />
+												Resolve No
+											</DropdownMenuItem>
+										</>
+									)}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="text-destructive focus:text-destructive"
+										onClick={() => onDeleteMarket(marketId, row.question)}
+									>
+										<Trash2 className="size-3.5" />
+										Delete market
+									</DropdownMenuItem>
+								</>
+							);
+						})()
+					: null}
 
-				{row.rowType === "proposal" && row.proposalId && (
-					<>
-						{row.status === "pending" && (
-							<>
-								<DropdownMenuItem
-									className="text-emerald-600 focus:text-emerald-600"
-									onClick={() => onApprove(row.proposalId!)}
-								>
-									<CheckCircle2 className="size-3.5" />
-									Approve
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-destructive focus:text-destructive"
-									onClick={() => onReject(row.proposalId!)}
-								>
-									<XCircle className="size-3.5" />
-									Reject
-								</DropdownMenuItem>
-							</>
-						)}
-						{row.approvedMarketSlug && (
-							<DropdownMenuItem asChild>
-								<Link
-									to="/market/$id"
-									params={{ id: row.approvedMarketSlug }}
-									className="flex items-center gap-2"
-								>
-									<ExternalLink className="size-3.5" />
-									View market
-								</Link>
-							</DropdownMenuItem>
-						)}
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							className="text-destructive focus:text-destructive"
-							onClick={() =>
-								onDeleteProposal(row.proposalId!, row.question)
-							}
-						>
-							<Trash2 className="size-3.5" />
-							Delete proposal
-						</DropdownMenuItem>
-					</>
-				)}
+				{row.rowType === "proposal" && row.proposalId
+					? (() => {
+							const proposalId = row.proposalId;
+							return (
+								<>
+									{row.status === "pending" && (
+										<>
+											<DropdownMenuItem
+												className="text-brand focus:text-brand"
+												onClick={() => onApprove(proposalId)}
+											>
+												<CheckCircle2 className="size-3.5" />
+												Approve
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-destructive focus:text-destructive"
+												onClick={() => onReject(proposalId)}
+											>
+												<XCircle className="size-3.5" />
+												Reject
+											</DropdownMenuItem>
+										</>
+									)}
+									{row.approvedMarketSlug && (
+										<DropdownMenuItem asChild>
+											<Link
+												to="/market/$id"
+												params={{ id: row.approvedMarketSlug }}
+												className="flex items-center gap-2"
+											>
+												<ExternalLink className="size-3.5" />
+												View market
+											</Link>
+										</DropdownMenuItem>
+									)}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="text-destructive focus:text-destructive"
+										onClick={() => onDeleteProposal(proposalId, row.question)}
+									>
+										<Trash2 className="size-3.5" />
+										Delete proposal
+									</DropdownMenuItem>
+								</>
+							);
+						})()
+					: null}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
@@ -1060,7 +1043,7 @@ function StatusBadge({
 		return isOverdue ? (
 			<Badge
 				variant="outline"
-				className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
+				className="gap-1 border-brand/40 text-brand dark:text-brand"
 			>
 				<Clock className="size-3" />
 				Overdue
@@ -1082,10 +1065,7 @@ function StatusBadge({
 
 	if (status === "resolved")
 		return (
-			<Badge
-				variant={resolution === "Yes" ? "yes" : "no"}
-				className="gap-1"
-			>
+			<Badge variant={resolution === "Yes" ? "yes" : "no"} className="gap-1">
 				{resolution === "Yes" ? (
 					<CheckCircle2 className="size-3" />
 				) : (
@@ -1099,7 +1079,7 @@ function StatusBadge({
 		return (
 			<Badge
 				variant="outline"
-				className="gap-1 border-amber-500/40 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+				className="gap-1 border-brand/40 bg-brand-wash text-brand dark:bg-brand-wash dark:text-brand"
 			>
 				Pending
 			</Badge>
@@ -1398,7 +1378,11 @@ function CreateMarketForm({ onSuccess }: { onSuccess: () => void }) {
 				/>
 			</div>
 			<DialogFooter>
-				<Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+				<Button
+					type="submit"
+					disabled={submitting}
+					className="w-full sm:w-auto"
+				>
 					{submitting ? (
 						"Creating…"
 					) : (
