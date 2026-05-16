@@ -13,6 +13,7 @@ import {
 	Clock,
 	Pencil,
 	Plus,
+	X,
 	XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -57,8 +58,11 @@ function ProfilePage() {
 function ProfileBody() {
 	const me = useQuery(api.users.me, {});
 	const updateHandle = useMutation(api.users.updateHandle);
+	const updateName = useMutation(api.users.updateName);
 	const [handleDraft, setHandleDraft] = useState<string | null>(null);
 	const [savingHandle, setSavingHandle] = useState(false);
+	const [nameDraft, setNameDraft] = useState<string | null>(null);
+	const [savingName, setSavingName] = useState(false);
 
 	if (me === undefined) return <ProfileSkeleton />;
 	if (me === null) return <ProfileSkeleton />;
@@ -76,6 +80,22 @@ function ProfileBody() {
 			});
 		} finally {
 			setSavingHandle(false);
+		}
+	};
+
+	const saveName = async () => {
+		if (nameDraft == null) return;
+		setSavingName(true);
+		try {
+			const next = await updateName({ name: nameDraft });
+			toast.success("Display name updated", { description: next });
+			setNameDraft(null);
+		} catch (err) {
+			toast.error("Couldn't update display name", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSavingName(false);
 		}
 	};
 
@@ -98,12 +118,14 @@ function ProfileBody() {
 						</p>
 						<div className="mt-3 flex flex-wrap gap-2">
 							<Badge variant="brand">Trader</Badge>
-							<Badge
-								variant="outline"
-								className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300"
-							>
-								Founding 100
-							</Badge>
+							{me.isAdmin && (
+								<Badge
+									variant="outline"
+									className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300"
+								>
+									Moderator
+								</Badge>
+							)}
 						</div>
 					</div>
 					<div className="flex flex-col items-end">
@@ -123,22 +145,63 @@ function ProfileBody() {
 
 			<Card className="mt-6">
 				<CardHeader>
-					<CardTitle>Account</CardTitle>
+					<CardTitle>Profile</CardTitle>
+					<CardDescription>
+						Visible to other traders across activity, comments, and the
+						leaderboard.
+					</CardDescription>
 				</CardHeader>
-				<CardContent>
-					<dl className="space-y-3 text-sm">
-						<Stat label="Joined" value={formatJoined(me.joinedAt)} />
-						<Stat label="Email" value={me.email ?? "—"} />
-						<Stat label="Display name" value={me.name ?? "—"} />
-					</dl>
-				</CardContent>
-			</Card>
-
-			<Card className="mt-6">
-				<CardHeader>
-					<CardTitle>Preferences</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-1 text-sm">
+				<CardContent className="text-sm">
+					<Pref
+						label="Display name"
+						control={
+							<div className="flex items-center gap-2">
+								{nameDraft == null ? (
+									<>
+										<span className="max-w-[16rem] truncate">
+											{me.name ?? "—"}
+										</span>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											onClick={() => setNameDraft(me.name ?? "")}
+											aria-label="Edit display name"
+										>
+											<Pencil />
+										</Button>
+									</>
+								) : (
+									<>
+										<Input
+											value={nameDraft}
+											onChange={(e) => setNameDraft(e.target.value)}
+											className="h-8 w-48"
+											maxLength={60}
+											placeholder="Your name"
+										/>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											onClick={() => setNameDraft(null)}
+											disabled={savingName}
+											aria-label="Cancel"
+										>
+											<X />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											onClick={saveName}
+											disabled={savingName}
+											aria-label="Save display name"
+										>
+											<Check />
+										</Button>
+									</>
+								)}
+							</div>
+						}
+					/>
 					<Pref
 						label="Handle"
 						control={
@@ -161,7 +224,17 @@ function ProfileBody() {
 											value={handleDraft}
 											onChange={(e) => setHandleDraft(e.target.value)}
 											className="h-8 w-40 font-mono"
+											maxLength={32}
 										/>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											onClick={() => setHandleDraft(null)}
+											disabled={savingHandle}
+											aria-label="Cancel"
+										>
+											<X />
+										</Button>
 										<Button
 											variant="ghost"
 											size="icon-sm"
@@ -176,6 +249,18 @@ function ProfileBody() {
 							</div>
 						}
 					/>
+				</CardContent>
+			</Card>
+
+			<Card className="mt-6">
+				<CardHeader>
+					<CardTitle>Account</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<dl className="space-y-3 text-sm">
+						<Stat label="Joined" value={formatJoined(me.joinedAt)} />
+						<Stat label="Email" value={me.email ?? "—"} />
+					</dl>
 				</CardContent>
 			</Card>
 

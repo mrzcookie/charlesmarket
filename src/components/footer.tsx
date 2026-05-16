@@ -1,9 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
 	return (
 		<footer className="border-t bg-muted/40">
-			<div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
+			<div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
 				<div className="col-span-2 md:col-span-1">
 					<div className="flex items-center gap-2">
 						<div className="grid h-7 w-7 place-items-center rounded-md bg-primary font-black text-primary-foreground text-xs">
@@ -20,44 +21,23 @@ export function Footer() {
 				<FooterCol
 					title="Trade"
 					links={[
-						{ label: "Markets", href: "/markets" },
-						{ label: "Activity", href: "/activity" },
-						{ label: "Leaderboard", href: "/leaderboard" },
+						{ label: "Markets", to: "/markets" },
+						{ label: "Activity", to: "/activity" },
+						{ label: "Leaderboard", to: "/leaderboard" },
+						{ label: "Propose a market", to: "/propose" },
 					]}
 				/>
 				<FooterCol
 					title="Account"
 					links={[
-						{ label: "Portfolio", href: "/portfolio" },
-						{ label: "Profile", href: "/profile" },
-						{ label: "Deposit", href: "#" },
-					]}
-				/>
-				<FooterCol
-					title="Resources"
-					links={[
-						{ label: "How it works", href: "#" },
-						{ label: "Resolution rules", href: "#" },
-						{ label: "Discord", href: "#" },
+						{ label: "Portfolio", to: "/portfolio" },
+						{ label: "Profile", to: "/profile" },
 					]}
 				/>
 			</div>
 			<Separator />
-			<div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-2 px-4 py-4 text-muted-foreground text-xs sm:flex-row sm:items-center sm:px-6">
-				<div>
-					© {new Date().getFullYear()} Charlesmarket. Play money, real feelings.
-				</div>
-				<div className="flex gap-4">
-					<a className="hover:text-foreground" href="#">
-						Terms
-					</a>
-					<a className="hover:text-foreground" href="#">
-						Privacy
-					</a>
-					<a className="hover:text-foreground" href="#">
-						Status
-					</a>
-				</div>
+			<div className="mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-4 text-muted-foreground text-xs sm:px-6">
+				© {new Date().getFullYear()} Charlesmarket · Play money, real feelings.
 			</div>
 		</footer>
 	);
@@ -68,7 +48,7 @@ function FooterCol({
 	links,
 }: {
 	title: string;
-	links: { label: string; href: string }[];
+	links: { label: string; to: string }[];
 }) {
 	return (
 		<div>
@@ -76,12 +56,12 @@ function FooterCol({
 			<ul className="mt-3 space-y-2">
 				{links.map((l) => (
 					<li key={l.label}>
-						<a
-							href={l.href}
+						<Link
+							to={l.to}
 							className="text-muted-foreground text-sm hover:text-foreground"
 						>
 							{l.label}
-						</a>
+						</Link>
 					</li>
 				))}
 			</ul>

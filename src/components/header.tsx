@@ -9,8 +9,8 @@ import {
 	Trophy,
 	Wallet,
 } from "lucide-react";
-import { useState } from "react";
 import type { ComponentType, SVGProps } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,26 +135,26 @@ export function Header() {
 					</span>
 				</Link>
 
-				<form
-					className="hidden flex-1 md:block"
-					onSubmit={(e) => {
-						e.preventDefault();
-						submitSearch();
-					}}
-					role="search"
-				>
-					<div className="relative max-w-md">
-						<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							type="search"
-							value={query}
-							onChange={(e) => setQuery(e.target.value)}
-							placeholder="Search Charles markets…"
-							className="bg-muted pl-9"
-							aria-label="Search markets"
-						/>
-					</div>
-				</form>
+				<search className="hidden flex-1 md:block">
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							submitSearch();
+						}}
+					>
+						<div className="relative max-w-md">
+							<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								type="search"
+								value={query}
+								onChange={(e) => setQuery(e.target.value)}
+								placeholder="Search Charles markets…"
+								className="bg-muted pl-9"
+								aria-label="Search markets"
+							/>
+						</div>
+					</form>
+				</search>
 
 				<nav className="hidden items-center gap-1 lg:flex">
 					{navLinks.map((l) => {

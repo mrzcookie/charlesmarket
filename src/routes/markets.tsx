@@ -178,17 +178,9 @@ function MarketsPage() {
 				<Card className="mt-12 border-dashed">
 					<CardContent className="flex flex-col items-center gap-3 py-12 text-center">
 						<p className="text-muted-foreground">
-							{markets.length === 0 ? (
-								<>
-									No markets seeded yet — run{" "}
-									<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-										npx convex run seed:run
-									</code>{" "}
-									or pitch your own.
-								</>
-							) : (
-								"No markets match those filters."
-							)}
+							{markets.length === 0
+								? "No markets yet — pitch the first one."
+								: "No markets match those filters."}
 						</p>
 						<Button asChild size="sm">
 							<Link to="/propose">

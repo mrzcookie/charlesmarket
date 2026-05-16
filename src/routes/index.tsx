@@ -15,11 +15,22 @@ export const Route = createFileRoute("/")({
 
 function Home() {
 	const docs = useQuery(api.markets.list, {});
+	const leaders = useQuery(api.leaderboard.top, { limit: 1 });
 	const isLoading = docs === undefined;
 	const markets = (docs ?? []).map((d) => toUIMarket(d));
 
 	const totalVolume = markets.reduce((acc, m) => acc + m.volume, 0);
 	const totalLiquidity = markets.reduce((acc, m) => acc + m.liquidity, 0);
+	const resolved = (docs ?? []).filter((m) => m.status === "resolved");
+	const yesResolved = resolved.filter((m) => m.resolution === "Yes").length;
+	const hitRate =
+		resolved.length > 0
+			? `${Math.round((yesResolved / resolved.length) * 100)}% Yes`
+			: "—";
+	const topTrader =
+		leaders && leaders.length > 0
+			? `${leaders[0].handle} · ${money(leaders[0].pnl)}`
+			: "—";
 	const trending = [...markets].sort((a, b) => b.volume - a.volume).slice(0, 4);
 	const featured = markets.slice(0, 6);
 
@@ -29,6 +40,8 @@ function Home() {
 				totalVolume={totalVolume}
 				totalLiquidity={totalLiquidity}
 				marketCount={markets.length}
+				hitRate={hitRate}
+				topTrader={topTrader}
 				loading={isLoading}
 			/>
 
@@ -89,11 +102,15 @@ function Hero({
 	totalVolume,
 	totalLiquidity,
 	marketCount,
+	hitRate,
+	topTrader,
 	loading,
 }: {
 	totalVolume: number;
 	totalLiquidity: number;
 	marketCount: number;
+	hitRate: string;
+	topTrader: string;
 	loading: boolean;
 }) {
 	return (
@@ -133,8 +150,8 @@ function Hero({
 						label="Open liquidity"
 						value={loading ? "—" : money(totalLiquidity)}
 					/>
-					<Stat label="Charles's hit rate" value="63% Yes" />
-					<Stat label="Top trader" value="@reece · +₪1.2k" />
+					<Stat label="Charles's hit rate" value={loading ? "—" : hitRate} />
+					<Stat label="Top trader" value={loading ? "—" : topTrader} />
 				</div>
 			</div>
 		</section>
@@ -219,15 +236,15 @@ function MarketCardSkeleton() {
 function EmptyMarkets() {
 	return (
 		<Card className="mt-8 border-dashed">
-			<CardContent className="py-12 text-center">
+			<CardContent className="flex flex-col items-center gap-3 py-12 text-center">
 				<h3 className="font-semibold text-lg">No markets yet</h3>
-				<p className="mt-2 text-muted-foreground text-sm">
-					The markets table is empty. Run{" "}
-					<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-						npx convex run seed:run
-					</code>{" "}
-					to populate the 12 starter Charles markets.
+				<p className="max-w-md text-muted-foreground text-sm">
+					Be the first to pitch one. Submit a question, set the resolution
+					criteria, and let the friend group trade it out.
 				</p>
+				<Button asChild>
+					<Link to="/propose">Propose a market</Link>
+				</Button>
 			</CardContent>
 		</Card>
 	);

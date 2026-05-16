@@ -60,7 +60,20 @@ export const updateHandle = mutation({
 		const trimmed = handle.trim();
 		if (!trimmed) throw new Error("Handle cannot be empty");
 		const normalized = trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
+		if (normalized.length > 32) throw new Error("Handle is too long");
 		await ctx.db.patch(user._id, { handle: normalized });
 		return normalized;
+	},
+});
+
+export const updateName = mutation({
+	args: { name: v.string() },
+	handler: async (ctx, { name }) => {
+		const user = await requireUser(ctx);
+		const trimmed = name.trim();
+		if (!trimmed) throw new Error("Display name cannot be empty");
+		if (trimmed.length > 60) throw new Error("Display name is too long");
+		await ctx.db.patch(user._id, { name: trimmed });
+		return trimmed;
 	},
 });

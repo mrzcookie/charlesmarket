@@ -795,12 +795,8 @@ function NotAuthorized() {
 				<AlertTriangle className="size-8 text-amber-600 dark:text-amber-400" />
 				<h2 className="font-semibold text-xl">Admin only</h2>
 				<p className="max-w-md text-muted-foreground text-sm">
-					This area is restricted to moderators. Ask an existing admin
-					to grant you access, or — if no admin exists yet — run{" "}
-					<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-						npx convex run admin:bootstrapAdmin '{`{"email":"you@example.com"}`}'
-					</code>
-					.
+					This area is restricted to moderators. Ask an existing admin to grant
+					you access.
 				</p>
 				<Button asChild variant="outline">
 					<Link to="/markets">Back to markets</Link>
