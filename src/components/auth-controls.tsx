@@ -1,4 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Link } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { LogIn, LogOut, Plus, ShieldCheck, User, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -79,25 +80,25 @@ export function UserMenu() {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>
-					<a href="/profile">
+					<Link to="/profile">
 						<User /> Profile
-					</a>
+					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<a href="/portfolio">
+					<Link to="/portfolio">
 						<Wallet /> Portfolio
-					</a>
+					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<a href="/propose">
+					<Link to="/propose">
 						<Plus /> Propose a ticket
-					</a>
+					</Link>
 				</DropdownMenuItem>
 				{me?.isAdmin && (
 					<DropdownMenuItem asChild>
-						<a href="/admin">
+						<Link to="/admin">
 							<ShieldCheck /> Admin
-						</a>
+						</Link>
 					</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />

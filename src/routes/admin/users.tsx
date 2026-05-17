@@ -6,20 +6,29 @@ import {
 	ChevronDown,
 	ChevronUp,
 	ExternalLink,
+	Filter,
 	Minus,
 	Pencil,
 	Plus,
 	Search,
 	Trash2,
+	User,
 	X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BracketChip, Kicker } from "@/components/console";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Sheet,
 	SheetContent,
@@ -58,6 +67,7 @@ type UserRow = {
 };
 
 type SortKey = "joinedAt" | "balance" | "handle";
+type ActivityFilter = "all" | "trade" | "comment" | "proposal";
 
 function UsersPage() {
 	const users = useQuery(api.admin.listUsers, {});
@@ -65,6 +75,7 @@ function UsersPage() {
 	const [sortKey, setSortKey] = useState<SortKey>("joinedAt");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 	const [drawerUser, setDrawerUser] = useState<UserRow | null>(null);
+	const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
 	const rows = useMemo(() => {
 		if (!users) return [];
@@ -117,25 +128,28 @@ function UsersPage() {
 				) : null}
 			</header>
 
-			<div className="relative max-w-md">
-				<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
-				<Input
-					type="search"
-					placeholder="Search by handle, name, or email…"
-					value={query}
-					onChange={(e) => setQuery(e.target.value)}
-					className="pl-9"
+			<div className="flex flex-wrap items-center gap-3">
+				<UserCombobox
+					users={users ?? []}
+					query={query}
+					onQueryChange={setQuery}
+					onSelect={(user) => setDrawerUser(user)}
 				/>
-				{query ? (
-					<button
-						type="button"
-						onClick={() => setQuery("")}
-						className="absolute top-1/2 right-3 -translate-y-1/2 text-bone-3 hover:text-bone"
-						aria-label="Clear search"
-					>
-						<X className="size-4" />
-					</button>
-				) : null}
+				<Select
+					value={activityFilter}
+					onValueChange={(v) => setActivityFilter(v as ActivityFilter)}
+				>
+					<SelectTrigger className="w-auto gap-2">
+						<Filter className="size-3.5 shrink-0 text-bone-3" />
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent position="popper" align="start">
+						<SelectItem value="all">All activity</SelectItem>
+						<SelectItem value="trade">Trades</SelectItem>
+						<SelectItem value="comment">Comments</SelectItem>
+						<SelectItem value="proposal">Proposals</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
 			{isLoading ? (
@@ -269,7 +283,151 @@ function UsersPage() {
 				</>
 			)}
 
-			<UserDrawer user={drawerUser} onClose={() => setDrawerUser(null)} />
+			<UserDrawer
+				user={drawerUser}
+				onClose={() => setDrawerUser(null)}
+				activityFilter={activityFilter}
+				setActivityFilter={setActivityFilter}
+			/>
+		</div>
+	);
+}
+
+// ----------------------------------------------------------------------------
+// User search combobox
+// ----------------------------------------------------------------------------
+
+function UserCombobox({
+	users,
+	query,
+	onQueryChange,
+	onSelect,
+}: {
+	users: UserRow[];
+	query: string;
+	onQueryChange: (q: string) => void;
+	onSelect: (user: UserRow) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const handler = (e: MouseEvent) => {
+			if (!containerRef.current?.contains(e.target as Node)) {
+				setOpen(false);
+			}
+		};
+		document.addEventListener("mousedown", handler);
+		return () => document.removeEventListener("mousedown", handler);
+	}, [open]);
+
+	const suggestions = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		if (!q) return users.slice(0, 15);
+		return users
+			.filter(
+				(u) =>
+					u.handle.toLowerCase().includes(q) ||
+					(u.name ?? "").toLowerCase().includes(q) ||
+					(u.email ?? "").toLowerCase().includes(q)
+			)
+			.slice(0, 15);
+	}, [users, query]);
+
+	return (
+		<div ref={containerRef} className="relative">
+			<button
+				type="button"
+				onClick={() => setOpen((o) => !o)}
+				className={cn(
+					"flex h-9 min-w-[180px] items-center gap-2 rounded-[4px] border bg-ink-2 px-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors",
+					open
+						? "border-brand text-bone"
+						: "border-rule text-bone hover:border-rule-bright"
+				)}
+			>
+				<User className="size-3.5 shrink-0 text-bone-3" />
+				<span className="flex-1 truncate text-left">
+					{query || "All users"}
+				</span>
+				{query ? (
+					<button
+						type="button"
+						onClick={(e) => {
+							e.stopPropagation();
+							onQueryChange("");
+							setOpen(false);
+						}}
+						className="text-bone-3 hover:text-bone"
+						aria-label="Clear search"
+					>
+						<X className="size-3" />
+					</button>
+				) : (
+					<ChevronDown
+						className={cn(
+							"size-3.5 text-bone-3 transition-transform",
+							open && "rotate-180"
+						)}
+					/>
+				)}
+			</button>
+
+			{open && (
+				<div className="absolute top-full left-0 z-50 mt-1 w-64 border border-rule bg-ink-2">
+					<div className="border-rule border-b p-2">
+						<div className="relative">
+							<Search className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-bone-3" />
+							<input
+								// biome-ignore lint/a11y/noAutofocus: search field in controlled dropdown
+								autoFocus
+								value={query}
+								onChange={(e) => onQueryChange(e.target.value)}
+								placeholder="Search users..."
+								className="w-full bg-transparent py-1.5 pr-2 pl-7 font-mono text-[11px] text-bone outline-none placeholder:text-bone-3"
+							/>
+						</div>
+					</div>
+					<div className="max-h-52 overflow-y-auto p-1">
+						{suggestions.length === 0 ? (
+							<div className="px-2 py-3 text-center font-mono text-[11px] text-bone-3">
+								No users found
+							</div>
+						) : (
+							suggestions.map((u) => (
+								<button
+									key={u._id}
+									type="button"
+									onClick={() => {
+										onSelect(u);
+										onQueryChange(u.handle);
+										setOpen(false);
+									}}
+									className="flex w-full items-center gap-2 rounded-[2px] px-2 py-1.5 text-left transition-colors hover:bg-ink-3"
+								>
+									<TraderAvatar handle={u.handle} />
+									<div className="min-w-0 flex-1">
+										<div className="truncate font-mono font-semibold text-[11px] text-bone">
+											{u.handle}
+										</div>
+										{u.name ? (
+											<div className="truncate font-mono text-[10px] text-bone-3">
+												{u.name}
+											</div>
+										) : null}
+									</div>
+									{u.isAdmin ? (
+										<BracketChip className="ml-auto shrink-0">
+											ADMIN
+										</BracketChip>
+									) : null}
+								</button>
+							))
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -320,9 +478,13 @@ function SortButton({
 function UserDrawer({
 	user,
 	onClose,
+	activityFilter,
+	setActivityFilter,
 }: {
 	user: UserRow | null;
 	onClose: () => void;
+	activityFilter: ActivityFilter;
+	setActivityFilter: (f: ActivityFilter) => void;
 }) {
 	return (
 		<Sheet open={user != null} onOpenChange={(o) => !o && onClose()}>
@@ -331,7 +493,13 @@ function UserDrawer({
 				className="w-full max-w-xl overflow-y-auto bg-ink"
 			>
 				{user ? (
-					<UserDrawerBody key={user._id} user={user} onClose={onClose} />
+					<UserDrawerBody
+						key={user._id}
+						user={user}
+						onClose={onClose}
+						activityFilter={activityFilter}
+						setActivityFilter={setActivityFilter}
+					/>
 				) : null}
 			</SheetContent>
 		</Sheet>
@@ -341,9 +509,13 @@ function UserDrawer({
 function UserDrawerBody({
 	user,
 	onClose,
+	activityFilter,
+	setActivityFilter,
 }: {
 	user: UserRow;
 	onClose: () => void;
+	activityFilter: ActivityFilter;
+	setActivityFilter: (f: ActivityFilter) => void;
 }) {
 	const updateUser = useMutation(api.admin.adminUpdateUser);
 	const deleteUserMutation = useMutation(api.admin.deleteUser);
@@ -589,8 +761,25 @@ function UserDrawerBody({
 			</section>
 
 			<section className="mt-4">
-				<div className="flex items-center justify-between gap-2 border-rule border-b pb-2">
-					<Kicker>FULL ACTIVITY</Kicker>
+				<div className="flex flex-wrap items-center justify-between gap-2 border-rule border-b pb-2">
+					<div className="flex items-center gap-3">
+						<Kicker>FULL ACTIVITY</Kicker>
+						<Select
+							value={activityFilter}
+							onValueChange={(v) => setActivityFilter(v as ActivityFilter)}
+						>
+							<SelectTrigger size="sm" className="h-7 gap-1.5 px-2 text-[10px]">
+								<Filter className="size-3 shrink-0 text-bone-3" />
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent position="popper" align="start">
+								<SelectItem value="all">All</SelectItem>
+								<SelectItem value="trade">Trades</SelectItem>
+								<SelectItem value="comment">Comments</SelectItem>
+								<SelectItem value="proposal">Proposals</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 					<Button asChild variant="outline" size="sm">
 						<Link
 							to="/profile/$username"
@@ -602,7 +791,7 @@ function UserDrawerBody({
 						</Link>
 					</Button>
 				</div>
-				<UserActivity userId={user._id} />
+				<UserActivity userId={user._id} activityFilter={activityFilter} />
 			</section>
 
 			<section className="mt-8 border border-magenta/30 bg-magenta-wash/40 p-4">
@@ -652,21 +841,42 @@ function UserDrawerBody({
 
 type ActivityEvent = FunctionReturnType<typeof api.admin.userActivity>[number];
 
-function UserActivity({ userId }: { userId: Id<"users"> }) {
+function UserActivity({
+	userId,
+	activityFilter,
+}: {
+	userId: Id<"users">;
+	activityFilter: ActivityFilter;
+}) {
 	const events = useQuery(api.admin.userActivity, { userId, limit: 50 });
-	if (events === undefined) {
+
+	const filtered = useMemo(() => {
+		if (!events) return null;
+		if (activityFilter === "all") return events;
+		return events.filter((e) => e.kind === activityFilter);
+	}, [events, activityFilter]);
+
+	if (filtered === null) {
 		return <Skeleton className="mt-4 h-32 w-full" />;
 	}
-	if (events.length === 0) {
+	if (filtered.length === 0) {
+		const label =
+			activityFilter === "trade"
+				? "trades"
+				: activityFilter === "comment"
+					? "comments"
+					: activityFilter === "proposal"
+						? "proposals"
+						: "activity";
 		return (
 			<div className="mt-4 border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-				No activity yet.
+				No {label} yet.
 			</div>
 		);
 	}
 	return (
 		<ul className="mt-4">
-			{events.map((e) => (
+			{filtered.map((e) => (
 				<li key={e._id}>
 					<ActivityRow event={e} />
 				</li>
