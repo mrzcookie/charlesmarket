@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
+	AlertTriangle,
 	Bell,
 	Check,
 	CheckCircle2,
@@ -76,7 +77,7 @@ type MarketRow = {
 	description: string;
 	category: string;
 	tags: string[];
-	status: "open" | "closed" | "resolved";
+	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
 	yesPrice: number;
 	volume: number;
@@ -109,12 +110,13 @@ type Row = MarketRow | ProposalRow;
 function TicketsPage() {
 	const markets = useQuery(api.admin.listAll, {});
 	const proposals = useQuery(api.proposals.listAll, {});
+	const pendingReports = useQuery(api.reports.listPending, {});
 
 	const [createOpen, setCreateOpen] = useState(false);
 	const [bellOpen, setBellOpen] = useState(false);
 	const [drawerRow, setDrawerRow] = useState<Row | null>(null);
 	const [filter, setFilter] = useState<
-		"all" | "open" | "closed" | "resolved" | "pending"
+		"all" | "open" | "closed" | "resolved" | "cancelled" | "pending"
 	>("all");
 	const [query, setQuery] = useState("");
 
@@ -191,7 +193,10 @@ function TicketsPage() {
 	}, [rows, filter, query]);
 
 	const isLoading = markets === undefined || proposals === undefined;
-	const notificationCount = pendingProposals.length + endedMarkets.length;
+	const notificationCount =
+		pendingProposals.length +
+		endedMarkets.length +
+		(pendingReports?.length ?? 0);
 
 	return (
 		<div className="space-y-8">
@@ -237,6 +242,7 @@ function TicketsPage() {
 								["open", "Open"],
 								["closed", "Closed"],
 								["resolved", "Resolved"],
+								["cancelled", "Cancelled"],
 							] as const
 						).map(([value, label]) => (
 							<Toggle
@@ -378,6 +384,7 @@ function TicketsPage() {
 				onOpenChange={setBellOpen}
 				pendingProposals={pendingProposals}
 				endedMarkets={endedMarkets}
+				pendingReports={pendingReports ?? []}
 				onOpenRow={(row) => {
 					setBellOpen(false);
 					setDrawerRow(row);
@@ -406,20 +413,34 @@ function TicketsPage() {
 // Notifications sheet
 // ----------------------------------------------------------------------------
 
+type PendingReport = {
+	_id: string;
+	_creationTime: number;
+	marketId: string;
+	marketQuestion: string;
+	marketSlug: string;
+	reporterHandle: string;
+	description: string;
+	status: string;
+};
+
 function NotificationsSheet({
 	open,
 	onOpenChange,
 	pendingProposals,
 	endedMarkets,
+	pendingReports,
 	onOpenRow,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	pendingProposals: ProposalRow[];
 	endedMarkets: MarketRow[];
+	pendingReports: PendingReport[];
 	onOpenRow: (row: Row) => void;
 }) {
-	const total = pendingProposals.length + endedMarkets.length;
+	const total =
+		pendingProposals.length + endedMarkets.length + pendingReports.length;
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -546,6 +567,53 @@ function NotificationsSheet({
 								</ul>
 							)}
 						</section>
+
+						<section>
+							<div className="flex items-baseline justify-between border-rule border-b pb-2">
+								<Kicker>INSIDER TRADING REPORTS</Kicker>
+								<span className="font-mono text-[11px] text-bone-3 tabular-nums">
+									{pendingReports.length}
+								</span>
+							</div>
+							{pendingReports.length === 0 ? (
+								<div className="mt-3 border border-rule border-dashed py-6 text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+									No pending reports.
+								</div>
+							) : (
+								<ul className="mt-3 space-y-3">
+									{pendingReports.map((r) => (
+										<li
+											key={r._id}
+											className="border border-magenta/30 border-rule bg-magenta-wash/20 p-3"
+										>
+											<div className="flex items-center gap-2 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+												<AlertTriangle className="size-3 text-magenta" />
+												<span>
+													{r.marketSlug
+														? marketId(r.marketSlug)
+														: "Unknown ticket"}
+												</span>
+												<span>· by {r.reporterHandle}</span>
+											</div>
+											<div className="mt-1 font-display font-semibold text-bone text-sm">
+												{r.marketQuestion}
+											</div>
+											<p className="mt-2 line-clamp-3 text-bone-2 text-xs">
+												{r.description}
+											</p>
+											<div className="mt-3 flex gap-2">
+												<InlineValidateReport
+													reportId={r._id as Id<"ticketReports">}
+												/>
+												<InlineDismissReport
+													reportId={r._id as Id<"ticketReports">}
+												/>
+											</div>
+										</li>
+									))}
+								</ul>
+							)}
+						</section>
 					</div>
 				)}
 			</SheetContent>
@@ -637,6 +705,66 @@ function InlineResolve({
 			}}
 		>
 			{side === "Yes" ? <CheckCircle2 /> : <XCircle />} Resolve {side}
+		</Button>
+	);
+}
+
+function InlineValidateReport({ reportId }: { reportId: Id<"ticketReports"> }) {
+	const validate = useMutation(api.reports.validate);
+	const [busy, setBusy] = useState(false);
+	return (
+		<Button
+			variant="no-soft"
+			size="sm"
+			disabled={busy}
+			onClick={async () => {
+				if (
+					!confirm(
+						"Validate report and cancel the ticket? All positions will be refunded."
+					)
+				)
+					return;
+				setBusy(true);
+				try {
+					await validate({ reportId });
+					toast.success("Report validated · ticket cancelled");
+				} catch (err) {
+					toast.error("Action failed", {
+						description: err instanceof Error ? err.message : String(err),
+					});
+				} finally {
+					setBusy(false);
+				}
+			}}
+		>
+			<AlertTriangle /> Validate & cancel
+		</Button>
+	);
+}
+
+function InlineDismissReport({ reportId }: { reportId: Id<"ticketReports"> }) {
+	const dismiss = useMutation(api.reports.dismiss);
+	const [busy, setBusy] = useState(false);
+	return (
+		<Button
+			variant="ghost"
+			size="sm"
+			disabled={busy}
+			onClick={async () => {
+				setBusy(true);
+				try {
+					await dismiss({ reportId });
+					toast.info("Report dismissed");
+				} catch (err) {
+					toast.error("Action failed", {
+						description: err instanceof Error ? err.message : String(err),
+					});
+				} finally {
+					setBusy(false);
+				}
+			}}
+		>
+			<X /> Dismiss
 		</Button>
 	);
 }
@@ -986,6 +1114,7 @@ function MarketActionButtons({
 	const closeMarket = useMutation(api.admin.closeMarket);
 	const reopenMarket = useMutation(api.admin.reopenMarket);
 	const resolveMarket = useMutation(api.admin.resolveMarket);
+	const cancelMarket = useMutation(api.admin.cancelMarket);
 	const deleteMarket = useMutation(api.admin.deleteMarket);
 	const [busy, setBusy] = useState(false);
 
@@ -1003,6 +1132,8 @@ function MarketActionButtons({
 			setBusy(false);
 		}
 	};
+
+	const isFinished = row.status === "resolved" || row.status === "cancelled";
 
 	return (
 		<div className="mt-3 grid grid-cols-2 gap-2">
@@ -1031,14 +1162,15 @@ function MarketActionButtons({
 					<RefreshCw /> Reopen
 				</Button>
 			) : null}
-			{row.status !== "resolved" ? (
+			{!isFinished ? (
 				<>
 					<Button
 						variant="yes"
 						disabled={busy}
 						onClick={() =>
 							run(
-								() => resolveMarket({ marketId: row.marketId, resolution: "Yes" }),
+								() =>
+									resolveMarket({ marketId: row.marketId, resolution: "Yes" }),
 								"Resolved Yes"
 							)
 						}
@@ -1050,12 +1182,32 @@ function MarketActionButtons({
 						disabled={busy}
 						onClick={() =>
 							run(
-								() => resolveMarket({ marketId: row.marketId, resolution: "No" }),
+								() =>
+									resolveMarket({ marketId: row.marketId, resolution: "No" }),
 								"Resolved No"
 							)
 						}
 					>
 						<XCircle /> Resolve No
+					</Button>
+					<Button
+						variant="ghost"
+						className="col-span-2 text-magenta hover:bg-magenta-wash hover:text-magenta"
+						disabled={busy}
+						onClick={() => {
+							if (
+								!confirm(
+									`Cancel ticket and refund all positions?\n\n"${row.question}"\n\nThis cannot be undone.`
+								)
+							)
+								return;
+							run(
+								() => cancelMarket({ marketId: row.marketId }),
+								"Ticket cancelled · positions refunded"
+							);
+						}}
+					>
+						<AlertTriangle /> Cancel & refund
 					</Button>
 				</>
 			) : null}
@@ -1114,6 +1266,9 @@ function StatusBadge({ row }: { row: Row }) {
 	}
 	if (row.status === "closed") {
 		return <BracketChip tone="neutral">CLOSED</BracketChip>;
+	}
+	if (row.status === "cancelled") {
+		return <BracketChip tone="danger">CANCELLED</BracketChip>;
 	}
 	return (
 		<Badge variant={row.resolution === "Yes" ? "yes" : "no"}>

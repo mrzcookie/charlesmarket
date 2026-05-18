@@ -331,7 +331,7 @@ export type ConvexMarket = {
 	closesAt: string;
 	closesAtMs: number;
 	tags: string[];
-	status: "open" | "closed" | "resolved";
+	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
 	createdAt: number;
 };

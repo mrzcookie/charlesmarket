@@ -182,9 +182,8 @@ export const closeMarket = mutation({
 		await requireAdmin(ctx);
 		const market = await ctx.db.get(marketId);
 		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") {
-			throw new Error("Already resolved");
-		}
+		if (market.status === "resolved") throw new Error("Already resolved");
+		if (market.status === "cancelled") throw new Error("Already cancelled");
 		await ctx.db.patch(marketId, { status: "closed" });
 		return { ok: true };
 	},
@@ -196,13 +195,58 @@ export const reopenMarket = mutation({
 		await requireAdmin(ctx);
 		const market = await ctx.db.get(marketId);
 		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") {
-			throw new Error("Already resolved");
-		}
+		if (market.status === "resolved") throw new Error("Already resolved");
+		if (market.status === "cancelled") throw new Error("Already cancelled");
 		await ctx.db.patch(marketId, { status: "open" });
 		return { ok: true };
 	},
 });
+
+export const cancelMarket = mutation({
+	args: { marketId: v.id("markets") },
+	handler: async (ctx, { marketId }) => {
+		await requireAdmin(ctx);
+		const market = await ctx.db.get(marketId);
+		if (!market) throw new Error("Market not found");
+		if (market.status === "resolved") throw new Error("Already resolved");
+		if (market.status === "cancelled") throw new Error("Already cancelled");
+
+		await cancelMarketPositions(ctx, marketId);
+		await ctx.db.patch(marketId, { status: "cancelled", openInterest: 0 });
+		return { ok: true };
+	},
+});
+
+export async function cancelMarketPositions(
+	ctx: MutationCtx,
+	marketId: Id<"markets">
+) {
+	const positions = await ctx.db
+		.query("positions")
+		.withIndex("by_market", (q) => q.eq("marketId", marketId))
+		.collect();
+
+	for (const p of positions) {
+		if (p.shares <= 0) continue;
+		const refund = p.shares * p.avgPrice;
+		const user = await ctx.db.get(p.userId);
+		if (user) {
+			await ctx.db.patch(p.userId, {
+				balance: (user.balance ?? 0) + refund,
+			});
+		}
+		await ctx.db.insert("trades", {
+			userId: p.userId,
+			marketId,
+			side: p.side,
+			kind: "sell",
+			shares: p.shares,
+			price: p.avgPrice,
+			cost: -refund,
+		});
+		await ctx.db.patch(p._id, { shares: 0 });
+	}
+}
 
 async function settlePositions(
 	ctx: MutationCtx,
@@ -250,9 +294,8 @@ export const resolveMarket = mutation({
 		await requireAdmin(ctx);
 		const market = await ctx.db.get(marketId);
 		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") {
-			throw new Error("Already resolved");
-		}
+		if (market.status === "resolved") throw new Error("Already resolved");
+		if (market.status === "cancelled") throw new Error("Already cancelled");
 
 		await settlePositions(ctx, marketId, resolution);
 

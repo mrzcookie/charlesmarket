@@ -60,7 +60,8 @@ export default defineSchema({
 		status: v.union(
 			v.literal("open"),
 			v.literal("closed"),
-			v.literal("resolved")
+			v.literal("resolved"),
+			v.literal("cancelled")
 		),
 		resolution: v.optional(sideUnion),
 		createdAt: v.number(),
@@ -105,4 +106,20 @@ export default defineSchema({
 		marketId: v.id("markets"),
 		yesPrice: v.number(),
 	}).index("by_market", ["marketId"]),
+
+	ticketReports: defineTable({
+		marketId: v.id("markets"),
+		reporterId: v.id("users"),
+		description: v.string(),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("validated"),
+			v.literal("rejected")
+		),
+		reviewedBy: v.optional(v.id("users")),
+		reviewedAt: v.optional(v.number()),
+	})
+		.index("by_market", ["marketId"])
+		.index("by_reporter", ["reporterId"])
+		.index("by_status", ["status"]),
 });

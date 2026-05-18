@@ -1,6 +1,11 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { LogIn } from "lucide-react";
+import {
+	Authenticated,
+	useConvexAuth,
+	useMutation,
+	useQuery,
+} from "convex/react";
+import { AlertTriangle, LogIn } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
@@ -9,6 +14,15 @@ import { PriceBar, QuickBuyDialog, TrendBadge } from "@/components/market-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,7 +96,7 @@ function MarketDetail() {
 			<main className="mx-auto w-full max-w-[1280px] px-4 py-8 pb-28 sm:px-6 sm:py-12 lg:pb-12">
 				<Breadcrumbs market={market} />
 				<div className="mt-5 grid grid-cols-1 gap-6 sm:mt-6 lg:grid-cols-[1.7fr_380px] lg:gap-10">
-					<MarketHeader market={market} />
+					<MarketHeader market={market} isOpen={!isClosed} />
 					<aside className="hidden space-y-4 lg:sticky lg:top-20 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
 						<OrderTicket market={market} />
 						<Stats market={market} />
@@ -156,7 +170,13 @@ function Breadcrumbs({ market }: { market: UIMarket }) {
 	);
 }
 
-function MarketHeader({ market }: { market: UIMarket }) {
+function MarketHeader({
+	market,
+	isOpen,
+}: {
+	market: UIMarket;
+	isOpen: boolean;
+}) {
 	return (
 		<div>
 			<div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
@@ -192,7 +212,89 @@ function MarketHeader({ market }: { market: UIMarket }) {
 			<div className="mt-5 max-w-xl">
 				<PriceBar yes={market.yesPrice} no={1 - market.yesPrice} />
 			</div>
+			{isOpen ? (
+				<Authenticated>
+					<div className="mt-4">
+						<ReportDialog marketId={market._id as Id<"markets">} />
+					</div>
+				</Authenticated>
+			) : null}
 		</div>
+	);
+}
+
+function ReportDialog({ marketId: mId }: { marketId: Id<"markets"> }) {
+	const submit = useMutation(api.reports.submit);
+	const [open, setOpen] = useState(false);
+	const [description, setDescription] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setSubmitting(true);
+		try {
+			await submit({ marketId: mId, description });
+			toast.success("Report submitted", {
+				description: "An admin will review your report.",
+			});
+			setOpen(false);
+			setDescription("");
+		} catch (err) {
+			toast.error("Report failed", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
+				<button
+					type="button"
+					className="flex items-center gap-1.5 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em] transition-colors hover:text-magenta"
+				>
+					<AlertTriangle className="size-3" />
+					Report insider trading
+				</button>
+			</DialogTrigger>
+			<DialogContent className="max-w-md">
+				<DialogHeader>
+					<DialogTitle>Report suspected insider trading</DialogTitle>
+					<DialogDescription>
+						Describe what you observed. An admin will review your report and may
+						cancel the ticket and refund all positions.
+					</DialogDescription>
+				</DialogHeader>
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div className="space-y-2">
+						<Label htmlFor="report-desc">Description</Label>
+						<Textarea
+							id="report-desc"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Describe what you observed in detail…"
+							rows={5}
+							maxLength={2000}
+							required
+							minLength={20}
+						/>
+						<p className="text-right font-mono text-[10px] text-bone-3 tabular-nums">
+							{description.length}/2000
+						</p>
+					</div>
+					<DialogFooter>
+						<Button
+							type="submit"
+							disabled={submitting || description.length < 20}
+						>
+							{submitting ? "Submitting…" : "Submit report"}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
