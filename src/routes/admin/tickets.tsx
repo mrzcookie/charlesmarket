@@ -625,7 +625,7 @@ function InlineResolve({
 			onClick={async () => {
 				setBusy(true);
 				try {
-					await resolve({ marketId, side });
+					await resolve({ marketId, resolution: side });
 					toast.success(`Resolved ${side}`);
 				} catch (err) {
 					toast.error("Resolve failed", {
@@ -1038,7 +1038,7 @@ function MarketActionButtons({
 						disabled={busy}
 						onClick={() =>
 							run(
-								() => resolveMarket({ marketId: row.marketId, side: "Yes" }),
+								() => resolveMarket({ marketId: row.marketId, resolution: "Yes" }),
 								"Resolved Yes"
 							)
 						}
@@ -1050,7 +1050,7 @@ function MarketActionButtons({
 						disabled={busy}
 						onClick={() =>
 							run(
-								() => resolveMarket({ marketId: row.marketId, side: "No" }),
+								() => resolveMarket({ marketId: row.marketId, resolution: "No" }),
 								"Resolved No"
 							)
 						}
