@@ -84,6 +84,25 @@ export default defineSchema({
 		yesPrice: v.number(),
 	}).index("by_ticket", ["ticketId"]),
 
+	refundOffers: defineTable({
+		tradeId: v.id("trades"),
+		userId: v.id("users"),
+		ticketId: v.id("tickets"),
+		offeredBy: v.id("users"),
+		side: sideUnion,
+		shares: v.number(),
+		cost: v.number(),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("accepted"),
+			v.literal("rejected"),
+			v.literal("cancelled")
+		),
+	})
+		.index("by_user", ["userId"])
+		.index("by_trade", ["tradeId"])
+		.index("by_status", ["status"]),
+
 	ticketReports: defineTable({
 		ticketId: v.id("tickets"),
 		reporterId: v.id("users"),

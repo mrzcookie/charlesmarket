@@ -136,11 +136,11 @@ function Home() {
 
 	const totalVolume = tickets.reduce((acc, m) => acc + m.volume, 0);
 	const totalLiquidity = tickets.reduce((acc, m) => acc + m.liquidity, 0);
-	const resolved = (docs ?? []).filter((m) => m.status === "resolved");
-	const yesResolved = resolved.filter((m) => m.resolution === "Yes").length;
+	const resolvedTickets = (docs ?? []).filter((m) => m.status === "resolved");
+	const yesResolved = resolvedTickets.filter((m) => m.resolution === "Yes").length;
 	const hitRate =
-		resolved.length > 0
-			? `${Math.round((yesResolved / resolved.length) * 100)}%`
+		resolvedTickets.length > 0
+			? `${Math.round((yesResolved / resolvedTickets.length) * 100)}%`
 			: "—";
 	const topTrader =
 		leaders && leaders.length > 0
@@ -149,15 +149,20 @@ function Home() {
 	const topTraderPnl =
 		leaders && leaders.length > 0 ? money(leaders[0].pnl) : "";
 
-	const openTickets = tickets
-		.filter((m) => m.status === "open")
-		.sort((a, b) => b.volume - a.volume);
-	const settled = tickets
-		.filter((m) => m.status !== "open")
-		.sort((a, b) => b.volume - a.volume);
-	const featured = openTickets[0];
-	const trending = openTickets.slice(1, 4);
-	const rest = openTickets.slice(4);
+	const openTickets = tickets.filter((m) => m.status === "open");
+	// Featured: highest volume.
+	const byVolume = [...openTickets].sort((a, b) => b.volume - a.volume);
+	const featured = byVolume[0];
+	// Trending: highest price movement (delta), excluding featured.
+	const byDelta = [...openTickets]
+		.filter((m) => m._id !== featured?._id)
+		.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+	const trending = byDelta.slice(0, 3);
+	const trendingIds = new Set([featured?._id, ...trending.map((m) => m._id)]);
+	// Rest: newest first (most recently created), excluding featured + trending.
+	const rest = [...openTickets]
+		.filter((m) => !trendingIds.has(m._id))
+		.sort((a, b) => b.createdAt - a.createdAt);
 
 	return (
 		<main className="flex-1">
@@ -233,28 +238,13 @@ function Home() {
 						<div className="mt-8 flex justify-center">
 							<Button asChild variant="outline">
 								<Link to="/tickets">
-									Browse all {tickets.length} tickets
+									Browse all {openTickets.length} open tickets
 									<ArrowRight />
 								</Link>
 							</Button>
 						</div>
 					) : null}
 				</section>
-
-				{!isLoading && settled.length > 0 ? (
-					<section className="border-rule border-t py-12 sm:py-16">
-						<SectionHead
-							kicker="SETTLED"
-							title="Resolved & closed"
-							href="/tickets"
-						/>
-						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{settled.slice(0, 6).map((m) => (
-								<TicketCard key={m._id} ticket={m} />
-							))}
-						</div>
-					</section>
-				) : null}
 			</div>
 		</main>
 	);

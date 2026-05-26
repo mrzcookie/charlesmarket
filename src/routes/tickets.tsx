@@ -19,7 +19,7 @@ import { pageHead } from "@/lib/seo";
 import { toUITicket } from "@/lib/tickets";
 import { api } from "../../convex/_generated/api";
 
-type Sort = "volume" | "closing" | "trending" | "new";
+type Sort = "volume" | "closing" | "trending" | "new" | "oldest";
 type View = "tiles" | "board";
 
 type SearchParams = {
@@ -44,7 +44,8 @@ export const Route = createFileRoute("/tickets")({
 				sort === "volume" ||
 				sort === "closing" ||
 				sort === "trending" ||
-				sort === "new"
+				sort === "new" ||
+				sort === "oldest"
 					? sort
 					: undefined,
 			q: typeof q === "string" && q.trim() ? q : undefined,
@@ -96,8 +97,9 @@ function TicketsPage() {
 			sorted.sort(
 				(a, b) => parseClosesIn(a.closesIn) - parseClosesIn(b.closesIn)
 			);
-		if (sort === "new") sorted.sort((a, b) => a.slug.localeCompare(b.slug));
-		// Always float live tickets above closed/resolved/cancelled regardless of sort.
+		if (sort === "new") sorted.sort((a, b) => b.createdAt - a.createdAt);
+		if (sort === "oldest") sorted.sort((a, b) => a.createdAt - b.createdAt);
+		// Float live tickets above closed/resolved.
 		sorted.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 		return sorted;
 	}, [tickets, search.q, query, sort]);
@@ -113,7 +115,7 @@ function TicketsPage() {
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						{isLoading
 							? "Loading tickets…"
-							: `${filtered.length} ${filtered.length === 1 ? "ticket" : "tickets"}. Live first, sorted by ${sortLabel(sort)}.`}
+							: `${filtered.length} ${filtered.length === 1 ? "ticket" : "tickets"}. Sorted by ${sortLabel(sort)}.`}
 					</p>
 				</div>
 				<Button asChild>
@@ -125,7 +127,7 @@ function TicketsPage() {
 
 			<div className="z-10 -mx-4 mt-8 flex flex-col gap-3 border-rule border-b bg-ink/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-[56px] md:flex-row md:items-center md:justify-between md:py-4">
 				<form
-					className="flex flex-1 items-center gap-2"
+					className="flex flex-1 flex-wrap items-center gap-2"
 					onSubmit={(e) => {
 						e.preventDefault();
 						const q = query.trim();
@@ -160,6 +162,7 @@ function TicketsPage() {
 							<SelectItem value="trending">Trending</SelectItem>
 							<SelectItem value="closing">Closing soon</SelectItem>
 							<SelectItem value="new">Newest</SelectItem>
+							<SelectItem value="oldest">Oldest</SelectItem>
 						</SelectContent>
 					</Select>
 					<ToggleGroup
@@ -242,6 +245,7 @@ function sortLabel(s: Sort): string {
 	if (s === "trending") return "biggest 24h moves";
 	if (s === "closing") return "closing soonest";
 	if (s === "new") return "newest";
+	if (s === "oldest") return "oldest first";
 	return "highest volume";
 }
 

@@ -33,6 +33,7 @@ export type Ticket = {
 	openInterest: number;
 	closesAt: string;
 	closesIn: string;
+	createdAt: number;
 	trend: "up" | "down" | "flat";
 	delta: number;
 	tags: string[];
@@ -138,6 +139,7 @@ export function toUITicket(
 		openInterest: doc.openInterest,
 		closesAt: doc.closesAt,
 		closesIn: formatClosesIn(doc.closesAtMs),
+		createdAt: doc.createdAt,
 		trend,
 		delta,
 		tags: doc.tags,

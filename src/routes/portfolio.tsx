@@ -3,11 +3,14 @@ import {
 	Authenticated,
 	AuthLoading,
 	Unauthenticated,
+	useMutation,
 	useQuery,
 } from "convex/react";
+import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
 import { Kicker, Stat, ticketId } from "@/components/console";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -21,6 +24,7 @@ import { pageHead } from "@/lib/seo";
 import { CURRENCY_SYMBOL, cents, money } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/portfolio")({
 	component: PortfolioPage,
@@ -64,6 +68,7 @@ function PortfolioBody() {
 	const me = useQuery(api.users.me, {});
 	const positions = useQuery(api.trades.positions, {});
 	const settled = useQuery(api.trades.settled, { limit: 5 });
+	const pendingRefunds = useQuery(api.refunds.myPendingRefunds, {});
 
 	if (me === undefined || positions === undefined) {
 		return <PortfolioSkeleton />;
@@ -76,6 +81,10 @@ function PortfolioBody() {
 
 	return (
 		<>
+			{pendingRefunds && pendingRefunds.length > 0 ? (
+				<PendingRefunds offers={pendingRefunds} />
+			) : null}
+
 			<section className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 border-rule border-y py-6 md:grid-cols-4">
 				<Stat
 					label="Portfolio value"
@@ -90,7 +99,10 @@ function PortfolioBody() {
 					value={`${totalPnl >= 0 ? "+" : "−"}${CURRENCY_SYMBOL}${Math.round(Math.abs(totalPnl)).toLocaleString()}`}
 					tone={totalPnl >= 0 ? "brand" : "magenta"}
 				/>
-				<Stat label="Open positions" value={String(positions.length)} />
+				<Stat
+					label="Open positions"
+					value={String(positions.length)}
+				/>
 			</section>
 
 			<section className="mt-12">
@@ -273,6 +285,83 @@ function MobileStat({
 				{value}
 			</div>
 		</div>
+	);
+}
+
+type RefundOffer = {
+	_id: Id<"refundOffers">;
+	tradeId: Id<"trades">;
+	ticketQuestion: string;
+	ticketSlug: string;
+	side: "Yes" | "No";
+	shares: number;
+	cost: number;
+};
+
+function PendingRefunds({ offers }: { offers: RefundOffer[] }) {
+	const accept = useMutation(api.refunds.acceptRefund);
+	const reject = useMutation(api.refunds.rejectRefund);
+
+	const handle = async (
+		offerId: Id<"refundOffers">,
+		action: "accept" | "reject"
+	) => {
+		try {
+			if (action === "accept") {
+				await accept({ offerId });
+				toast.success("Refund accepted — shekels returned to your balance.");
+			} else {
+				await reject({ offerId });
+				toast.success("Refund declined — your position is unchanged.");
+			}
+		} catch (err) {
+			toast.error("Something went wrong", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	return (
+		<section className="mt-8 border border-brand bg-brand-wash p-4">
+			<Kicker className="text-brand">PENDING REFUND OFFERS</Kicker>
+			<p className="mt-1 text-bone-2 text-sm">
+				An admin has offered to refund the following bets. Accept to get your
+				shekels back; decline to keep your position.
+			</p>
+			<ul className="mt-3 space-y-3">
+				{offers.map((o) => (
+					<li
+						key={o._id}
+						className="flex flex-col gap-3 border border-rule bg-ink p-3 sm:flex-row sm:items-center sm:justify-between"
+					>
+						<div className="min-w-0">
+							<div className="font-display font-semibold text-bone text-sm">
+								{o.ticketQuestion}
+							</div>
+							<div className="mt-0.5 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+								<Badge variant={o.side === "Yes" ? "yes" : "no"} className="mr-1.5">
+									{o.side}
+								</Badge>
+								{o.shares.toFixed(2)} shares · {CURRENCY_SYMBOL}
+								{Math.round(Math.abs(o.cost))} refund
+							</div>
+						</div>
+						<div className="flex shrink-0 gap-2">
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => handle(o._id, "reject")}
+							>
+								Decline
+							</Button>
+							<Button size="sm" onClick={() => handle(o._id, "accept")}>
+								Accept refund
+							</Button>
+						</div>
+					</li>
+				))}
+			</ul>
+		</section>
 	);
 }
 

@@ -194,9 +194,19 @@ function TicketHeader({
 						))}
 					</>
 				) : null}
-				<BracketChip pulse className="ml-auto">
-					LIVE
-				</BracketChip>
+				{isOpen ? (
+					<BracketChip pulse className="ml-auto">
+						LIVE
+					</BracketChip>
+				) : (
+					<BracketChip tone="neutral" className="ml-auto">
+						{ticket.status === "resolved"
+							? `RESOLVED ${ticket.resolution ?? ""}`
+							: ticket.status === "cancelled"
+								? "CANCELLED"
+								: "CLOSED"}
+					</BracketChip>
+				)}
 			</div>
 			<h1 className="display-headline mt-4 text-3xl leading-[0.98] sm:text-4xl md:text-[3.25rem]">
 				{ticket.question}

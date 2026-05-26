@@ -432,6 +432,11 @@ export const userTrades = query({
 		return await Promise.all(
 			trades.map(async (t) => {
 				const ticket = await ctx.db.get(t.ticketId);
+				const pendingOffer = await ctx.db
+					.query("refundOffers")
+					.withIndex("by_trade", (q) => q.eq("tradeId", t._id))
+					.filter((q) => q.eq(q.field("status"), "pending"))
+					.first();
 				return {
 					_id: t._id,
 					_creationTime: t._creationTime,
@@ -442,9 +447,48 @@ export const userTrades = query({
 					cost: t.cost,
 					ticketQuestion: ticket?.question ?? "Deleted ticket",
 					ticketSlug: ticket?.slug ?? "",
+					pendingOfferId: pendingOffer?._id ?? null,
 				};
 			})
 		);
+	},
+});
+
+export const offerRefund = mutation({
+	args: { tradeId: v.id("trades") },
+	handler: async (ctx, { tradeId }) => {
+		const admin = await requireAdmin(ctx);
+		const trade = await ctx.db.get(tradeId);
+		if (!trade) throw new Error("Trade not found");
+		const existing = await ctx.db
+			.query("refundOffers")
+			.withIndex("by_trade", (q) => q.eq("tradeId", tradeId))
+			.filter((q) => q.eq(q.field("status"), "pending"))
+			.first();
+		if (existing) throw new Error("A refund offer is already pending for this trade");
+		await ctx.db.insert("refundOffers", {
+			tradeId,
+			userId: trade.userId,
+			ticketId: trade.ticketId,
+			offeredBy: admin._id,
+			side: trade.side,
+			shares: trade.shares,
+			cost: trade.cost,
+			status: "pending",
+		});
+		return { ok: true };
+	},
+});
+
+export const cancelRefundOffer = mutation({
+	args: { offerId: v.id("refundOffers") },
+	handler: async (ctx, { offerId }) => {
+		await requireAdmin(ctx);
+		const offer = await ctx.db.get(offerId);
+		if (!offer) throw new Error("Offer not found");
+		if (offer.status !== "pending") throw new Error("Offer is no longer pending");
+		await ctx.db.patch(offerId, { status: "cancelled" });
+		return { ok: true };
 	},
 });
 

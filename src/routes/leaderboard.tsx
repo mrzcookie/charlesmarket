@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Kicker } from "@/components/console";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -28,7 +31,19 @@ export const Route = createFileRoute("/leaderboard")({
 });
 
 function LeaderboardPage() {
-	const traders = useQuery(api.leaderboard.top, { limit: 25 });
+	const traders = useQuery(api.leaderboard.top, { limit: 100 });
+	const [searchQ, setSearchQ] = useState("");
+
+	const visible = useMemo(() => {
+		if (!traders) return undefined;
+		const q = searchQ.trim().toLowerCase().replace(/^@/, "");
+		if (!q) return traders;
+		return traders.filter(
+			(t) =>
+				t.handle.toLowerCase().replace(/^@/, "").includes(q) ||
+				(t.name ?? "").toLowerCase().includes(q)
+		);
+	}, [traders, searchQ]);
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
@@ -43,9 +58,20 @@ function LeaderboardPage() {
 				</p>
 			</header>
 
-			{traders === undefined ? (
+			<div className="relative mt-6 max-w-sm">
+				<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
+				<Input
+					type="search"
+					value={searchQ}
+					onChange={(e) => setSearchQ(e.target.value)}
+					placeholder="Search traders…"
+					className="pl-9"
+				/>
+			</div>
+
+			{visible === undefined ? (
 				<LeaderboardSkeleton />
-			) : traders.length === 0 ? (
+			) : traders?.length === 0 ? (
 				<div className="mt-12 border-rule border-y px-6 py-16 text-center">
 					<Kicker>No ranking yet</Kicker>
 					<h3 className="display-headline mt-3 text-2xl">Nobody's traded.</h3>
@@ -56,18 +82,24 @@ function LeaderboardPage() {
 				</div>
 			) : (
 				<>
-					<section className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-						{traders.slice(0, 3).map((t, i) => (
-							<PodiumCard key={t._id} trader={t} place={i + 1} />
-						))}
-					</section>
+					{!searchQ && (
+						<section className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+							{(traders ?? []).slice(0, 3).map((t, i) => (
+								<PodiumCard key={t._id} trader={t} place={i + 1} />
+							))}
+						</section>
+					)}
 
 					<section className="mt-10">
 						<div className="border-rule border-b pb-3">
-							<Kicker>FULL RANKING</Kicker>
+							<Kicker>
+								{searchQ
+									? `${visible.length} result${visible.length === 1 ? "" : "s"}`
+									: "FULL RANKING"}
+							</Kicker>
 						</div>
 						<ul className="md:hidden">
-							{traders.map((t, i) => (
+							{visible.map((t, i) => (
 								<li key={t._id} className="ledger-row">
 									<Link
 										to="/profile/$username"
@@ -113,7 +145,7 @@ function LeaderboardPage() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{traders.map((t, i) => (
+									{visible.map((t, i) => (
 										<TableRow
 											key={t._id}
 											className="cursor-pointer transition-colors hover:bg-ink-3"

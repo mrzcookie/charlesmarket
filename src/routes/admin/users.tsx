@@ -834,6 +834,11 @@ function UserDrawerBody({
 				</div>
 			</section>
 
+			<section className="mt-4 border border-rule bg-ink-2 p-4">
+				<Kicker>TRADES & REFUNDS</Kicker>
+				<UserTrades userId={user._id} />
+			</section>
+
 			<section className="mt-4">
 				<div className="flex flex-wrap items-center justify-between gap-2 border-rule border-b pb-2">
 					<div className="flex items-center gap-3">
@@ -906,6 +911,122 @@ function UserDrawerBody({
 				)}
 			</section>
 		</>
+	);
+}
+
+// ----------------------------------------------------------------------------
+// User trades + refund offers (admin view)
+// ----------------------------------------------------------------------------
+
+type TradeRow = FunctionReturnType<typeof api.admin.userTrades>[number];
+
+function UserTrades({ userId }: { userId: Id<"users"> }) {
+	const trades = useQuery(api.admin.userTrades, { userId });
+	const offerRefund = useMutation(api.admin.offerRefund);
+	const cancelOffer = useMutation(api.admin.cancelRefundOffer);
+
+	if (trades === undefined) {
+		return <Skeleton className="mt-3 h-20 w-full" />;
+	}
+	if (trades.length === 0) {
+		return (
+			<div className="mt-3 border border-rule border-dashed py-6 text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+				No trades yet.
+			</div>
+		);
+	}
+
+	const handleOffer = async (tradeId: Id<"trades">) => {
+		try {
+			await offerRefund({ tradeId });
+			toast.success("Refund offer sent — waiting for user to accept.");
+		} catch (err) {
+			toast.error("Failed to offer refund", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	const handleCancel = async (offerId: Id<"refundOffers">) => {
+		try {
+			await cancelOffer({ offerId });
+			toast.success("Refund offer cancelled.");
+		} catch (err) {
+			toast.error("Failed to cancel offer", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		}
+	};
+
+	return (
+		<ul className="mt-3 space-y-2">
+			{trades.map((t) => (
+				<TradeRefundRow
+					key={t._id}
+					trade={t}
+					onOffer={() => handleOffer(t._id as Id<"trades">)}
+					onCancel={
+						t.pendingOfferId
+							? () => handleCancel(t.pendingOfferId as Id<"refundOffers">)
+							: undefined
+					}
+				/>
+			))}
+		</ul>
+	);
+}
+
+function TradeRefundRow({
+	trade,
+	onOffer,
+	onCancel,
+}: {
+	trade: TradeRow;
+	onOffer: () => void;
+	onCancel?: () => void;
+}) {
+	return (
+		<li className="flex flex-col gap-2 border border-rule bg-ink p-2.5 sm:flex-row sm:items-center sm:justify-between">
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center gap-2 font-mono text-[11px] text-bone-2 uppercase tracking-[0.1em]">
+					<Badge variant={trade.side === "Yes" ? "yes" : "no"}>
+						{trade.kind === "buy" ? "BUY" : "SELL"} {trade.side}
+					</Badge>
+					<span>{trade.shares.toFixed(2)} sh</span>
+					<span>@</span>
+					<span className="tabular-nums">{cents(trade.price)}</span>
+					<span className="text-bone-3">·</span>
+					<span className="tabular-nums">
+						{CURRENCY_SYMBOL}
+						{Math.round(Math.abs(trade.cost))}
+					</span>
+				</div>
+				<div className="mt-0.5 truncate font-display text-xs text-bone-2">
+					{trade.ticketQuestion}
+				</div>
+			</div>
+			<div className="shrink-0">
+				{trade.pendingOfferId ? (
+					<div className="flex items-center gap-2">
+						<span className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							Offer pending
+						</span>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-6 px-2 text-magenta hover:text-magenta"
+							onClick={onCancel}
+						>
+							<X className="size-3" /> Cancel
+						</Button>
+					</div>
+				) : (
+					<Button variant="outline" size="sm" className="h-6 px-2" onClick={onOffer}>
+						Offer refund
+					</Button>
+				)}
+			</div>
+		</li>
 	);
 }
 
