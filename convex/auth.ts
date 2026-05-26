@@ -1,7 +1,7 @@
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 
-const STARTING_BALANCE = 1000;
+const STARTING_BALANCE = 2000;
 
 function handleFromEmail(email: string | undefined) {
 	if (!email) return `@user-${Math.random().toString(36).slice(2, 8)}`;

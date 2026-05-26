@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Map a market slug to a deterministic numeric ID (`M-007`).
+ * Map a ticket slug to a deterministic ticker (`T-007`).
  * Pure visual layer. Backend slugs are unchanged.
  */
-export function marketId(slug: string): string {
+export function ticketId(slug: string): string {
 	let h = 0;
 	for (let i = 0; i < slug.length; i++) {
 		h = (h * 31 + slug.charCodeAt(i)) >>> 0;
 	}
 	const n = (h % 999) + 1;
-	return `M-${String(n).padStart(3, "0")}`;
+	return `T-${String(n).padStart(3, "0")}`;
 }
 
 /**

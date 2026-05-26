@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowRight, Check, Clock, Pencil, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Check, Pencil, Plus, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BracketChip, Kicker, marketId, Stat } from "@/components/console";
+import { BracketChip, Kicker, Stat, ticketId } from "@/components/console";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
+import { crumbForPath, getPreviousPath } from "@/lib/route-history";
 import { pageHead } from "@/lib/seo";
 import { useDynamicHead } from "@/lib/seo-client";
+import { CURRENCY_SYMBOL, cents, money } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/profile/$username")({
 		const handle = decodeURIComponent(params.username).replace(/^@/, "");
 		return pageHead({
 			title: `@${handle}`,
-			description: `${handle} on Charles — trader profile, open positions, P&L, and trade history.`,
+			description: `${handle} on Charles.market: trader profile, open positions, P&L, and trade history.`,
 			path: `/profile/${encodeURIComponent(handle)}`,
 		});
 	},
@@ -38,6 +39,8 @@ export const Route = createFileRoute("/profile/$username")({
 function PublicProfilePage() {
 	const { username } = useParams({ from: "/profile/$username" });
 	const handleParam = decodeURIComponent(username);
+	// Snapshot at mount — don't react to subsequent route changes.
+	const referrer = useMemo(() => crumbForPath(getPreviousPath()), []);
 	const profile = useQuery(api.users.publicProfile, { handle: handleParam });
 	const positions = useQuery(api.users.publicPositions, {
 		handle: handleParam,
@@ -54,8 +57,8 @@ function PublicProfilePage() {
 	useDynamicHead({
 		title: profile ? `@${cleanHandle} · ${pnlLabel} P&L` : `@${cleanHandle}`,
 		description: profile
-			? `@${cleanHandle} on Charles — ${pnlLabel} lifetime P&L. Open positions, trade history, and shekels at stake.`
-			: `Trader profile for @${cleanHandle} on Charles.`,
+			? `@${cleanHandle} on Charles.market: ${pnlLabel} lifetime P&L. Open positions, trade history, and shekels at stake.`
+			: `Trader profile for @${cleanHandle} on Charles.market.`,
 		path: `/profile/${encodeURIComponent(cleanHandle)}`,
 	});
 
@@ -95,8 +98,8 @@ function PublicProfilePage() {
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
 			<nav className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
-				<Link to="/leaderboard" className="shrink-0 hover:text-brand">
-					Leaderboard
+				<Link to={referrer.to} className="shrink-0 hover:text-brand">
+					{referrer.label}
 				</Link>
 				<span aria-hidden="true">/</span>
 				<span className="text-bone">{profile.handle}</span>
@@ -122,15 +125,36 @@ function PublicProfilePage() {
 						<div className="min-w-0">
 							<Kicker>{isMine ? "YOUR ACCOUNT" : "TRADER"}</Kicker>
 							{isMine && me ? (
-								<EditableHandle currentHandle={me.handle} />
+								<EditableName
+									currentName={me.name ?? null}
+									fallbackHandle={me.handle}
+								/>
 							) : (
 								<h1 className="display-headline mt-1 break-all text-3xl tracking-[-0.03em] sm:text-4xl">
-									{profile.handle}
+									{profile.name ?? profile.handle}
 								</h1>
 							)}
+							{isMine && me ? (
+								<EditableHandle currentHandle={me.handle} />
+							) : profile.name ? (
+								<div className="mt-1 font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+									{profile.handle}
+								</div>
+							) : null}
 							<div className="mt-3 flex flex-wrap items-center gap-2">
 								<Badge>Trader</Badge>
 								{profile.isAdmin ? <BracketChip>ADMIN</BracketChip> : null}
+								{profile.rank ? (
+									<Link
+										to="/leaderboard"
+										className="hover:opacity-80"
+										title={`Rank ${profile.rank} of ${profile.traderCount}`}
+									>
+										<BracketChip>RANK #{profile.rank}</BracketChip>
+									</Link>
+								) : (
+									<BracketChip tone="neutral">UNRANKED</BracketChip>
+								)}
 								<span className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
 									Joined {formatJoined(profile.joinedAt)}
 								</span>
@@ -174,8 +198,8 @@ function PublicProfilePage() {
 								<Link to="/portfolio">View portfolio</Link>
 							</Button>
 							<Button asChild size="sm">
-								<Link to="/propose">
-									<Plus /> Propose
+								<Link to="/create">
+									<Plus /> New ticket
 								</Link>
 							</Button>
 						</div>
@@ -225,7 +249,7 @@ function PublicProfilePage() {
 									<div className="flex items-start justify-between gap-2">
 										<Link
 											to="/ticket/$id"
-											params={{ id: p.marketSlug }}
+											params={{ id: p.ticketSlug }}
 											className="flex-1 font-display font-semibold text-bone text-sm hover:text-brand"
 										>
 											{p.question}
@@ -263,12 +287,12 @@ function PublicProfilePage() {
 									{positions.map((p) => (
 										<TableRow key={p._id}>
 											<TableCell className="pl-4 font-bold font-mono text-bone-3 text-xs">
-												{marketId(p.marketSlug)}
+												{ticketId(p.ticketSlug)}
 											</TableCell>
 											<TableCell>
 												<Link
 													to="/ticket/$id"
-													params={{ id: p.marketSlug }}
+													params={{ id: p.ticketSlug }}
 													className="font-display font-semibold text-bone hover:text-brand"
 												>
 													{p.question}
@@ -330,11 +354,11 @@ function PublicProfilePage() {
 								className="ledger-row grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-3 py-3 sm:gap-5"
 							>
 								<span className="font-bold font-mono text-bone-3 text-xs tabular-nums">
-									{marketId(t.marketSlug)}
+									{ticketId(t.ticketSlug)}
 								</span>
 								<Link
 									to="/ticket/$id"
-									params={{ id: t.marketSlug }}
+									params={{ id: t.ticketSlug }}
 									className="line-clamp-1 font-display font-semibold text-bone text-sm hover:text-brand"
 								>
 									{t.question}
@@ -364,9 +388,91 @@ function PublicProfilePage() {
 					</Button>
 				</div>
 			</section>
-
-			{isMine ? <MyProposals /> : null}
 		</main>
+	);
+}
+
+function EditableName({
+	currentName,
+	fallbackHandle,
+}: {
+	currentName: string | null;
+	fallbackHandle: string;
+}) {
+	const updateName = useMutation(api.users.updateDisplayName);
+	const [draft, setDraft] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
+
+	const display = currentName ?? fallbackHandle;
+
+	const save = async () => {
+		if (draft == null) return;
+		const trimmed = draft.trim();
+		if (!trimmed) {
+			toast.error("Display name can't be empty");
+			return;
+		}
+		setSaving(true);
+		try {
+			await updateName({ name: trimmed });
+			toast.success("Display name updated");
+			setDraft(null);
+		} catch (err) {
+			toast.error("Couldn't update name", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	if (draft == null) {
+		return (
+			<div className="mt-1 flex items-center gap-2">
+				<h1 className="display-headline break-all text-3xl tracking-[-0.03em] sm:text-4xl">
+					{display}
+				</h1>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					onClick={() => setDraft(currentName ?? "")}
+					aria-label="Edit display name"
+				>
+					<Pencil />
+				</Button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="mt-2 flex flex-wrap items-center gap-2">
+			<Input
+				value={draft}
+				onChange={(e) => setDraft(e.target.value)}
+				placeholder="Your name"
+				className="h-9 w-56"
+				maxLength={60}
+				autoFocus
+			/>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={() => setDraft(null)}
+				disabled={saving}
+				aria-label="Cancel"
+			>
+				<X />
+			</Button>
+			<Button
+				variant="default"
+				size="sm"
+				onClick={save}
+				disabled={saving}
+				aria-label="Save display name"
+			>
+				<Check /> {saving ? "Saving…" : "Save"}
+			</Button>
+		</div>
 	);
 }
 
@@ -440,111 +546,6 @@ function EditableHandle({ currentHandle }: { currentHandle: string }) {
 			</Button>
 		</div>
 	);
-}
-
-function MyProposals() {
-	const proposals = useQuery(api.proposals.listMine, {});
-	const remove = useMutation(api.proposals.remove);
-
-	const handleDelete = async (id: string) => {
-		if (!confirm("Delete this proposal?")) return;
-		try {
-			await remove({ proposalId: id as never });
-			toast.info("Proposal deleted");
-		} catch (err) {
-			toast.error("Couldn't delete", {
-				description: err instanceof Error ? err.message : String(err),
-			});
-		}
-	};
-
-	return (
-		<section className="mt-12 border border-rule bg-ink-2 p-6">
-			<div className="flex items-center justify-between border-rule border-b pb-3">
-				<div>
-					<Kicker>PRIVATE · YOUR PROPOSALS</Kicker>
-					<p className="mt-2 text-bone-2 text-sm">
-						Tickets you've pitched. Approved ones go live; rejected ones show
-						reviewer notes.
-					</p>
-				</div>
-				<Button asChild size="sm">
-					<Link to="/propose">
-						<Plus /> New
-					</Link>
-				</Button>
-			</div>
-			<div className="mt-4">
-				{proposals === undefined ? (
-					<Skeleton className="h-24" />
-				) : proposals.length === 0 ? (
-					<div className="border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-						No proposals yet.{" "}
-						<Link to="/propose" className="text-brand underline">
-							Pitch your first ticket
-						</Link>
-					</div>
-				) : (
-					<ul>
-						{proposals.map((p) => (
-							<li
-								key={p._id}
-								className="ledger-row flex flex-wrap items-start justify-between gap-2 py-4"
-							>
-								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
-										<ProposalStatusBadge status={p.status} />
-										<span className="text-bone-3">{p.category}</span>
-									</div>
-									<div className="mt-2 font-display font-semibold text-bone">
-										{p.question}
-									</div>
-									{p.rejectionReason ? (
-										<div className="mt-2 font-mono text-[11px] text-magenta uppercase tracking-[0.1em]">
-											{p.rejectionReason}
-										</div>
-									) : null}
-									{p.approvedMarketSlug ? (
-										<Link
-											to="/ticket/$id"
-											params={{ id: p.approvedMarketSlug }}
-											className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-brand uppercase tracking-[0.12em] hover:underline"
-										>
-											OPEN TICKET <ArrowRight className="size-3" />
-										</Link>
-									) : null}
-								</div>
-								{p.status !== "approved" ? (
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => handleDelete(p._id)}
-									>
-										Delete
-									</Button>
-								) : null}
-							</li>
-						))}
-					</ul>
-				)}
-			</div>
-		</section>
-	);
-}
-
-function ProposalStatusBadge({
-	status,
-}: {
-	status: "pending" | "approved" | "rejected";
-}) {
-	if (status === "pending")
-		return (
-			<Badge variant="outline">
-				<Clock className="size-3" /> PENDING
-			</Badge>
-		);
-	if (status === "approved") return <Badge variant="yes">APPROVED</Badge>;
-	return <Badge variant="no">REJECTED</Badge>;
 }
 
 function MobileStat({

@@ -8,8 +8,8 @@ import {
 import { SignInButton } from "@/components/auth-controls";
 import { Kicker } from "@/components/console";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENCY_SYMBOL, STARTING_BALANCE } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { CURRENCY_SYMBOL, STARTING_BALANCE } from "@/lib/tickets";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/profile/")({

@@ -10,11 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TicketsRouteImport } from './routes/tickets'
-import { Route as ProposeRouteImport } from './routes/propose'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
-import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as CreateRouteImport } from './routes/create'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
@@ -22,19 +21,12 @@ import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
-import { Route as MarketIdRouteImport } from './routes/market.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminTicketsRouteImport } from './routes/admin/tickets'
-import { Route as AdminMarketsRouteImport } from './routes/admin/markets'
 
 const TicketsRoute = TicketsRouteImport.update({
   id: '/tickets',
   path: '/tickets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProposeRoute = ProposeRouteImport.update({
-  id: '/propose',
-  path: '/propose',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -47,14 +39,14 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MarketsRoute = MarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -92,11 +84,6 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/$username',
   getParentRoute: () => ProfileRoute,
 } as any)
-const MarketIdRoute = MarketIdRouteImport.update({
-  id: '/market/$id',
-  path: '/market/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -107,26 +94,18 @@ const AdminTicketsRoute = AdminTicketsRouteImport.update({
   path: '/tickets',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminMarketsRoute = AdminMarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
-  getParentRoute: () => AdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/create': typeof CreateRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRouteWithChildren
-  '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
-  '/admin/markets': typeof AdminMarketsRoute
   '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/ticket/$id': typeof TicketIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -135,15 +114,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
+  '/create': typeof CreateRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
-  '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
-  '/admin/markets': typeof AdminMarketsRoute
   '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/ticket/$id': typeof TicketIdRoute
   '/admin': typeof AdminIndexRoute
@@ -154,16 +130,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/create': typeof CreateRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/markets': typeof MarketsRoute
   '/portfolio': typeof PortfolioRoute
   '/profile': typeof ProfileRouteWithChildren
-  '/propose': typeof ProposeRoute
   '/tickets': typeof TicketsRoute
-  '/admin/markets': typeof AdminMarketsRoute
   '/admin/tickets': typeof AdminTicketsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/market/$id': typeof MarketIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/ticket/$id': typeof TicketIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -175,16 +148,13 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
+    | '/create'
     | '/leaderboard'
-    | '/markets'
     | '/portfolio'
     | '/profile'
-    | '/propose'
     | '/tickets'
-    | '/admin/markets'
     | '/admin/tickets'
     | '/admin/users'
-    | '/market/$id'
     | '/profile/$username'
     | '/ticket/$id'
     | '/admin/'
@@ -193,15 +163,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activity'
+    | '/create'
     | '/leaderboard'
-    | '/markets'
     | '/portfolio'
-    | '/propose'
     | '/tickets'
-    | '/admin/markets'
     | '/admin/tickets'
     | '/admin/users'
-    | '/market/$id'
     | '/profile/$username'
     | '/ticket/$id'
     | '/admin'
@@ -211,16 +178,13 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/admin'
+    | '/create'
     | '/leaderboard'
-    | '/markets'
     | '/portfolio'
     | '/profile'
-    | '/propose'
     | '/tickets'
-    | '/admin/markets'
     | '/admin/tickets'
     | '/admin/users'
-    | '/market/$id'
     | '/profile/$username'
     | '/ticket/$id'
     | '/admin/'
@@ -231,13 +195,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivityRoute: typeof ActivityRoute
   AdminRoute: typeof AdminRouteWithChildren
+  CreateRoute: typeof CreateRoute
   LeaderboardRoute: typeof LeaderboardRoute
-  MarketsRoute: typeof MarketsRoute
   PortfolioRoute: typeof PortfolioRoute
   ProfileRoute: typeof ProfileRouteWithChildren
-  ProposeRoute: typeof ProposeRoute
   TicketsRoute: typeof TicketsRoute
-  MarketIdRoute: typeof MarketIdRoute
   TicketIdRoute: typeof TicketIdRoute
 }
 
@@ -248,13 +210,6 @@ declare module '@tanstack/react-router' {
       path: '/tickets'
       fullPath: '/tickets'
       preLoaderRoute: typeof TicketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/propose': {
-      id: '/propose'
-      path: '/propose'
-      fullPath: '/propose'
-      preLoaderRoute: typeof ProposeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -271,18 +226,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/markets': {
-      id: '/markets'
-      path: '/markets'
-      fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/leaderboard': {
       id: '/leaderboard'
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -334,13 +289,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/market/$id': {
-      id: '/market/$id'
-      path: '/market/$id'
-      fullPath: '/market/$id'
-      preLoaderRoute: typeof MarketIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -355,25 +303,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTicketsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/markets': {
-      id: '/admin/markets'
-      path: '/markets'
-      fullPath: '/admin/markets'
-      preLoaderRoute: typeof AdminMarketsRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
 
 interface AdminRouteChildren {
-  AdminMarketsRoute: typeof AdminMarketsRoute
   AdminTicketsRoute: typeof AdminTicketsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminMarketsRoute: AdminMarketsRoute,
   AdminTicketsRoute: AdminTicketsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -398,13 +337,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivityRoute: ActivityRoute,
   AdminRoute: AdminRouteWithChildren,
+  CreateRoute: CreateRoute,
   LeaderboardRoute: LeaderboardRoute,
-  MarketsRoute: MarketsRoute,
   PortfolioRoute: PortfolioRoute,
   ProfileRoute: ProfileRouteWithChildren,
-  ProposeRoute: ProposeRoute,
   TicketsRoute: TicketsRoute,
-  MarketIdRoute: MarketIdRoute,
   TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport

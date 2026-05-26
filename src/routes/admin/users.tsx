@@ -46,7 +46,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
+import { CURRENCY_SYMBOL, cents, money } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -67,7 +67,7 @@ type UserRow = {
 };
 
 type SortKey = "joinedAt" | "balance" | "handle";
-type ActivityFilter = "all" | "trade" | "comment" | "proposal";
+type ActivityFilter = "all" | "trade" | "comment" | "ticket";
 
 function UsersPage() {
 	const users = useQuery(api.admin.listUsers, {});
@@ -110,23 +110,64 @@ function UsersPage() {
 
 	const isLoading = users === undefined;
 
+	const stats = useMemo(() => {
+		const totals = {
+			total: users?.length ?? 0,
+			totalCash: 0,
+			adminCount: 0,
+			joinedThisWeek: 0,
+		};
+		const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+		for (const u of users ?? []) {
+			totals.totalCash += u.balance ?? 0;
+			if (u.isAdmin) totals.adminCount += 1;
+			if ((u.joinedAt ?? 0) > weekAgo) totals.joinedThisWeek += 1;
+		}
+		return totals;
+	}, [users]);
+
 	return (
 		<div className="space-y-8">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<Kicker>ACCOUNTS</Kicker>
-					<h1 className="display-headline mt-2 text-3xl sm:text-4xl">Users</h1>
+					<Kicker>USERS</Kicker>
+					<h1 className="display-headline mt-2 text-3xl sm:text-4xl">
+						User management
+					</h1>
 					<p className="mt-2 max-w-xl text-bone-2 text-sm">
 						Edit handles, adjust balances, grant or revoke admin, and inspect
 						every trader's full activity.
 					</p>
 				</div>
-				{users !== undefined ? (
-					<Badge variant="outline">
-						{users.length} {users.length === 1 ? "USER" : "USERS"}
-					</Badge>
-				) : null}
 			</header>
+
+			<dl className="grid grid-cols-2 divide-x divide-rule border-rule border-y sm:grid-cols-4 sm:divide-y-0">
+				<UserStatTile
+					label="Users"
+					value={isLoading ? "—" : stats.total.toLocaleString()}
+					sub={isLoading ? undefined : "signed in to the console"}
+				/>
+				<UserStatTile
+					label="Cash on table"
+					value={
+						isLoading
+							? "—"
+							: `${CURRENCY_SYMBOL}${stats.totalCash.toLocaleString()}`
+					}
+					sub="across all balances"
+				/>
+				<UserStatTile
+					label="Admins"
+					value={isLoading ? "—" : stats.adminCount.toString()}
+					sub={isLoading ? undefined : "elevated access"}
+					tone={stats.adminCount > 0 ? "brand" : undefined}
+				/>
+				<UserStatTile
+					label="New this week"
+					value={isLoading ? "—" : stats.joinedThisWeek.toString()}
+					sub={isLoading ? undefined : "joined in last 7d"}
+				/>
+			</dl>
 
 			<div className="flex flex-wrap items-center gap-3">
 				<UserCombobox
@@ -147,7 +188,7 @@ function UsersPage() {
 						<SelectItem value="all">All activity</SelectItem>
 						<SelectItem value="trade">Trades</SelectItem>
 						<SelectItem value="comment">Comments</SelectItem>
-						<SelectItem value="proposal">Proposals</SelectItem>
+						<SelectItem value="ticket">Tickets</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>
@@ -159,13 +200,13 @@ function UsersPage() {
 					))}
 				</div>
 			) : rows.length === 0 ? (
-				<div className="space-y-3 border border-rule border-dashed bg-ink-2 px-6 py-12 text-center">
+				<div className="border-rule border-y px-6 py-16 text-center">
 					<Kicker>
-						{users && users.length === 0 ? "EMPTY" : "NO MATCHES"}
+						{users && users.length === 0 ? "Roster's empty" : "No matches"}
 					</Kicker>
-					<p className="font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
+					<p className="mx-auto mt-3 max-w-sm text-bone-2 text-sm">
 						{users && users.length === 0
-							? "No users yet. Once people sign in, they show up here."
+							? "Nobody's signed in yet. The roster fills as people show up."
 							: "Nothing matches that search."}
 					</p>
 				</div>
@@ -436,6 +477,39 @@ function UserCombobox({
 // Sort button
 // ----------------------------------------------------------------------------
 
+function UserStatTile({
+	label,
+	value,
+	sub,
+	tone,
+}: {
+	label: string;
+	value: string;
+	sub?: string;
+	tone?: "brand";
+}) {
+	return (
+		<div className="flex flex-col gap-1.5 px-4 py-3 sm:px-5 sm:py-4">
+			<div className="font-mono font-semibold text-[10px] text-bone-3 uppercase tracking-[0.16em]">
+				{label}
+			</div>
+			<div
+				className={cn(
+					"font-bold font-mono text-2xl tabular-nums leading-none sm:text-3xl",
+					tone === "brand" ? "text-brand" : "text-bone"
+				)}
+			>
+				{value}
+			</div>
+			{sub ? (
+				<div className="truncate font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+					{sub}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
 function SortButton({
 	children,
 	active,
@@ -616,7 +690,7 @@ function UserDrawerBody({
 
 	return (
 		<>
-			<SheetHeader className="border-rule border-b">
+			<SheetHeader className="border-rule border-b pr-10">
 				<div className="flex items-start gap-4">
 					<Avatar className="size-12 shrink-0 rounded-[4px]">
 						<AvatarFallback className="rounded-[4px] bg-brand font-bold font-mono text-brand-foreground text-sm">
@@ -752,7 +826,7 @@ function UserDrawerBody({
 						<Kicker>ADMIN ACCESS</Kicker>
 						<p className="mt-1 text-bone-2 text-xs">
 							{user.isAdmin
-								? "Can approve proposals, resolve and delete tickets, and manage users."
+								? "Can resolve/delete tickets, refund trades, and manage users. Override: can self-subject tickets."
 								: "Trader-level access only."}
 						</p>
 					</div>
@@ -776,7 +850,7 @@ function UserDrawerBody({
 								<SelectItem value="all">All</SelectItem>
 								<SelectItem value="trade">Trades</SelectItem>
 								<SelectItem value="comment">Comments</SelectItem>
-								<SelectItem value="proposal">Proposals</SelectItem>
+								<SelectItem value="ticket">Tickets</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -865,8 +939,8 @@ function UserActivity({
 				? "trades"
 				: activityFilter === "comment"
 					? "comments"
-					: activityFilter === "proposal"
-						? "proposals"
+					: activityFilter === "ticket"
+						? "tickets"
 						: "activity";
 		return (
 			<div className="mt-4 border border-rule border-dashed py-8 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
@@ -896,9 +970,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
 						{event.body}
 					</p>
 				) : null}
-				{event.kind === "proposal" && event.rejectionReason ? (
-					<p className="mt-1 text-magenta text-xs">{event.rejectionReason}</p>
-				) : null}
+				{null}
 			</div>
 			<span className="whitespace-nowrap font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
 				{relativeTime(event.ts)}
@@ -922,7 +994,7 @@ function EventBody({ event }: { event: ActivityEvent }) {
 				<span aria-hidden="true">·</span>
 				<Link
 					to="/ticket/$id"
-					params={{ id: event.marketSlug }}
+					params={{ id: event.ticketSlug }}
 					className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
 				>
 					{event.question}
@@ -936,7 +1008,7 @@ function EventBody({ event }: { event: ActivityEvent }) {
 				<span>commented on</span>
 				<Link
 					to="/ticket/$id"
-					params={{ id: event.marketSlug }}
+					params={{ id: event.ticketSlug }}
 					className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
 				>
 					{event.question}
@@ -944,29 +1016,23 @@ function EventBody({ event }: { event: ActivityEvent }) {
 			</div>
 		);
 	}
-	if (event.kind === "proposal") {
+	if (event.kind === "ticket") {
 		const statusTone =
-			event.status === "approved"
+			event.status === "resolved"
 				? "text-brand"
-				: event.status === "rejected"
+				: event.status === "cancelled"
 					? "text-magenta"
 					: "text-bone-2";
 		return (
 			<div className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-bone-2 uppercase tracking-[0.1em]">
-				<span>proposed</span>
-				{event.approvedMarketSlug ? (
-					<Link
-						to="/ticket/$id"
-						params={{ id: event.approvedMarketSlug }}
-						className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
-					>
-						{event.question}
-					</Link>
-				) : (
-					<span className="font-display font-semibold text-bone normal-case tracking-normal">
-						{event.question}
-					</span>
-				)}
+				<span>{event.role === "subject" ? "subject of" : "created"}</span>
+				<Link
+					to="/ticket/$id"
+					params={{ id: event.ticketSlug }}
+					className="font-display font-semibold text-bone normal-case tracking-normal hover:text-brand"
+				>
+					{event.question}
+				</Link>
 				<span aria-hidden="true">·</span>
 				<span className={cn("font-bold", statusTone)}>{event.status}</span>
 			</div>
@@ -979,7 +1045,7 @@ function KindMark({ kind }: { kind: ActivityEvent["kind"] }) {
 	const map: Record<ActivityEvent["kind"], { label: string; tone: string }> = {
 		trade: { label: "TRD", tone: "border-brand/40 bg-brand-wash text-brand" },
 		comment: { label: "MSG", tone: "border-rule bg-ink text-bone-2" },
-		proposal: { label: "PRO", tone: "border-rule bg-ink-2 text-bone" },
+		ticket: { label: "TKT", tone: "border-rule bg-ink-2 text-bone" },
 	};
 	const m = map[kind] ?? {
 		label: "···",

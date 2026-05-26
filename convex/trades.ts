@@ -3,11 +3,11 @@ import { query } from "./_generated/server";
 import { currentUser } from "./users";
 
 export const byMarket = query({
-	args: { marketId: v.id("markets"), limit: v.optional(v.number()) },
-	handler: async (ctx, { marketId, limit = 25 }) => {
+	args: { ticketId: v.id("tickets"), limit: v.optional(v.number()) },
+	handler: async (ctx, { ticketId, limit = 25 }) => {
 		const trades = await ctx.db
 			.query("trades")
-			.withIndex("by_market", (q) => q.eq("marketId", marketId))
+			.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
 			.order("desc")
 			.take(limit);
 		const userIds = Array.from(new Set(trades.map((t) => t.userId)));
@@ -20,7 +20,7 @@ export const byMarket = query({
 		return trades.map((t) => ({
 			_id: t._id,
 			_creationTime: t._creationTime,
-			marketId: t.marketId,
+			ticketId: t.ticketId,
 			side: t.side,
 			kind: t.kind,
 			shares: t.shares,
@@ -40,20 +40,20 @@ export const positions = query({
 			.query("positions")
 			.withIndex("by_user", (q) => q.eq("userId", user._id))
 			.collect();
-		const markets = await Promise.all(
-			positions.map((p) => ctx.db.get(p.marketId))
+		const tickets = await Promise.all(
+			positions.map((p) => ctx.db.get(p.ticketId))
 		);
 		return positions
 			.map((p, i) => {
-				const m = markets[i];
+				const m = tickets[i];
 				if (!m) return null;
 				const current = p.side === "Yes" ? m.yesPrice : 1 - m.yesPrice;
 				const cost = p.shares * p.avgPrice;
 				const value = p.shares * current;
 				return {
 					_id: p._id,
-					marketId: p.marketId,
-					marketSlug: m.slug,
+					ticketId: p.ticketId,
+					ticketSlug: m.slug,
 					question: m.question,
 					side: p.side,
 					shares: p.shares,
@@ -79,12 +79,12 @@ export const settled = query({
 			.withIndex("by_user", (q) => q.eq("userId", user._id))
 			.order("desc")
 			.take(limit);
-		const markets = await Promise.all(
-			trades.map((t) => ctx.db.get(t.marketId))
+		const tickets = await Promise.all(
+			trades.map((t) => ctx.db.get(t.ticketId))
 		);
 		return trades
 			.map((t, i) => {
-				const m = markets[i];
+				const m = tickets[i];
 				if (!m || m.status !== "resolved") return null;
 				return {
 					question: m.question,

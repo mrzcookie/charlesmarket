@@ -10,35 +10,25 @@ import { currentUser, isAdminUser, requireAdmin } from "./users";
 
 const sideUnion = v.union(v.literal("Yes"), v.literal("No"));
 
-const CATEGORIES = [
-	"Antics",
-	"Mishaps",
-	"Relationships",
-	"Career",
-	"Health",
-	"Travel",
-	"Money",
-] as const;
-
 function slugify(input: string): string {
 	const base = input
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "")
 		.slice(0, 60);
-	return base || `market-${Math.random().toString(36).slice(2, 8)}`;
+	return base || `ticket-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 async function uniqueSlug(
 	ctx: QueryCtx,
 	desired: string,
-	exceptId?: Id<"markets">
+	exceptId?: Id<"tickets">
 ): Promise<string> {
 	let candidate = desired;
 	let i = 2;
 	while (true) {
 		const hit = await ctx.db
-			.query("markets")
+			.query("tickets")
 			.withIndex("by_slug", (q) => q.eq("slug", candidate))
 			.unique();
 		if (!hit || hit._id === exceptId) return candidate;
@@ -47,105 +37,50 @@ async function uniqueSlug(
 	}
 }
 
+async function userMini(ctx: QueryCtx, userId: Id<"users">) {
+	const u = await ctx.db.get(userId);
+	if (!u) return null;
+	return {
+		_id: u._id,
+		handle: u.handle ?? "@anon",
+		name: u.name ?? null,
+		image: u.image ?? null,
+	};
+}
+
 export const listAll = query({
 	args: {},
 	handler: async (ctx) => {
 		const user = await currentUser(ctx);
 		if (!isAdminUser(user)) return [];
-		return await ctx.db.query("markets").order("desc").take(500);
+		const tickets = await ctx.db.query("tickets").order("desc").take(500);
+		return await Promise.all(
+			tickets.map(async (m) => ({
+				...m,
+				subject: await userMini(ctx, m.subjectUserId),
+				creator: await userMini(ctx, m.creatorId),
+			}))
+		);
 	},
 });
 
-export const createMarket = mutation({
+export const updateTicket = mutation({
 	args: {
-		question: v.string(),
-		description: v.string(),
-		category: v.string(),
-		tags: v.array(v.string()),
-		closesAt: v.string(),
-		closesAtMs: v.number(),
-		initialYesPrice: v.number(),
-		initialLiquidity: v.number(),
-		slugOverride: v.optional(v.string()),
-	},
-	handler: async (ctx, args) => {
-		await requireAdmin(ctx);
-		const question = args.question.trim();
-		const description = args.description.trim();
-		const closesAt = args.closesAt.trim();
-		if (question.length < 6 || !/\?$/.test(question)) {
-			throw new Error("Question must end with '?'");
-		}
-		if (description.length > 1_000) {
-			throw new Error("Description must be 1,000 characters or fewer");
-		}
-		if (!CATEGORIES.includes(args.category as (typeof CATEGORIES)[number])) {
-			throw new Error("Invalid category");
-		}
-		if (!Number.isFinite(args.closesAtMs) || args.closesAtMs < Date.now()) {
-			throw new Error("Closing time must be in the future");
-		}
-		if (
-			!Number.isFinite(args.initialYesPrice) ||
-			args.initialYesPrice <= 0.01 ||
-			args.initialYesPrice >= 0.99
-		) {
-			throw new Error("Initial Yes price must be between 0.01 and 0.99");
-		}
-		if (
-			!Number.isFinite(args.initialLiquidity) ||
-			args.initialLiquidity < 100
-		) {
-			throw new Error("Initial liquidity must be at least 100");
-		}
-
-		const tags = args.tags
-			.map((t) => t.trim().toLowerCase())
-			.filter(Boolean)
-			.slice(0, 8);
-		const desired = slugify(args.slugOverride ?? question);
-		const slug = await uniqueSlug(ctx, desired);
-		const now = Date.now();
-
-		const marketId = await ctx.db.insert("markets", {
-			slug,
-			question,
-			description,
-			category: args.category,
-			yesPrice: args.initialYesPrice,
-			volume: 0,
-			liquidity: args.initialLiquidity,
-			openInterest: 0,
-			closesAt,
-			closesAtMs: args.closesAtMs,
-			tags,
-			status: "open",
-			createdAt: now,
-		});
-		await ctx.db.insert("priceTicks", {
-			marketId,
-			yesPrice: args.initialYesPrice,
-		});
-		return { marketId, slug };
-	},
-});
-
-export const updateMarket = mutation({
-	args: {
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		question: v.optional(v.string()),
 		description: v.optional(v.string()),
-		category: v.optional(v.string()),
 		tags: v.optional(v.array(v.string())),
 		closesAt: v.optional(v.string()),
 		closesAtMs: v.optional(v.number()),
 		slug: v.optional(v.string()),
+		subjectUserId: v.optional(v.id("users")),
+		creatorId: v.optional(v.id("users")),
 	},
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(args.marketId);
-		if (!market) throw new Error("Market not found");
-		const patch: Partial<Doc<"markets">> = {};
+		const ticket = await ctx.db.get(args.ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		const patch: Partial<Doc<"tickets">> = {};
 		if (args.question !== undefined) {
 			const q = args.question.trim();
 			if (q.length < 6) throw new Error("Question too short");
@@ -153,12 +88,6 @@ export const updateMarket = mutation({
 		}
 		if (args.description !== undefined) {
 			patch.description = args.description.trim();
-		}
-		if (args.category !== undefined) {
-			if (!CATEGORIES.includes(args.category as (typeof CATEGORIES)[number])) {
-				throw new Error("Invalid category");
-			}
-			patch.category = args.category;
 		}
 		if (args.tags !== undefined) {
 			patch.tags = args.tags
@@ -169,61 +98,71 @@ export const updateMarket = mutation({
 		if (args.closesAt !== undefined) patch.closesAt = args.closesAt.trim();
 		if (args.closesAtMs !== undefined) patch.closesAtMs = args.closesAtMs;
 		if (args.slug !== undefined) {
-			patch.slug = await uniqueSlug(ctx, slugify(args.slug), args.marketId);
+			patch.slug = await uniqueSlug(ctx, slugify(args.slug), args.ticketId);
 		}
-		await ctx.db.patch(args.marketId, patch);
+		if (args.subjectUserId !== undefined) {
+			const subject = await ctx.db.get(args.subjectUserId);
+			if (!subject) throw new Error("Subject user not found");
+			patch.subjectUserId = args.subjectUserId;
+		}
+		if (args.creatorId !== undefined) {
+			const creator = await ctx.db.get(args.creatorId);
+			if (!creator) throw new Error("Creator user not found");
+			patch.creatorId = args.creatorId;
+		}
+		await ctx.db.patch(args.ticketId, patch);
 		return { ok: true };
 	},
 });
 
-export const closeMarket = mutation({
-	args: { marketId: v.id("markets") },
-	handler: async (ctx, { marketId }) => {
+export const closeTicket = mutation({
+	args: { ticketId: v.id("tickets") },
+	handler: async (ctx, { ticketId }) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") throw new Error("Already resolved");
-		if (market.status === "cancelled") throw new Error("Already cancelled");
-		await ctx.db.patch(marketId, { status: "closed" });
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status === "resolved") throw new Error("Already resolved");
+		if (ticket.status === "cancelled") throw new Error("Already cancelled");
+		await ctx.db.patch(ticketId, { status: "closed" });
 		return { ok: true };
 	},
 });
 
-export const reopenMarket = mutation({
-	args: { marketId: v.id("markets") },
-	handler: async (ctx, { marketId }) => {
+export const reopenTicket = mutation({
+	args: { ticketId: v.id("tickets") },
+	handler: async (ctx, { ticketId }) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") throw new Error("Already resolved");
-		if (market.status === "cancelled") throw new Error("Already cancelled");
-		await ctx.db.patch(marketId, { status: "open" });
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status === "resolved") throw new Error("Already resolved");
+		if (ticket.status === "cancelled") throw new Error("Already cancelled");
+		await ctx.db.patch(ticketId, { status: "open" });
 		return { ok: true };
 	},
 });
 
-export const cancelMarket = mutation({
-	args: { marketId: v.id("markets") },
-	handler: async (ctx, { marketId }) => {
+export const cancelTicket = mutation({
+	args: { ticketId: v.id("tickets") },
+	handler: async (ctx, { ticketId }) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") throw new Error("Already resolved");
-		if (market.status === "cancelled") throw new Error("Already cancelled");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status === "resolved") throw new Error("Already resolved");
+		if (ticket.status === "cancelled") throw new Error("Already cancelled");
 
-		await cancelMarketPositions(ctx, marketId);
-		await ctx.db.patch(marketId, { status: "cancelled", openInterest: 0 });
+		await cancelTicketPositions(ctx, ticketId);
+		await ctx.db.patch(ticketId, { status: "cancelled", openInterest: 0 });
 		return { ok: true };
 	},
 });
 
-export async function cancelMarketPositions(
+export async function cancelTicketPositions(
 	ctx: MutationCtx,
-	marketId: Id<"markets">
+	ticketId: Id<"tickets">
 ) {
 	const positions = await ctx.db
 		.query("positions")
-		.withIndex("by_market", (q) => q.eq("marketId", marketId))
+		.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
 		.collect();
 
 	for (const p of positions) {
@@ -237,7 +176,7 @@ export async function cancelMarketPositions(
 		}
 		await ctx.db.insert("trades", {
 			userId: p.userId,
-			marketId,
+			ticketId,
 			side: p.side,
 			kind: "sell",
 			shares: p.shares,
@@ -250,12 +189,12 @@ export async function cancelMarketPositions(
 
 async function settlePositions(
 	ctx: MutationCtx,
-	marketId: Id<"markets">,
+	ticketId: Id<"tickets">,
 	resolution: "Yes" | "No"
 ) {
 	const positions = await ctx.db
 		.query("positions")
-		.withIndex("by_market", (q) => q.eq("marketId", marketId))
+		.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
 		.collect();
 
 	for (const p of positions) {
@@ -271,7 +210,7 @@ async function settlePositions(
 		}
 		await ctx.db.insert("trades", {
 			userId: p.userId,
-			marketId,
+			ticketId,
 			side: p.side,
 			kind: "sell",
 			shares: p.shares,
@@ -285,38 +224,38 @@ async function settlePositions(
 	}
 }
 
-export const resolveMarket = mutation({
+export const resolveTicket = mutation({
 	args: {
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		resolution: sideUnion,
 	},
-	handler: async (ctx, { marketId, resolution }) => {
+	handler: async (ctx, { ticketId, resolution }) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status === "resolved") throw new Error("Already resolved");
-		if (market.status === "cancelled") throw new Error("Already cancelled");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status === "resolved") throw new Error("Already resolved");
+		if (ticket.status === "cancelled") throw new Error("Already cancelled");
 
-		await settlePositions(ctx, marketId, resolution);
+		await settlePositions(ctx, ticketId, resolution);
 
 		const finalYes = resolution === "Yes" ? 1 : 0;
-		await ctx.db.patch(marketId, {
+		await ctx.db.patch(ticketId, {
 			status: "resolved",
 			resolution,
 			yesPrice: finalYes,
 			openInterest: 0,
 		});
-		await ctx.db.insert("priceTicks", { marketId, yesPrice: finalYes });
+		await ctx.db.insert("priceTicks", { ticketId, yesPrice: finalYes });
 		return { ok: true };
 	},
 });
 
-export const deleteMarket = mutation({
-	args: { marketId: v.id("markets") },
-	handler: async (ctx, { marketId }) => {
+export const deleteTicket = mutation({
+	args: { ticketId: v.id("tickets") },
+	handler: async (ctx, { ticketId }) => {
 		await requireAdmin(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
 
 		const childTables = [
 			"trades",
@@ -327,24 +266,14 @@ export const deleteMarket = mutation({
 		for (const table of childTables) {
 			const rows = await ctx.db
 				.query(table)
-				.withIndex("by_market", (q) => q.eq("marketId", marketId))
+				.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
 				.collect();
 			for (const r of rows) {
 				await ctx.db.delete(r._id);
 			}
 		}
 
-		const proposals = await ctx.db
-			.query("marketProposals")
-			.withIndex("by_status", (q) => q.eq("status", "approved"))
-			.collect();
-		for (const p of proposals) {
-			if (p.approvedMarketId === marketId) {
-				await ctx.db.patch(p._id, { approvedMarketId: undefined });
-			}
-		}
-
-		await ctx.db.delete(marketId);
+		await ctx.db.delete(ticketId);
 		return { ok: true };
 	},
 });
@@ -469,7 +398,7 @@ export const userTrades = query({
 			.take(50);
 		return await Promise.all(
 			trades.map(async (t) => {
-				const market = await ctx.db.get(t.marketId);
+				const ticket = await ctx.db.get(t.ticketId);
 				return {
 					_id: t._id,
 					_creationTime: t._creationTime,
@@ -478,11 +407,127 @@ export const userTrades = query({
 					shares: t.shares,
 					price: t.price,
 					cost: t.cost,
-					marketQuestion: market?.question ?? "Deleted ticket",
-					marketSlug: market?.slug ?? "",
+					ticketQuestion: ticket?.question ?? "Deleted ticket",
+					ticketSlug: ticket?.slug ?? "",
 				};
 			})
 		);
+	},
+});
+
+export const ticketTrades = query({
+	args: { ticketId: v.id("tickets"), limit: v.optional(v.number()) },
+	handler: async (ctx, { ticketId, limit = 200 }) => {
+		await requireAdmin(ctx);
+		const trades = await ctx.db
+			.query("trades")
+			.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
+			.order("desc")
+			.take(limit);
+
+		const userIds = Array.from(new Set(trades.map((t) => t.userId)));
+		const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+		const userMap = new Map(
+			users
+				.filter((u): u is NonNullable<typeof u> => u !== null)
+				.map((u) => [
+					u._id,
+					{
+						handle: u.handle ?? "@anon",
+						name: u.name ?? null,
+						image: u.image ?? null,
+					},
+				])
+		);
+
+		return trades.map((t) => ({
+			_id: t._id,
+			_creationTime: t._creationTime,
+			userId: t.userId,
+			user: userMap.get(t.userId) ?? null,
+			side: t.side,
+			kind: t.kind,
+			shares: t.shares,
+			price: t.price,
+			cost: t.cost,
+		}));
+	},
+});
+
+/**
+ * Reverse a single trade: refund the cost to the user, adjust their position
+ * (or recreate it for a sell-refund), and decrement the ticket's volume. Does
+ * NOT revert the ticket price or priceTicks — those reflect history. Position
+ * avgPrice is left as-is (recomputing across blended trades is brittle).
+ */
+export const refundTrade = mutation({
+	args: { tradeId: v.id("trades") },
+	handler: async (ctx, { tradeId }) => {
+		await requireAdmin(ctx);
+		const trade = await ctx.db.get(tradeId);
+		if (!trade) throw new Error("Trade not found");
+
+		const user = await ctx.db.get(trade.userId);
+		const ticket = await ctx.db.get(trade.ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+
+		// Refund cash. Buy cost is positive (paid out); sell cost is negative
+		// (proceeds received). Reversing means undoing both.
+		if (user) {
+			const next = Math.max(0, (user.balance ?? 0) + trade.cost);
+			await ctx.db.patch(user._id, { balance: next });
+		}
+
+		// Adjust position. Buy refund removes shares; sell refund adds them back.
+		const position = await ctx.db
+			.query("positions")
+			.withIndex("by_user_ticket_side", (q) =>
+				q
+					.eq("userId", trade.userId)
+					.eq("ticketId", trade.ticketId)
+					.eq("side", trade.side)
+			)
+			.unique();
+
+		if (trade.kind === "buy") {
+			if (position) {
+				const next = Math.max(0, position.shares - trade.shares);
+				if (next <= 1e-9) {
+					await ctx.db.delete(position._id);
+				} else {
+					await ctx.db.patch(position._id, { shares: next });
+				}
+			}
+		} else {
+			// sell refund — add shares back
+			if (position) {
+				await ctx.db.patch(position._id, {
+					shares: position.shares + trade.shares,
+				});
+			} else {
+				await ctx.db.insert("positions", {
+					userId: trade.userId,
+					ticketId: trade.ticketId,
+					side: trade.side,
+					shares: trade.shares,
+					avgPrice: trade.price,
+					realizedPnl: 0,
+				});
+			}
+		}
+
+		// Adjust ticket aggregates. Volume and openInterest move proportionally.
+		const absCost = Math.abs(trade.cost);
+		const nextVolume = Math.max(0, ticket.volume - absCost);
+		const oiDelta = trade.kind === "buy" ? -absCost : absCost;
+		const nextOpenInterest = Math.max(0, ticket.openInterest + oiDelta);
+		await ctx.db.patch(ticket._id, {
+			volume: nextVolume,
+			openInterest: nextOpenInterest,
+		});
+
+		await ctx.db.delete(tradeId);
+		return { ok: true };
 	},
 });
 
@@ -491,7 +536,7 @@ type UserFeedEvent =
 			kind: "trade";
 			_id: string;
 			ts: number;
-			marketSlug: string;
+			ticketSlug: string;
 			question: string;
 			side: "Yes" | "No";
 			action: "buy" | "sell";
@@ -503,19 +548,18 @@ type UserFeedEvent =
 			kind: "comment";
 			_id: string;
 			ts: number;
-			marketSlug: string;
+			ticketSlug: string;
 			question: string;
 			body: string;
 	  }
 	| {
-			kind: "proposal";
+			kind: "ticket";
 			_id: string;
 			ts: number;
+			ticketSlug: string;
 			question: string;
-			category: string;
-			status: "pending" | "approved" | "rejected";
-			rejectionReason: string | null;
-			approvedMarketSlug: string | null;
+			role: "subject" | "creator";
+			status: "open" | "closed" | "resolved" | "cancelled";
 	  };
 
 /**
@@ -529,15 +573,15 @@ export const userActivity = query({
 		const events: UserFeedEvent[] = [];
 
 		const seenMarkets = new Map<string, { slug: string; question: string }>();
-		const resolveMarket = async (marketId: Id<"markets">) => {
-			const cached = seenMarkets.get(marketId);
+		const resolveTicket = async (ticketId: Id<"tickets">) => {
+			const cached = seenMarkets.get(ticketId);
 			if (cached) return cached;
-			const m = await ctx.db.get(marketId);
+			const m = await ctx.db.get(ticketId);
 			const data = {
 				slug: m?.slug ?? "unknown",
 				question: m?.question ?? "Deleted ticket",
 			};
-			seenMarkets.set(marketId, data);
+			seenMarkets.set(ticketId, data);
 			return data;
 		};
 
@@ -547,12 +591,12 @@ export const userActivity = query({
 			.order("desc")
 			.take(limit);
 		for (const t of trades) {
-			const m = await resolveMarket(t.marketId);
+			const m = await resolveTicket(t.ticketId);
 			events.push({
 				kind: "trade",
 				_id: t._id,
 				ts: t._creationTime,
-				marketSlug: m.slug,
+				ticketSlug: m.slug,
 				question: m.question,
 				side: t.side,
 				action: t.kind,
@@ -565,37 +609,36 @@ export const userActivity = query({
 		const comments = await ctx.db.query("comments").order("desc").take(500);
 		for (const c of comments) {
 			if (c.userId !== userId) continue;
-			const m = await resolveMarket(c.marketId);
+			const m = await resolveTicket(c.ticketId);
 			events.push({
 				kind: "comment",
 				_id: c._id,
 				ts: c._creationTime,
-				marketSlug: m.slug,
+				ticketSlug: m.slug,
 				question: m.question,
 				body: c.body,
 			});
 		}
 
-		const proposals = await ctx.db
-			.query("marketProposals")
-			.withIndex("by_proposer", (q) => q.eq("proposerId", userId))
+		const subjectTickets = await ctx.db
+			.query("tickets")
+			.withIndex("by_subject", (q) => q.eq("subjectUserId", userId))
 			.order("desc")
 			.take(limit);
-		for (const p of proposals) {
-			let approvedSlug: string | null = null;
-			if (p.approvedMarketId) {
-				const m = await ctx.db.get(p.approvedMarketId);
-				approvedSlug = m?.slug ?? null;
-			}
+		const creatorTickets = await ctx.db
+			.query("tickets")
+			.withIndex("by_creator", (q) => q.eq("creatorId", userId))
+			.order("desc")
+			.take(limit);
+		for (const m of [...subjectTickets, ...creatorTickets]) {
 			events.push({
-				kind: "proposal",
-				_id: p._id,
-				ts: p._creationTime,
-				question: p.question,
-				category: p.category,
-				status: p.status,
-				rejectionReason: p.rejectionReason ?? null,
-				approvedMarketSlug: approvedSlug,
+				kind: "ticket",
+				_id: m._id,
+				ts: m._creationTime,
+				ticketSlug: m.slug,
+				question: m.question,
+				role: m.subjectUserId === userId ? "subject" : "creator",
+				status: m.status,
 			});
 		}
 

@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { useState } from "react";
 import { Kicker } from "@/components/console";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,9 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CURRENCY_SYMBOL, money } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { CURRENCY_SYMBOL, money } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
@@ -24,51 +22,37 @@ export const Route = createFileRoute("/leaderboard")({
 		pageHead({
 			title: "Leaderboard",
 			description:
-				"Top traders on Charles, ranked by lifetime P&L in shekels. Realized profit plus unrealized mark-to-market.",
+				"Top traders on Charles.market, ranked by lifetime P&L in shekels. Realized profit plus unrealized mark-to-ticket.",
 			path: "/leaderboard",
 		}),
 });
 
-const ranges = ["24h", "7d", "30d", "All"] as const;
-type Range = (typeof ranges)[number];
-
 function LeaderboardPage() {
-	const [range, setRange] = useState<Range>("30d");
 	const traders = useQuery(api.leaderboard.top, { limit: 25 });
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
-			<header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-				<div>
-					<Kicker>LEADERBOARD</Kicker>
-					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
-						Top traders
-					</h1>
-					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
-						Ranked by lifetime P&L in shekels ({CURRENCY_SYMBOL}). Realized plus
-						unrealized. Tap a handle to view their profile.
-					</p>
-				</div>
-				<ToggleGroup
-					type="single"
-					value={range}
-					onValueChange={(v) => v && setRange(v as Range)}
-					className="self-start sm:self-auto"
-				>
-					{ranges.map((r) => (
-						<ToggleGroupItem key={r} value={r}>
-							{r}
-						</ToggleGroupItem>
-					))}
-				</ToggleGroup>
+			<header>
+				<Kicker>LEADERBOARD</Kicker>
+				<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
+					Top traders
+				</h1>
+				<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
+					Ranked by lifetime P&L in shekels ({CURRENCY_SYMBOL}), realized plus
+					unrealized. Tap a handle to view their profile.
+				</p>
 			</header>
 
 			{traders === undefined ? (
 				<LeaderboardSkeleton />
 			) : traders.length === 0 ? (
-				<div className="mt-12 border border-rule border-dashed bg-ink-2 py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-					No traders yet. Sign in and place the first trade to claim the top
-					spot.
+				<div className="mt-12 border-rule border-y px-6 py-16 text-center">
+					<Kicker>No ranking yet</Kicker>
+					<h3 className="display-headline mt-3 text-2xl">Nobody's traded.</h3>
+					<p className="mx-auto mt-2 max-w-sm text-bone-2 text-sm">
+						The leaderboard fills as people place trades. First trade claims the
+						top spot.
+					</p>
 				</div>
 			) : (
 				<>
@@ -95,12 +79,11 @@ function LeaderboardPage() {
 										</span>
 										<TraderAvatar handle={t.handle} image={t.image} />
 										<div className="min-w-0 flex-1">
-											<div className="truncate font-mono font-semibold text-bone text-sm">
-												{t.handle}
+											<div className="truncate font-display font-semibold text-bone text-sm">
+												{t.name ?? t.handle}
 											</div>
 											<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-												{money(t.volume)} vol · {Math.round(t.winRate * 100)}%
-												win
+												{t.handle} · {money(t.volume)} vol
 											</div>
 										</div>
 										<div
@@ -142,11 +125,18 @@ function LeaderboardPage() {
 												<Link
 													to="/profile/$username"
 													params={{ username: encodeHandle(t.handle) }}
-													className="flex items-center gap-2 hover:text-brand"
+													className="flex items-center gap-3 hover:text-brand"
 												>
 													<TraderAvatar handle={t.handle} image={t.image} />
-													<span className="font-mono font-semibold text-bone">
-														{t.handle}
+													<span className="min-w-0">
+														<span className="block truncate font-display font-semibold text-bone">
+															{t.name ?? t.handle}
+														</span>
+														{t.name ? (
+															<span className="block font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+																{t.handle}
+															</span>
+														) : null}
 													</span>
 												</Link>
 											</TableCell>
@@ -215,21 +205,21 @@ function PodiumCard({ trader, place }: { trader: Trader; place: number }) {
 			</div>
 			<TraderAvatar handle={trader.handle} image={trader.image} size="lg" />
 			<div className="min-w-0 flex-1">
-				<div className="truncate font-bold font-mono text-bone">
+				<div className="truncate font-display font-semibold text-bone text-sm">
+					{trader.name ?? trader.handle}
+				</div>
+				<div className="truncate font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
 					{trader.handle}
 				</div>
 				<div
 					className={cn(
-						"font-bold font-mono text-sm tabular-nums",
+						"mt-1 font-bold font-mono text-sm tabular-nums",
 						positive ? "text-brand" : "text-magenta"
 					)}
 				>
 					{positive ? "+" : "−"}
 					{CURRENCY_SYMBOL}
 					{Math.round(Math.abs(trader.pnl)).toLocaleString()}
-				</div>
-				<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-					{Math.round(trader.winRate * 100)}% win
 				</div>
 			</div>
 		</Link>

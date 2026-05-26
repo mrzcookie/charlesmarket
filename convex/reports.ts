@@ -1,18 +1,18 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { cancelMarketPositions } from "./admin";
+import { cancelTicketPositions } from "./admin";
 import { currentUser, isAdminUser, requireAdmin, requireUser } from "./users";
 
 export const submit = mutation({
 	args: {
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		description: v.string(),
 	},
-	handler: async (ctx, { marketId, description }) => {
+	handler: async (ctx, { ticketId, description }) => {
 		const user = await requireUser(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Ticket not found");
-		if (market.status !== "open")
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status !== "open")
 			throw new Error("Can only report open tickets");
 		const desc = description.trim();
 		if (!desc) throw new Error("Description is required");
@@ -20,7 +20,7 @@ export const submit = mutation({
 			throw new Error("Description must be 2,000 characters or fewer");
 
 		await ctx.db.insert("ticketReports", {
-			marketId,
+			ticketId,
 			reporterId: user._id,
 			description: desc,
 			status: "pending",
@@ -53,14 +53,14 @@ export const listPending = query({
 			.collect();
 		return await Promise.all(
 			reports.map(async (r) => {
-				const market = await ctx.db.get(r.marketId);
+				const ticket = await ctx.db.get(r.ticketId);
 				const reporter = await ctx.db.get(r.reporterId);
 				return {
 					_id: r._id,
 					_creationTime: r._creationTime,
-					marketId: r.marketId,
-					marketQuestion: market?.question ?? "Deleted ticket",
-					marketSlug: market?.slug ?? "",
+					ticketId: r.ticketId,
+					ticketQuestion: ticket?.question ?? "Deleted ticket",
+					ticketSlug: ticket?.slug ?? "",
 					reporterHandle: reporter?.handle ?? "@anon",
 					description: r.description,
 					status: r.status,
@@ -78,14 +78,14 @@ export const validate = mutation({
 		if (!report) throw new Error("Report not found");
 		if (report.status !== "pending") throw new Error("Report already reviewed");
 
-		const market = await ctx.db.get(report.marketId);
+		const ticket = await ctx.db.get(report.ticketId);
 		if (
-			market &&
-			market.status !== "resolved" &&
-			market.status !== "cancelled"
+			ticket &&
+			ticket.status !== "resolved" &&
+			ticket.status !== "cancelled"
 		) {
-			await cancelMarketPositions(ctx, report.marketId);
-			await ctx.db.patch(report.marketId, {
+			await cancelTicketPositions(ctx, report.ticketId);
+			await ctx.db.patch(report.ticketId, {
 				status: "cancelled",
 				openInterest: 0,
 			});

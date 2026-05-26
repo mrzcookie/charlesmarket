@@ -18,7 +18,7 @@ export const top = query({
 
 				let unrealized = 0;
 				for (const p of positions) {
-					const m = await ctx.db.get(p.marketId);
+					const m = await ctx.db.get(p.ticketId);
 					if (!m) continue;
 					const current = p.side === "Yes" ? m.yesPrice : 1 - m.yesPrice;
 					unrealized += p.shares * (current - p.avgPrice);

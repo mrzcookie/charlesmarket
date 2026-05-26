@@ -1,12 +1,12 @@
 export const SITE_URL = "https://charles.market";
 export const SITE_NAME = "CHARLES.MARKET";
-export const SITE_TAGLINE = "Bet on Charles";
+export const SITE_TAGLINE = "Bet on the people you know";
 export const OG_IMAGE_PATH = "/og.svg";
 
-const TITLE_SUFFIX = ` — ${SITE_NAME}`;
+const TITLE_SUFFIX = ` · ${SITE_NAME}`;
 
 export function pageTitle(label: string): string {
-	if (!label) return `${SITE_NAME} — ${SITE_TAGLINE}`;
+	if (!label) return `${SITE_NAME} · ${SITE_TAGLINE}`;
 	if (label.toUpperCase().includes(SITE_NAME)) return label;
 	return `${label}${TITLE_SUFFIX}`;
 }

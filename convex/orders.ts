@@ -12,11 +12,11 @@ function priceImpact(yesPrice: number, side: "Yes" | "No", amount: number) {
 
 export const place = mutation({
 	args: {
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		side: sideUnion,
 		amount: v.number(),
 	},
-	handler: async (ctx, { marketId, side, amount }) => {
+	handler: async (ctx, { ticketId, side, amount }) => {
 		if (!Number.isFinite(amount) || amount <= 0) {
 			throw new Error("Amount must be positive");
 		}
@@ -24,20 +24,26 @@ export const place = mutation({
 		const balance = user.balance ?? 0;
 		if (balance < amount) throw new Error("Insufficient shekels");
 
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status !== "open") throw new Error("Market is closed");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status !== "open") throw new Error("Ticket is closed");
+		if (ticket.subjectUserId === user._id) {
+			throw new Error("You can't trade on a ticket about you");
+		}
+		if (ticket.creatorId === user._id) {
+			throw new Error("You can't trade on a ticket you created");
+		}
 
-		const price = side === "Yes" ? market.yesPrice : 1 - market.yesPrice;
-		if (price <= 0 || price >= 1) throw new Error("Invalid market price");
+		const price = side === "Yes" ? ticket.yesPrice : 1 - ticket.yesPrice;
+		if (price <= 0 || price >= 1) throw new Error("Invalid ticket price");
 		const shares = amount / price;
 
 		await ctx.db.patch(user._id, { balance: balance - amount });
 
 		const existing = await ctx.db
 			.query("positions")
-			.withIndex("by_user_market_side", (q) =>
-				q.eq("userId", user._id).eq("marketId", marketId).eq("side", side)
+			.withIndex("by_user_ticket_side", (q) =>
+				q.eq("userId", user._id).eq("ticketId", ticketId).eq("side", side)
 			)
 			.unique();
 
@@ -52,7 +58,7 @@ export const place = mutation({
 		} else {
 			await ctx.db.insert("positions", {
 				userId: user._id,
-				marketId,
+				ticketId,
 				side,
 				shares,
 				avgPrice: price,
@@ -62,7 +68,7 @@ export const place = mutation({
 
 		await ctx.db.insert("trades", {
 			userId: user._id,
-			marketId,
+			ticketId,
 			side,
 			kind: "buy",
 			shares,
@@ -70,13 +76,13 @@ export const place = mutation({
 			cost: amount,
 		});
 
-		const nextYes = priceImpact(market.yesPrice, side, amount);
-		await ctx.db.patch(marketId, {
+		const nextYes = priceImpact(ticket.yesPrice, side, amount);
+		await ctx.db.patch(ticketId, {
 			yesPrice: nextYes,
-			volume: market.volume + amount,
-			openInterest: market.openInterest + amount,
+			volume: ticket.volume + amount,
+			openInterest: ticket.openInterest + amount,
 		});
-		await ctx.db.insert("priceTicks", { marketId, yesPrice: nextYes });
+		await ctx.db.insert("priceTicks", { ticketId, yesPrice: nextYes });
 
 		return {
 			shares,
@@ -89,31 +95,37 @@ export const place = mutation({
 
 export const sell = mutation({
 	args: {
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		side: sideUnion,
 		shares: v.number(),
 	},
-	handler: async (ctx, { marketId, side, shares }) => {
+	handler: async (ctx, { ticketId, side, shares }) => {
 		if (!Number.isFinite(shares) || shares <= 0) {
 			throw new Error("Shares must be positive");
 		}
 		const user = await requireUser(ctx);
 
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
-		if (market.status !== "open") throw new Error("Market is closed");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status !== "open") throw new Error("Ticket is closed");
+		if (ticket.subjectUserId === user._id) {
+			throw new Error("You can't trade on a ticket about you");
+		}
+		if (ticket.creatorId === user._id) {
+			throw new Error("You can't trade on a ticket you created");
+		}
 
 		const position = await ctx.db
 			.query("positions")
-			.withIndex("by_user_market_side", (q) =>
-				q.eq("userId", user._id).eq("marketId", marketId).eq("side", side)
+			.withIndex("by_user_ticket_side", (q) =>
+				q.eq("userId", user._id).eq("ticketId", ticketId).eq("side", side)
 			)
 			.unique();
 		if (!position || position.shares < shares) {
 			throw new Error("Not enough shares to sell");
 		}
 
-		const price = side === "Yes" ? market.yesPrice : 1 - market.yesPrice;
+		const price = side === "Yes" ? ticket.yesPrice : 1 - ticket.yesPrice;
 		const proceeds = shares * price;
 		const costBasis = shares * position.avgPrice;
 		const pnl = proceeds - costBasis;
@@ -133,7 +145,7 @@ export const sell = mutation({
 
 		await ctx.db.insert("trades", {
 			userId: user._id,
-			marketId,
+			ticketId,
 			side,
 			kind: "sell",
 			shares,
@@ -142,16 +154,16 @@ export const sell = mutation({
 		});
 
 		const nextYes = priceImpact(
-			market.yesPrice,
+			ticket.yesPrice,
 			side === "Yes" ? "No" : "Yes",
 			proceeds
 		);
-		await ctx.db.patch(marketId, {
+		await ctx.db.patch(ticketId, {
 			yesPrice: nextYes,
-			volume: market.volume + proceeds,
-			openInterest: Math.max(0, market.openInterest - proceeds),
+			volume: ticket.volume + proceeds,
+			openInterest: Math.max(0, ticket.openInterest - proceeds),
 		});
-		await ctx.db.insert("priceTicks", { marketId, yesPrice: nextYes });
+		await ctx.db.insert("priceTicks", { ticketId, yesPrice: nextYes });
 
 		return { proceeds, pnl, newBalance: balance + proceeds };
 	},

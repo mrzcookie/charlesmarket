@@ -7,8 +7,8 @@ type FeedEvent =
 			_id: string;
 			ts: number;
 			handle: string;
-			marketId: string;
-			marketSlug: string;
+			ticketId: string;
+			ticketSlug: string;
 			question: string;
 			side: "Yes" | "No";
 			action: "buy" | "sell";
@@ -21,8 +21,8 @@ type FeedEvent =
 			_id: string;
 			ts: number;
 			handle: string;
-			marketId: string;
-			marketSlug: string;
+			ticketId: string;
+			ticketSlug: string;
 			question: string;
 			body: string;
 	  }
@@ -30,8 +30,8 @@ type FeedEvent =
 			kind: "resolve";
 			_id: string;
 			ts: number;
-			marketId: string;
-			marketSlug: string;
+			ticketId: string;
+			ticketSlug: string;
 			question: string;
 			resolution: "Yes" | "No";
 	  };
@@ -63,31 +63,31 @@ export const feed = query({
 		};
 
 		const seenMarkets = new Map<string, { slug: string; question: string }>();
-		const resolveMarket = async (marketId: string) => {
-			const cached = seenMarkets.get(marketId);
+		const resolveTicket = async (ticketId: string) => {
+			const cached = seenMarkets.get(ticketId);
 			if (cached) return cached;
 			// biome-ignore lint/suspicious/noExplicitAny: Id cast
-			const m = await ctx.db.get(marketId as any);
+			const m = await ctx.db.get(ticketId as any);
 			const data = {
 				slug: (m as { slug?: string } | null)?.slug ?? "unknown",
 				question:
-					(m as { question?: string } | null)?.question ?? "Unknown market",
+					(m as { question?: string } | null)?.question ?? "Unknown ticket",
 			};
-			seenMarkets.set(marketId, data);
+			seenMarkets.set(ticketId, data);
 			return data;
 		};
 
 		if (filter === "all" || filter === "trades") {
 			const trades = await ctx.db.query("trades").order("desc").take(limit);
 			for (const t of trades) {
-				const m = await resolveMarket(t.marketId);
+				const m = await resolveTicket(t.ticketId);
 				events.push({
 					kind: "trade",
 					_id: t._id,
 					ts: t._creationTime,
 					handle: await resolveHandle(t.userId),
-					marketId: t.marketId,
-					marketSlug: m.slug,
+					ticketId: t.ticketId,
+					ticketSlug: m.slug,
 					question: m.question,
 					side: t.side,
 					action: t.kind,
@@ -101,14 +101,14 @@ export const feed = query({
 		if (filter === "all" || filter === "comments") {
 			const comments = await ctx.db.query("comments").order("desc").take(limit);
 			for (const c of comments) {
-				const m = await resolveMarket(c.marketId);
+				const m = await resolveTicket(c.ticketId);
 				events.push({
 					kind: "comment",
 					_id: c._id,
 					ts: c._creationTime,
 					handle: await resolveHandle(c.userId),
-					marketId: c.marketId,
-					marketSlug: m.slug,
+					ticketId: c.ticketId,
+					ticketSlug: m.slug,
 					question: m.question,
 					body: c.body,
 				});
@@ -117,7 +117,7 @@ export const feed = query({
 
 		if (filter === "all" || filter === "resolutions") {
 			const resolved = await ctx.db
-				.query("markets")
+				.query("tickets")
 				.withIndex("by_status", (q) => q.eq("status", "resolved"))
 				.order("desc")
 				.take(limit);
@@ -127,8 +127,8 @@ export const feed = query({
 					kind: "resolve",
 					_id: m._id,
 					ts: m._creationTime,
-					marketId: m._id,
-					marketSlug: m.slug,
+					ticketId: m._id,
+					ticketSlug: m.slug,
 					question: m.question,
 					resolution: m.resolution,
 				});

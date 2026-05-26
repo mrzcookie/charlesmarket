@@ -5,6 +5,7 @@ import {
 	Link,
 	Outlet,
 	Scripts,
+	useRouterState,
 } from "@tanstack/react-router";
 import { lazy, type ReactNode, Suspense, useEffect } from "react";
 import { Footer } from "@/components/footer";
@@ -13,7 +14,16 @@ import { TableRegistryProvider } from "@/components/table-devtools";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { convex } from "@/lib/convex";
+import { trackPath } from "@/lib/route-history";
 import appCss from "@/styles/global.css?url";
+
+function RouteTracker() {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	useEffect(() => {
+		trackPath(pathname);
+	}, [pathname]);
+	return null;
+}
 
 const Devtools = import.meta.env.DEV
 	? lazy(() =>
@@ -99,9 +109,9 @@ const chunkErrorRecoveryScript = `
 
 const SITE_URL = "https://charles.market";
 const SITE_NAME = "CHARLES.MARKET";
-const DEFAULT_TITLE = "CHARLES.MARKET — Bet on Charles";
+const DEFAULT_TITLE = "CHARLES.MARKET · Bet on the people you know";
 const DEFAULT_DESCRIPTION =
-	"A play-money prediction console for one chaotic friend named Charles. Trade Yes/No tickets in shekels on his next mishap, milestone, or antic.";
+	"Play-money prediction console for the friends you know. Anyone publishes a Yes/No ticket about another user; the room sets the line in shekels.";
 const OG_IMAGE = `${SITE_URL}/og.svg`;
 
 const structuredData = {
@@ -146,7 +156,7 @@ export const Route = createRootRoute({
 			{
 				name: "keywords",
 				content:
-					"prediction market, play-money, friends, betting, Yes/No tickets, shekels, prediction console, Charles, social bets, market for friends",
+					"prediction ticket, play-money, friends, betting, Yes/No tickets, shekels, prediction console, Charles, social bets, ticket for friends",
 			},
 			{ name: "application-name", content: SITE_NAME },
 			{ name: "apple-mobile-web-app-title", content: SITE_NAME },
@@ -180,7 +190,7 @@ export const Route = createRootRoute({
 			{ property: "og:image:height", content: "630" },
 			{
 				property: "og:image:alt",
-				content: "CHARLES.MARKET — bet on Charles in shekels",
+				content: "CHARLES.MARKET · bet on the people you know in shekels",
 			},
 			{ name: "twitter:card", content: "summary_large_image" },
 			{ name: "twitter:title", content: DEFAULT_TITLE },
@@ -188,7 +198,7 @@ export const Route = createRootRoute({
 			{ name: "twitter:image", content: OG_IMAGE },
 			{
 				name: "twitter:image:alt",
-				content: "CHARLES.MARKET — bet on Charles in shekels",
+				content: "CHARLES.MARKET · bet on the people you know in shekels",
 			},
 		],
 		links: [
@@ -233,6 +243,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 			<body className="flex min-h-screen flex-col font-sans">
 				<TableRegistryProvider>
 					<ConvexAuthProvider client={convex}>
+						<RouteTracker />
 						<a
 							href="#main-content"
 							className="absolute top-0 left-2 z-50 -translate-y-full rounded-[4px] bg-brand px-3 py-1.5 font-mono font-semibold text-brand-foreground text-xs uppercase tracking-widest focus:top-2 focus:translate-y-0"

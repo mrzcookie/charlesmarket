@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,25 +14,25 @@ import { Label } from "@/components/ui/label";
 import {
 	CURRENCY_SYMBOL,
 	cents,
-	type Market,
 	money,
+	type Ticket,
 	trail,
-	type UIMarket,
-} from "@/lib/markets";
+	type UITicket,
+} from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { useBalance } from "@/lib/wallet";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { SignInButton } from "./auth-controls";
-import { marketId, Sparkline } from "./console";
+import { Sparkline, ticketId } from "./console";
 
 type Variant = "default" | "compact" | "featured";
 
-export function MarketCard({
-	market,
+export function TicketCard({
+	ticket,
 	variant = "default",
 }: {
-	market: Market;
+	ticket: Ticket;
 	variant?: Variant;
 }) {
 	const [dialogOpen, setDialogOpen] = useState(false);
@@ -43,12 +43,12 @@ export function MarketCard({
 		setDialogOpen(true);
 	};
 
-	const yes = market.yesPrice;
+	const yes = ticket.yesPrice;
 	const no = 1 - yes;
-	const id = marketId(market.slug);
+	const id = ticketId(ticket.slug);
 	const sparkPts =
-		market.history.length >= 2
-			? market.history.map((h) => h.yes)
+		ticket.history.length >= 2
+			? ticket.history.map((h) => h.yes)
 			: trail(yes).map((h) => h.yes);
 
 	if (variant === "featured") {
@@ -56,18 +56,18 @@ export function MarketCard({
 			<>
 				<Link
 					to="/ticket/$id"
-					params={{ id: market.slug }}
+					params={{ id: ticket.slug }}
 					className="group block border border-rule bg-ink-2 p-6 transition-colors hover:border-rule-bright hover:bg-ink-3 sm:p-8"
 				>
-					<TicketMeta market={market} id={id} />
+					<TicketMeta ticket={ticket} id={id} />
 					<h3 className="display-headline mt-6 text-2xl sm:text-3xl md:text-[2.5rem]">
-						{market.question}
+						{ticket.question}
 					</h3>
 					<div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-[1fr_320px]">
 						<div className="flex h-32 items-end sm:h-40">
 							<Sparkline
 								points={sparkPts}
-								trend={market.trend}
+								trend={ticket.trend}
 								width={520}
 								height={140}
 								className="h-full w-full"
@@ -94,12 +94,12 @@ export function MarketCard({
 							/>
 						</div>
 					</div>
-					<TicketFooter market={market} />
+					<TicketFooter ticket={ticket} />
 				</Link>
 
-				{"_id" in market && (
+				{"_id" in ticket && (
 					<QuickBuyDialog
-						market={market as UIMarket}
+						ticket={ticket as UITicket}
 						open={dialogOpen}
 						onOpenChange={setDialogOpen}
 						initialSide={dialogSide}
@@ -114,7 +114,7 @@ export function MarketCard({
 			<>
 				<Link
 					to="/ticket/$id"
-					params={{ id: market.slug }}
+					params={{ id: ticket.slug }}
 					className="ledger-row group grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 px-3 py-3 sm:gap-6 sm:px-4 sm:py-4"
 				>
 					<span className="font-bold font-mono text-bone-3 text-xs tabular-nums">
@@ -122,17 +122,26 @@ export function MarketCard({
 					</span>
 					<div className="min-w-0">
 						<div className="line-clamp-2 font-display font-semibold text-bone text-sm leading-tight tracking-[-0.01em] group-hover:text-brand sm:text-base">
-							{market.question}
+							{ticket.question}
 						</div>
 						<div className="mt-1 flex items-center gap-3 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-							<span>{market.category}</span>
-							<span aria-hidden="true">·</span>
-							<span>{market.closesIn}</span>
+							{ticket.subject ? (
+								<>
+									<span className="truncate">
+										ABOUT{" "}
+										<span className="text-bone normal-case tracking-normal">
+											{ticket.subject.name ?? ticket.subject.handle}
+										</span>
+									</span>
+									<span aria-hidden="true">·</span>
+								</>
+							) : null}
+							<span>{ticket.closesIn}</span>
 						</div>
 					</div>
 					<Sparkline
 						points={sparkPts}
-						trend={market.trend}
+						trend={ticket.trend}
 						width={68}
 						height={22}
 						className="hidden sm:block"
@@ -147,9 +156,9 @@ export function MarketCard({
 					</div>
 				</Link>
 
-				{"_id" in market && (
+				{"_id" in ticket && (
 					<QuickBuyDialog
-						market={market as UIMarket}
+						ticket={ticket as UITicket}
 						open={dialogOpen}
 						onOpenChange={setDialogOpen}
 						initialSide={dialogSide}
@@ -159,52 +168,61 @@ export function MarketCard({
 		);
 	}
 
+	const isClosed = ticket.status !== "open";
+
 	return (
 		<>
 			<Link
 				to="/ticket/$id"
-				params={{ id: market.slug }}
-				className="group flex h-full flex-col border border-rule bg-ink-2 p-4 transition-colors hover:border-rule-bright hover:bg-ink-3 sm:p-5"
+				params={{ id: ticket.slug }}
+				className={cn(
+					"group flex h-full flex-col border border-rule bg-ink-2 p-4 transition-colors hover:border-rule-bright hover:bg-ink-3 sm:p-5",
+					isClosed && "opacity-60 hover:opacity-100"
+				)}
 			>
-				<TicketMeta market={market} id={id} />
+				<TicketMeta ticket={ticket} id={id} />
 				<h3 className="display-question mt-3 line-clamp-3 text-bone text-lg group-hover:text-brand sm:text-xl">
-					{market.question}
+					{ticket.question}
 				</h3>
 				<div className="mt-4 flex h-10 items-end">
 					<Sparkline
 						points={sparkPts}
-						trend={market.trend}
+						trend={ticket.trend}
 						width={240}
 						height={36}
 						className="h-full w-full"
 					/>
 				</div>
-				<div className="mt-4 grid grid-cols-2 gap-2">
-					<PriceSlab
-						side="yes"
-						price={yes}
-						onClick={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							openBuy("Yes");
-						}}
-					/>
-					<PriceSlab
-						side="no"
-						price={no}
-						onClick={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							openBuy("No");
-						}}
-					/>
-				</div>
-				<TicketFooter market={market} />
+				{isClosed ? (
+					<ClosedBanner ticket={ticket} />
+				) : (
+					<div className="mt-4 grid grid-cols-2 gap-2">
+						<PriceSlab
+							side="yes"
+							price={yes}
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								openBuy("Yes");
+							}}
+						/>
+						<PriceSlab
+							side="no"
+							price={no}
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								openBuy("No");
+							}}
+						/>
+					</div>
+				)}
+				<TicketFooter ticket={ticket} />
 			</Link>
 
-			{"_id" in market && (
+			{"_id" in ticket && (
 				<QuickBuyDialog
-					market={market as UIMarket}
+					ticket={ticket as UITicket}
 					open={dialogOpen}
 					onOpenChange={setDialogOpen}
 					initialSide={dialogSide}
@@ -214,34 +232,93 @@ export function MarketCard({
 	);
 }
 
-function TicketMeta({ market, id }: { market: Market; id: string }) {
-	return (
-		<div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
-			<div className="flex items-center gap-2 text-bone-3">
-				<span className="font-bold text-bone">{id}</span>
-				<span aria-hidden="true">·</span>
-				<span>{market.category}</span>
+function ClosedBanner({ ticket }: { ticket: Ticket }) {
+	if (ticket.status === "resolved" && ticket.resolution) {
+		const yes = ticket.resolution === "Yes";
+		return (
+			<div
+				className={cn(
+					"mt-4 flex items-center justify-between border px-3 py-2.5",
+					yes
+						? "border-brand/40 bg-brand-wash"
+						: "border-magenta/40 bg-magenta-wash"
+				)}
+			>
+				<span className="font-bold font-mono text-[11px] uppercase tracking-[0.18em]">
+					Resolved
+				</span>
+				<span
+					className={cn(
+						"font-bold font-mono text-base tabular-nums",
+						yes ? "text-brand" : "text-magenta"
+					)}
+				>
+					{ticket.resolution}
+				</span>
 			</div>
-			<TrendBadge trend={market.trend} delta={market.delta} />
+		);
+	}
+	if (ticket.status === "cancelled") {
+		return (
+			<div className="mt-4 flex items-center justify-between border border-magenta/40 bg-magenta-wash px-3 py-2.5">
+				<span className="font-bold font-mono text-[11px] uppercase tracking-[0.18em]">
+					Cancelled
+				</span>
+				<span className="font-bold font-mono text-[11px] text-magenta uppercase tracking-[0.14em]">
+					Refunded
+				</span>
+			</div>
+		);
+	}
+	return (
+		<div className="mt-4 flex items-center justify-between border border-rule bg-ink px-3 py-2.5">
+			<span className="font-bold font-mono text-[11px] uppercase tracking-[0.18em]">
+				Closed
+			</span>
+			<span className="font-bold font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
+				Awaiting resolution
+			</span>
 		</div>
 	);
 }
 
-function TicketFooter({ market }: { market: Market }) {
+function TicketMeta({ ticket, id }: { ticket: Ticket; id: string }) {
+	return (
+		<div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
+			<div className="flex min-w-0 items-center gap-2 text-bone-3">
+				<span className="font-bold text-bone">{id}</span>
+				{ticket.subject ? (
+					<>
+						<span aria-hidden="true">·</span>
+						<span className="truncate">
+							ABOUT{" "}
+							<span className="text-bone normal-case tracking-normal">
+								{ticket.subject.name ?? ticket.subject.handle}
+							</span>
+						</span>
+					</>
+				) : null}
+			</div>
+			<TrendBadge trend={ticket.trend} delta={ticket.delta} />
+		</div>
+	);
+}
+
+function TicketFooter({ ticket }: { ticket: Ticket }) {
 	return (
 		<div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-rule border-t pt-3 font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
 			<span>
 				VOL{" "}
-				<span className="text-bone tabular-nums">{money(market.volume)}</span>
+				<span className="text-bone tabular-nums">{money(ticket.volume)}</span>
 			</span>
 			<span>
 				LIQ{" "}
 				<span className="text-bone tabular-nums">
-					{money(market.liquidity)}
+					{money(ticket.liquidity)}
 				</span>
 			</span>
 			<span>
-				CLOSES <span className="text-bone">{market.closesIn}</span>
+				CLOSES <span className="text-bone">{ticket.closesIn}</span>
 			</span>
 		</div>
 	);
@@ -279,18 +356,19 @@ function PriceSlab({
 }
 
 export function QuickBuyDialog({
-	market,
+	ticket,
 	open,
 	onOpenChange,
 	initialSide,
 }: {
-	market: UIMarket;
+	ticket: UITicket;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	initialSide: "Yes" | "No";
 }) {
 	const { isAuthenticated, isLoading } = useConvexAuth();
 	const { balance, mounted } = useBalance();
+	const me = useQuery(api.users.me, isAuthenticated ? {} : "skip");
 	const placeOrder = useMutation(api.orders.place);
 
 	const [side, setSide] = useState<"Yes" | "No">(initialSide);
@@ -301,11 +379,19 @@ export function QuickBuyDialog({
 		if (open) setSide(initialSide);
 	}, [open, initialSide]);
 
-	const price = side === "Yes" ? market.yesPrice : 1 - market.yesPrice;
+	const price = side === "Yes" ? ticket.yesPrice : 1 - ticket.yesPrice;
 	const cost = Number(amount) || 0;
 	const shares = price > 0 ? cost / price : 0;
 	const insufficient = isAuthenticated && cost > balance;
-	const id = marketId(market.slug);
+	const id = ticketId(ticket.slug);
+	const isSubject = !!me && ticket.subject?._id === me._id;
+	const isCreator = !!me && ticket.creator?._id === me._id;
+	const blocked = isSubject || isCreator;
+	const blockReason = isSubject
+		? "You can't trade on a ticket about you."
+		: isCreator
+			? "You can't trade on a ticket you created."
+			: null;
 
 	const submit = async () => {
 		if (cost <= 0) return;
@@ -318,7 +404,7 @@ export function QuickBuyDialog({
 		setSubmitting(true);
 		try {
 			const result = await placeOrder({
-				marketId: market._id as Id<"markets">,
+				ticketId: ticket._id as Id<"tickets">,
 				side,
 				amount: cost,
 			});
@@ -347,7 +433,7 @@ export function QuickBuyDialog({
 						QUICK ORDER · {id}
 					</div>
 					<DialogTitle className="line-clamp-3 font-display text-base leading-snug">
-						{market.question}
+						{ticket.question}
 					</DialogTitle>
 				</DialogHeader>
 
@@ -356,23 +442,43 @@ export function QuickBuyDialog({
 						<div className="h-10 w-full animate-pulse bg-ink-3" />
 						<div className="h-10 w-full animate-pulse bg-ink-3" />
 					</div>
+				) : blocked ? (
+					<div className="space-y-3 py-2">
+						<div className="border border-rule bg-ink-2 px-4 py-6 text-center">
+							<div
+								className="bracket-chip mx-auto inline-flex"
+								data-tone="danger"
+							>
+								CAN'T TRADE
+							</div>
+							<p className="mt-3 text-bone-2 text-sm">{blockReason}</p>
+						</div>
+						<Link
+							to="/ticket/$id"
+							params={{ id: ticket.slug }}
+							className="block text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em] hover:text-brand"
+							onClick={() => onOpenChange(false)}
+						>
+							→ Open full ticket
+						</Link>
+					</div>
 				) : !isAuthenticated ? (
 					<div className="space-y-4 py-2">
 						<p className="text-bone-2 text-sm">
-							Sign in to trade. Everyone starts with {CURRENCY_SYMBOL}1,000 in
+							Sign in to trade. Everyone starts with {CURRENCY_SYMBOL}2,000 in
 							play-money shekels.
 						</p>
 						<div className="grid grid-cols-2 gap-2">
 							<div className="price-slab" data-side="yes" data-active="true">
 								<span className="text-[10px]">YES</span>
 								<span className="font-bold text-base">
-									{cents(market.yesPrice)}
+									{cents(ticket.yesPrice)}
 								</span>
 							</div>
 							<div className="price-slab" data-side="no" data-active="true">
 								<span className="text-[10px]">NO</span>
 								<span className="font-bold text-base">
-									{cents(1 - market.yesPrice)}
+									{cents(1 - ticket.yesPrice)}
 								</span>
 							</div>
 						</div>
@@ -402,7 +508,7 @@ export function QuickBuyDialog({
 										side === "Yes" ? "text-brand" : "text-bone"
 									)}
 								>
-									{cents(market.yesPrice)}
+									{cents(ticket.yesPrice)}
 								</span>
 							</button>
 							<button
@@ -421,7 +527,7 @@ export function QuickBuyDialog({
 										side === "No" ? "text-magenta" : "text-bone"
 									)}
 								>
-									{cents(1 - market.yesPrice)}
+									{cents(1 - ticket.yesPrice)}
 								</span>
 							</button>
 						</div>
@@ -503,7 +609,7 @@ export function QuickBuyDialog({
 
 						<Link
 							to="/ticket/$id"
-							params={{ id: market.slug }}
+							params={{ id: ticket.slug }}
 							className="block text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em] hover:text-brand"
 							onClick={() => onOpenChange(false)}
 						>
@@ -539,7 +645,7 @@ export function TrendBadge({
 	trend,
 	delta,
 }: {
-	trend: Market["trend"];
+	trend: Ticket["trend"];
 	delta: number;
 }) {
 	const sign = trend === "up" ? "▲" : trend === "down" ? "▼" : "─";

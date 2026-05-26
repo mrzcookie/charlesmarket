@@ -6,7 +6,7 @@ import {
 	useQuery,
 } from "convex/react";
 import { SignInButton } from "@/components/auth-controls";
-import { Kicker, marketId, Stat } from "@/components/console";
+import { Kicker, Stat, ticketId } from "@/components/console";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -17,8 +17,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { CURRENCY_SYMBOL, cents, money } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { CURRENCY_SYMBOL, cents, money } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
 
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/portfolio")({
 		pageHead({
 			title: "Your portfolio",
 			description:
-				"Your open positions, cash balance, lifetime P&L, and every ticket you've settled on Charles.",
+				"Your open positions, cash balance, lifetime P&L, and every ticket you've settled on Charles.market.",
 			path: "/portfolio",
 			noIndex: true,
 		}),
@@ -43,8 +43,7 @@ function PortfolioPage() {
 					Portfolio
 				</h1>
 				<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
-					Open positions, lifetime P&L, and every ticket you've settled on
-					Charles.
+					Open positions, lifetime P&L, and every ticket you've settled.
 				</p>
 			</header>
 
@@ -106,7 +105,7 @@ function PortfolioBody() {
 				</div>
 				{positions.length === 0 ? (
 					<div className="mt-6 border border-rule border-dashed py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-						No open positions yet — go bet on Charles.
+						No open positions yet. Go pick someone worth a bet.
 					</div>
 				) : (
 					<>
@@ -116,7 +115,7 @@ function PortfolioBody() {
 									<div className="flex items-start justify-between gap-2">
 										<Link
 											to="/ticket/$id"
-											params={{ id: p.marketSlug }}
+											params={{ id: p.ticketSlug }}
 											className="flex-1 font-display font-semibold text-bone text-sm hover:text-brand"
 										>
 											{p.question}
@@ -155,12 +154,12 @@ function PortfolioBody() {
 									{positions.map((p) => (
 										<TableRow key={p._id}>
 											<TableCell className="pl-4 font-bold font-mono text-bone-3 text-xs">
-												{marketId(p.marketSlug)}
+												{ticketId(p.ticketSlug)}
 											</TableCell>
 											<TableCell>
 												<Link
 													to="/ticket/$id"
-													params={{ id: p.marketSlug }}
+													params={{ id: p.ticketSlug }}
 													className="font-display font-semibold text-bone hover:text-brand"
 												>
 													{p.question}
@@ -307,7 +306,7 @@ function SignInPanel() {
 			</h2>
 			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
 				Positions, cash, and lifetime P&L live on your account. Sign in and
-				we'll spin you up a {CURRENCY_SYMBOL}1,000 starter balance.
+				we'll spin you up a {CURRENCY_SYMBOL}2,000 starter balance.
 			</p>
 			<SignInButton size="lg" className="mt-6" label="Sign in with Google" />
 		</div>
