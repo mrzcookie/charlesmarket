@@ -107,12 +107,10 @@ pnpm check              # biome check --write (format + lint)
 
 npx convex dev          # Watch + push convex/ to the dev deployment
 npx convex codegen      # Regenerate convex/_generated/ without pushing
-npx convex run seed:run # Seed the starter tickets (idempotent)
-npx convex run seed:wipe# Drop markets/positions/trades/comments/priceTicks
+npx convex run seed:wipe# Drop tickets/positions/trades/comments/priceTicks/reports
 
 # One-shot ops
 npx convex run admin:bootstrapAdmin '{"email":"you@example.com"}'
-npx convex run migrations:stripResolutionSource
 ```
 
 ## Project layout (TL;DR)
@@ -120,11 +118,11 @@ npx convex run migrations:stripResolutionSource
 ```
 convex/        Schema, auth, ticket lifecycle, admin tools, seed
 src/routes/    File-based pages: /, /tickets, /ticket/$id, /portfolio,
-               /activity, /leaderboard, /propose, /profile, /profile/$username,
-               /admin/{tickets,users}; redirect stubs at /markets, /market/$id
-src/components/  Header, footer, market-card, console helpers, auth controls
+               /activity, /leaderboard, /create, /profile, /profile/$username,
+               /admin/{tickets,users}
+src/components/  Header, footer, ticket-card, console helpers, auth controls
 src/components/ui/  shadcn primitives (restyled to console palette)
-src/lib/       Convex client, wallet hook, market helpers, cn()
+src/lib/       Convex client, wallet hook, ticket helpers, cn()
 src/styles/    Tailwind v4 @theme tokens + console palette + dark default
 public/        favicon.svg (lime "C.") + robots.txt
 ```
@@ -141,15 +139,16 @@ Done:
 
 - Console design system ("The Console") with a single brand color and
   sharp instrument-panel chrome
-- Tickets / proposals lifecycle with admin edit, approve, resolve,
-  close, reopen, delete
+- Tickets about any user with subject + creator trade gates;
+  admin can resolve, close, cancel, refund, edit any field
 - Google sign-in via Convex Auth, server-enforced trading
 - Realtime everywhere (orders, positions, leaderboard, activity feed)
-- Public profile pages with merged activity, owner-only sections
-- Admin notifications bell tied to pending proposals + overdue tickets
+- Public profile pages with leaderboard rank, merged activity, owner-only sections
+- Admin notifications bell tied to overdue tickets + insider-trading reports
 - Mobile-first responsive layout with sticky-bottom buy CTA
 - SEO meta + OG, favicon, robots.txt, chunk-error auto-recovery
-- URL rename `/markets` → `/tickets` with redirects for old links
+- Daily ₪50 stipend (24h cooldown)
+- Rotating-name hero animation with framer-motion
 
 Next:
 
@@ -162,6 +161,6 @@ Next:
 ## Disclaimer
 
 CHARLES.MARKET runs on play-money shekels. No real value changes
-hands. The tickets describe behavior of a fictionalized "Charles" for
-entertainment between friends — please don't use this to operate an
-actual betting business without talking to a lawyer.
+hands. The tickets describe friends doing dumb things, for entertainment
+between friends. Please don't use this to operate an actual betting
+business without talking to a lawyer.
