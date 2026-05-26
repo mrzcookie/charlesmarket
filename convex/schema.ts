@@ -38,7 +38,10 @@ export default defineSchema({
 		),
 		resolution: v.optional(sideUnion),
 		createdAt: v.number(),
-		subjectUserId: v.id("users"),
+		// Subject is either a linked user (subjectUserId) OR a free-text name
+		// (subjectName). Exactly one is set; enforced at mutation time.
+		subjectUserId: v.optional(v.id("users")),
+		subjectName: v.optional(v.string()),
 		creatorId: v.id("users"),
 	})
 		.index("by_slug", ["slug"])

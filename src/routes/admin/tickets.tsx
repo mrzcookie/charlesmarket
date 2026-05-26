@@ -71,10 +71,10 @@ type Row = {
 	liquidity: number;
 	slug: string;
 	subject: {
-		_id: Id<"users">;
-		handle: string;
-		name: string | null;
-		image: string | null;
+		name: string;
+		_id?: Id<"users">;
+		handle?: string;
+		image?: string | null;
 	} | null;
 	creator: {
 		_id: Id<"users">;
@@ -697,7 +697,7 @@ function TicketDrawerBody({ row, onClose }: { row: Row; onClose: () => void }) {
 	const [tags, setTags] = useState(row.tags.join(", "));
 	const [closesAtMs, setClosesAtMs] = useState(row.closesAtMs);
 	const [closesAtLabel, setClosesAtLabel] = useState(row.closesAt);
-	const [subject, setSubject] = useState<Pick | null>(row.subject);
+	const [subject, setSubject] = useState<Row["subject"]>(row.subject);
 	const [creator, setCreator] = useState<Pick | null>(row.creator);
 	const [saving, setSaving] = useState(false);
 
@@ -706,6 +706,9 @@ function TicketDrawerBody({ row, onClose }: { row: Row; onClose: () => void }) {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
+			const subjectChanged =
+				(subject?._id ?? null) !== (row.subject?._id ?? null) ||
+				(subject?.name ?? null) !== (row.subject?.name ?? null);
 			await updateTicket({
 				ticketId: row.id,
 				question: question.trim(),
@@ -716,8 +719,11 @@ function TicketDrawerBody({ row, onClose }: { row: Row; onClose: () => void }) {
 					.filter(Boolean),
 				closesAt: closesAtLabel.trim() || row.closesAt,
 				closesAtMs,
-				subjectUserId:
-					subject && subject._id !== row.subject?._id ? subject._id : undefined,
+				subjectUserId: subjectChanged && subject?._id ? subject._id : undefined,
+				subjectName:
+					subjectChanged && !subject?._id && subject?.name
+						? subject.name
+						: undefined,
 				creatorId:
 					creator && creator._id !== row.creator?._id ? creator._id : undefined,
 			});
@@ -738,7 +744,8 @@ function TicketDrawerBody({ row, onClose }: { row: Row; onClose: () => void }) {
 		tags !== row.tags.join(", ") ||
 		closesAtMs !== row.closesAtMs ||
 		closesAtLabel !== row.closesAt ||
-		subject?._id !== row.subject?._id ||
+		(subject?._id ?? null) !== (row.subject?._id ?? null) ||
+		(subject?.name ?? null) !== (row.subject?.name ?? null) ||
 		creator?._id !== row.creator?._id;
 
 	return (
@@ -825,9 +832,9 @@ function TicketDrawerBody({ row, onClose }: { row: Row; onClose: () => void }) {
 					</div>
 
 					<div className="grid grid-cols-1 gap-3 border-rule border-t pt-4 sm:grid-cols-2">
-						<EditablePerson
+						<EditableSubject
 							label="Subject (about)"
-							person={subject}
+							subject={subject}
 							meId={me?._id}
 							onChange={setSubject}
 							allowSelf
@@ -1058,6 +1065,120 @@ function MiniStat({
 	);
 }
 
+function EditableSubject({
+	label,
+	subject,
+	meId,
+	onChange,
+	allowSelf = false,
+}: {
+	label: string;
+	subject: Row["subject"];
+	meId: Id<"users"> | undefined;
+	onChange: (next: Row["subject"]) => void;
+	allowSelf?: boolean;
+}) {
+	const [editing, setEditing] = useState(false);
+	const [nameMode, setNameMode] = useState(false);
+	const [nameDraft, setNameDraft] = useState("");
+	return (
+		<div className="space-y-2">
+			<Label>{label}</Label>
+			{editing ? (
+				<div className="space-y-2">
+					{nameMode ? (
+						<form
+							className="flex items-center gap-2"
+							onSubmit={(e) => {
+								e.preventDefault();
+								const trimmed = nameDraft.trim();
+								if (!trimmed) return;
+								onChange({ name: trimmed });
+								setNameMode(false);
+								setEditing(false);
+								setNameDraft("");
+							}}
+						>
+							<Input
+								autoFocus
+								value={nameDraft}
+								onChange={(e) => setNameDraft(e.target.value)}
+								placeholder="e.g. Carla from accounting"
+								maxLength={60}
+							/>
+							<Button type="submit" size="sm" disabled={!nameDraft.trim()}>
+								Set
+							</Button>
+						</form>
+					) : (
+						<UserPicker
+							meId={meId}
+							allowSelf={allowSelf}
+							onPick={(u) => {
+								onChange({
+									_id: u._id,
+									handle: u.handle,
+									name: u.name ?? u.handle,
+									image: u.image,
+								});
+								setEditing(false);
+							}}
+						/>
+					)}
+					<div className="flex items-center gap-2">
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => setNameMode((m) => !m)}
+						>
+							{nameMode ? "Pick a user" : "Use a name instead"}
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							className="ml-auto"
+							onClick={() => {
+								setEditing(false);
+								setNameMode(false);
+								setNameDraft("");
+							}}
+						>
+							<X /> Cancel
+						</Button>
+					</div>
+				</div>
+			) : (
+				<div className="flex items-center justify-between gap-2 border border-rule bg-ink px-3 py-2">
+					<div className="min-w-0">
+						<div className="truncate font-display font-semibold text-sm">
+							{subject ? subject.name : "—"}
+						</div>
+						{subject?.handle ? (
+							<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+								{subject.handle}
+							</div>
+						) : subject ? (
+							<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.14em]">
+								off-platform
+							</div>
+						) : null}
+					</div>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => setEditing(true)}
+					>
+						<Pencil /> Change
+					</Button>
+				</div>
+			)}
+		</div>
+	);
+}
+
 function EditablePerson({
 	label,
 	person,
@@ -1133,18 +1254,29 @@ function PeopleRow({
 				{label}
 			</div>
 			{person ? (
-				<Link
-					to="/profile/$username"
-					params={{ username: person.handle.replace(/^@/, "") }}
-					className="flex min-w-0 items-baseline gap-2 hover:text-brand"
-				>
-					<span className="truncate font-display font-semibold text-bone text-sm">
-						{person.name ?? person.handle}
-					</span>
-					<span className="shrink-0 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-						{person.handle}
-					</span>
-				</Link>
+				person.handle ? (
+					<Link
+						to="/profile/$username"
+						params={{ username: person.handle.replace(/^@/, "") }}
+						className="flex min-w-0 items-baseline gap-2 hover:text-brand"
+					>
+						<span className="truncate font-display font-semibold text-bone text-sm">
+							{person.name ?? person.handle}
+						</span>
+						<span className="shrink-0 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							{person.handle}
+						</span>
+					</Link>
+				) : (
+					<div className="flex min-w-0 items-baseline gap-2">
+						<span className="truncate font-display font-semibold text-bone text-sm">
+							{person.name}
+						</span>
+						<span className="shrink-0 font-mono text-[9px] text-bone-3 uppercase tracking-[0.14em]">
+							off-platform
+						</span>
+					</div>
+				)
 			) : (
 				<span className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
 					—

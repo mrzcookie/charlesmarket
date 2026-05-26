@@ -12,6 +12,16 @@ export type UserMini = {
 	image: string | null;
 };
 
+// Subject can be a linked user OR a free-text name (someone not in the system).
+// `name` is always present. When `_id` is set, the subject links to a profile;
+// otherwise it's off-platform.
+export type SubjectRef = {
+	name: string;
+	_id?: string;
+	handle?: string;
+	image?: string | null;
+};
+
 export type Ticket = {
 	id: string;
 	slug: string;
@@ -29,7 +39,7 @@ export type Ticket = {
 	history: PriceTick[];
 	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
-	subject: UserMini | null;
+	subject: SubjectRef | null;
 	creator: UserMini | null;
 };
 
@@ -101,7 +111,7 @@ export type ConvexTicket = {
 	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
 	createdAt: number;
-	subject?: UserMini | null;
+	subject?: SubjectRef | null;
 	creator?: UserMini | null;
 };
 

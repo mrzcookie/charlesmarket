@@ -125,12 +125,16 @@ type Pick = {
 	image: string | null;
 };
 
+type SubjectChoice =
+	| { kind: "user"; user: Pick }
+	| { kind: "name"; name: string };
+
 function AuthedBody() {
 	const me = useQuery(api.users.me, {});
 	const create = useMutation(api.tickets.create);
 	const navigate = useNavigate();
 
-	const [subject, setSubject] = useState<Pick | null>(null);
+	const [subject, setSubject] = useState<SubjectChoice | null>(null);
 	const [question, setQuestion] = useState("");
 	const [description, setDescription] = useState("");
 	const [tagInput, setTagInput] = useState("");
@@ -175,9 +179,18 @@ function AuthedBody() {
 		Number.isFinite(closesAtMs) && closesAtMs > Date.now() + 5 * 60_000;
 	const yesOk = yesPrice > 0.01 && yesPrice < 0.99;
 	const liqOk = liquidity >= 100 && liquidity <= 50_000;
-	const subjectOk = !!subject && subject._id !== me?._id;
+	const subjectOk =
+		!!subject &&
+		(subject.kind === "name"
+			? subject.name.trim().length > 0 && subject.name.trim().length <= 60
+			: subject.user._id !== me?._id);
 	const formValid =
 		questionOk && descriptionOk && futureOk && yesOk && liqOk && subjectOk;
+
+	const subjectLabel =
+		subject?.kind === "user"
+			? (subject.user.name ?? subject.user.handle)
+			: (subject?.name ?? "");
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -185,7 +198,8 @@ function AuthedBody() {
 		setSubmitting(true);
 		try {
 			const { slug } = await create({
-				subjectUserId: subject._id,
+				subjectUserId: subject.kind === "user" ? subject.user._id : undefined,
+				subjectName: subject.kind === "name" ? subject.name.trim() : undefined,
 				question: questionTrim,
 				description: descriptionTrim,
 				tags,
@@ -223,23 +237,25 @@ function AuthedBody() {
 						{subject ? (
 							<div className="flex items-center justify-between border border-brand/40 bg-brand-wash p-3">
 								<div className="flex items-center gap-3">
-									{subject.image ? (
+									{subject.kind === "user" && subject.user.image ? (
 										<img
-											src={subject.image}
+											src={subject.user.image}
 											alt=""
 											className="size-9 border border-rule object-cover"
 										/>
 									) : (
 										<div className="grid size-9 place-items-center border border-rule bg-ink text-bone-2 text-xs">
-											{(subject.name ?? subject.handle).slice(0, 2)}
+											{subjectLabel.slice(0, 2)}
 										</div>
 									)}
 									<div className="min-w-0">
 										<div className="truncate font-display font-semibold">
-											{subject.name ?? subject.handle}
+											{subjectLabel}
 										</div>
 										<div className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
-											{subject.handle}
+											{subject.kind === "user"
+												? subject.user.handle
+												: "OFF-PLATFORM"}
 										</div>
 									</div>
 								</div>
@@ -253,7 +269,7 @@ function AuthedBody() {
 								</Button>
 							</div>
 						) : (
-							<UserPicker meId={me?._id} onPick={setSubject} />
+							<SubjectPicker meId={me?._id} onPick={setSubject} />
 						)}
 						<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
 							The person this ticket is about. They can't trade it.
@@ -264,11 +280,7 @@ function AuthedBody() {
 						<Label htmlFor="question">Question</Label>
 						<Input
 							id="question"
-							placeholder={
-								subject
-									? `Will ${subject.name ?? subject.handle}…?`
-									: "Will they…?"
-							}
+							placeholder={subject ? `Will ${subjectLabel}…?` : "Will they…?"}
 							value={question}
 							onChange={(e) => setQuestion(e.target.value)}
 							maxLength={140}
@@ -450,90 +462,124 @@ function AuthedBody() {
 	);
 }
 
-function UserPicker({
+function SubjectPicker({
 	meId,
 	onPick,
 }: {
 	meId: Id<"users"> | undefined;
-	onPick: (user: Pick) => void;
+	onPick: (choice: SubjectChoice) => void;
 }) {
+	const [mode, setMode] = useState<"user" | "name">("user");
 	const [q, setQ] = useState("");
+	const [name, setName] = useState("");
 	const trimmed = q.trim();
 	const results = useQuery(
 		api.users.search,
-		trimmed.length >= 1 ? { q: trimmed, limit: 8 } : "skip"
+		mode === "user" && trimmed.length >= 1 ? { q: trimmed, limit: 8 } : "skip"
 	);
+
+	const trimmedName = name.trim();
+	const nameOk = trimmedName.length > 0 && trimmedName.length <= 60;
 
 	return (
 		<div className="space-y-2">
-			<div className="relative">
-				<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
-				<Input
-					placeholder="Search by name or @handle"
-					value={q}
-					onChange={(e) => setQ(e.target.value)}
-					className="pl-9"
-				/>
-			</div>
-			{trimmed.length >= 1 && (
-				<div className="border border-rule bg-ink">
-					{results === undefined ? (
-						<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
-							Searching…
+			{mode === "user" ? (
+				<>
+					<div className="relative">
+						<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
+						<Input
+							placeholder="Search by name or @handle"
+							value={q}
+							onChange={(e) => setQ(e.target.value)}
+							className="pl-9"
+						/>
+					</div>
+					{trimmed.length >= 1 && (
+						<div className="border border-rule bg-ink">
+							{results === undefined ? (
+								<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+									Searching…
+								</div>
+							) : results.length === 0 ? (
+								<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+									No matches.
+								</div>
+							) : (
+								<ul>
+									{results.map((u) => {
+										const isMe = meId === u._id;
+										return (
+											<li key={u._id}>
+												<button
+													type="button"
+													disabled={isMe}
+													onClick={() => onPick({ kind: "user", user: u })}
+													className={cn(
+														"flex w-full items-center gap-3 border-rule border-b px-3 py-2 text-left transition last:border-b-0",
+														isMe
+															? "cursor-not-allowed opacity-50"
+															: "hover:bg-brand-wash"
+													)}
+												>
+													{u.image ? (
+														<img
+															src={u.image}
+															alt=""
+															className="size-8 border border-rule object-cover"
+														/>
+													) : (
+														<div className="grid size-8 place-items-center border border-rule bg-ink-2 text-bone-2 text-xs">
+															{(u.name ?? u.handle).slice(0, 2)}
+														</div>
+													)}
+													<div className="min-w-0 flex-1">
+														<div className="truncate font-display font-semibold text-sm">
+															{u.name ?? u.handle}
+														</div>
+														<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+															{u.handle}
+														</div>
+													</div>
+													{isMe ? (
+														<span className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+															You
+														</span>
+													) : null}
+												</button>
+											</li>
+										);
+									})}
+								</ul>
+							)}
 						</div>
-					) : results.length === 0 ? (
-						<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
-							No matches.
-						</div>
-					) : (
-						<ul>
-							{results.map((u) => {
-								const isMe = meId === u._id;
-								return (
-									<li key={u._id}>
-										<button
-											type="button"
-											disabled={isMe}
-											onClick={() => onPick(u)}
-											className={cn(
-												"flex w-full items-center gap-3 border-rule border-b px-3 py-2 text-left transition last:border-b-0",
-												isMe
-													? "cursor-not-allowed opacity-50"
-													: "hover:bg-brand-wash"
-											)}
-										>
-											{u.image ? (
-												<img
-													src={u.image}
-													alt=""
-													className="size-8 border border-rule object-cover"
-												/>
-											) : (
-												<div className="grid size-8 place-items-center border border-rule bg-ink-2 text-bone-2 text-xs">
-													{(u.name ?? u.handle).slice(0, 2)}
-												</div>
-											)}
-											<div className="min-w-0 flex-1">
-												<div className="truncate font-display font-semibold text-sm">
-													{u.name ?? u.handle}
-												</div>
-												<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-													{u.handle}
-												</div>
-											</div>
-											{isMe ? (
-												<span className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-													You
-												</span>
-											) : null}
-										</button>
-									</li>
-								);
-							})}
-						</ul>
 					)}
+				</>
+			) : (
+				<div className="flex flex-col gap-2 sm:flex-row">
+					<Input
+						placeholder="e.g. Carla from accounting"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						maxLength={60}
+					/>
+					<Button
+						type="button"
+						disabled={!nameOk}
+						onClick={() => onPick({ kind: "name", name: trimmedName })}
+					>
+						Use name
+					</Button>
 				</div>
 			)}
+			<button
+				type="button"
+				onClick={() => setMode(mode === "user" ? "name" : "user")}
+				className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em] hover:text-brand"
+			>
+				{mode === "user"
+					? "→ Not on Charles? Use a name instead"
+					: "← Pick a user instead"}
+			</button>
 		</div>
 	);
 }

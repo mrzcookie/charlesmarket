@@ -42,9 +42,39 @@ async function userMini(ctx: QueryCtx, userId: Id<"users">) {
 	};
 }
 
+// Unified subject ref. `name` is always present; `_id` + `handle` + `image`
+// only when the subject is a linked user. Renderers check `_id` to decide if
+// the subject links to a profile.
+export type SubjectRef = {
+	name: string;
+	_id?: Id<"users">;
+	handle?: string;
+	image?: string | null;
+};
+
+async function subjectRef(
+	ctx: QueryCtx,
+	m: Doc<"tickets">
+): Promise<SubjectRef | null> {
+	if (m.subjectUserId) {
+		const u = await userMini(ctx, m.subjectUserId);
+		if (!u) return null;
+		return {
+			_id: u._id,
+			handle: u.handle,
+			name: u.name ?? u.handle,
+			image: u.image,
+		};
+	}
+	if (m.subjectName) {
+		return { name: m.subjectName };
+	}
+	return null;
+}
+
 async function enrichMarket(ctx: QueryCtx, m: Doc<"tickets">) {
 	const [subject, creator] = await Promise.all([
-		userMini(ctx, m.subjectUserId),
+		subjectRef(ctx, m),
 		userMini(ctx, m.creatorId),
 	]);
 	return { ...m, subject, creator };
@@ -94,9 +124,14 @@ export const history = query({
 	},
 });
 
+const MAX_SUBJECT_NAME = 60;
+
 export const create = mutation({
 	args: {
-		subjectUserId: v.id("users"),
+		// Subject: pick exactly one. `subjectUserId` links a real user;
+		// `subjectName` is free-text for someone not in the system.
+		subjectUserId: v.optional(v.id("users")),
+		subjectName: v.optional(v.string()),
 		question: v.string(),
 		description: v.string(),
 		tags: v.array(v.string()),
@@ -111,12 +146,33 @@ export const create = mutation({
 	handler: async (ctx, args) => {
 		const user = await requireUser(ctx);
 
-		const subject = await ctx.db.get(args.subjectUserId);
-		if (!subject) throw new Error("Subject user not found");
-		if (subject._id === user._id) {
-			if (!(args.adminOverride && isAdminUser(user))) {
-				throw new Error("You can't make a ticket about yourself");
+		// XOR: exactly one subject form.
+		const trimmedName = args.subjectName?.trim() || undefined;
+		if (!args.subjectUserId && !trimmedName) {
+			throw new Error("Pick a subject: either a user or a name");
+		}
+		if (args.subjectUserId && trimmedName) {
+			throw new Error("Pick one subject form, not both");
+		}
+
+		let resolvedSubjectUserId: Id<"users"> | undefined;
+		let resolvedSubjectName: string | undefined;
+		if (args.subjectUserId) {
+			const subject = await ctx.db.get(args.subjectUserId);
+			if (!subject) throw new Error("Subject user not found");
+			if (subject._id === user._id) {
+				if (!(args.adminOverride && isAdminUser(user))) {
+					throw new Error("You can't make a ticket about yourself");
+				}
 			}
+			resolvedSubjectUserId = subject._id;
+		} else if (trimmedName) {
+			if (trimmedName.length > MAX_SUBJECT_NAME) {
+				throw new Error(
+					`Subject name must be ${MAX_SUBJECT_NAME} characters or fewer`
+				);
+			}
+			resolvedSubjectName = trimmedName;
 		}
 
 		const question = args.question.trim();
@@ -173,7 +229,8 @@ export const create = mutation({
 			tags,
 			status: "open",
 			createdAt: now,
-			subjectUserId: subject._id,
+			subjectUserId: resolvedSubjectUserId,
+			subjectName: resolvedSubjectName,
 			creatorId: user._id,
 		});
 		await ctx.db.insert("priceTicks", {

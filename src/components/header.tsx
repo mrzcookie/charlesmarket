@@ -335,7 +335,7 @@ type TicketHit = {
 	yesPrice: number;
 	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
-	subject: { handle: string; name: string | null } | null;
+	subject: { name: string; handle?: string } | null;
 };
 
 function SearchDropdown({
@@ -443,9 +443,7 @@ function SearchDropdown({
 														{t.question}
 													</div>
 													<div className="mt-0.5 font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
-														{t.subject
-															? `ABOUT ${t.subject.name ?? t.subject.handle}`
-															: ""}
+														{t.subject ? `ABOUT ${t.subject.name}` : ""}
 														{t.subject ? " · " : ""}
 														{isClosed
 															? t.status === "resolved"

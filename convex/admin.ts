@@ -48,6 +48,31 @@ async function userMini(ctx: QueryCtx, userId: Id<"users">) {
 	};
 }
 
+type AdminSubject = {
+	name: string;
+	_id?: Id<"users">;
+	handle?: string;
+	image?: string | null;
+};
+
+async function subjectRef(
+	ctx: QueryCtx,
+	ticket: Doc<"tickets">
+): Promise<AdminSubject | null> {
+	if (ticket.subjectUserId) {
+		const u = await userMini(ctx, ticket.subjectUserId);
+		if (!u) return null;
+		return {
+			_id: u._id,
+			handle: u.handle,
+			name: u.name ?? u.handle,
+			image: u.image,
+		};
+	}
+	if (ticket.subjectName) return { name: ticket.subjectName };
+	return null;
+}
+
 export const listAll = query({
 	args: {},
 	handler: async (ctx) => {
@@ -57,7 +82,7 @@ export const listAll = query({
 		return await Promise.all(
 			tickets.map(async (m) => ({
 				...m,
-				subject: await userMini(ctx, m.subjectUserId),
+				subject: await subjectRef(ctx, m),
 				creator: await userMini(ctx, m.creatorId),
 			}))
 		);
@@ -74,6 +99,7 @@ export const updateTicket = mutation({
 		closesAtMs: v.optional(v.number()),
 		slug: v.optional(v.string()),
 		subjectUserId: v.optional(v.id("users")),
+		subjectName: v.optional(v.string()),
 		creatorId: v.optional(v.id("users")),
 	},
 	handler: async (ctx, args) => {
@@ -104,6 +130,13 @@ export const updateTicket = mutation({
 			const subject = await ctx.db.get(args.subjectUserId);
 			if (!subject) throw new Error("Subject user not found");
 			patch.subjectUserId = args.subjectUserId;
+			patch.subjectName = undefined;
+		} else if (args.subjectName !== undefined) {
+			const trimmed = args.subjectName.trim();
+			if (!trimmed) throw new Error("Subject name cannot be empty");
+			if (trimmed.length > 60) throw new Error("Subject name too long");
+			patch.subjectName = trimmed;
+			patch.subjectUserId = undefined;
 		}
 		if (args.creatorId !== undefined) {
 			const creator = await ctx.db.get(args.creatorId);

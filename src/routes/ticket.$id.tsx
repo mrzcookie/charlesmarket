@@ -204,13 +204,19 @@ function TicketHeader({
 			{ticket.subject ? (
 				<div className="mt-3 font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
 					ABOUT{" "}
-					<Link
-						to="/profile/$username"
-						params={{ username: ticket.subject.handle.replace(/^@/, "") }}
-						className="font-bold text-bone normal-case tracking-normal hover:text-brand"
-					>
-						{ticket.subject.name ?? ticket.subject.handle}
-					</Link>
+					{ticket.subject.handle ? (
+						<Link
+							to="/profile/$username"
+							params={{ username: ticket.subject.handle.replace(/^@/, "") }}
+							className="font-bold text-bone normal-case tracking-normal hover:text-brand"
+						>
+							{ticket.subject.name}
+						</Link>
+					) : (
+						<span className="font-bold text-bone normal-case tracking-normal">
+							{ticket.subject.name}
+						</span>
+					)}
 				</div>
 			) : null}
 			<div className="mt-6 flex items-end justify-between">

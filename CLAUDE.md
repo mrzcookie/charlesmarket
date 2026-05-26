@@ -200,8 +200,10 @@ tickets.create ──> ticket (open) ──close──> ticket (closed) ──re
 ```
 
 - `tickets.create` (auth required, no admin gate) inserts a row in
-  `tickets` with `subjectUserId` + `creatorId` and seeds the first
-  `priceTicks` entry.
+  `tickets` with either `subjectUserId` (linked user) **or**
+  `subjectName` (free-text, off-platform) plus `creatorId`, and seeds
+  the first `priceTicks` entry. Pass exactly one of the two — the
+  mutation rejects both/neither.
 - `admin.resolveTicket` pays out winning positions (1 ₪/share), records
   closing trades, zeroes positions, sets `yesPrice` to 0 or 1, and writes
   a final priceTick.
@@ -214,9 +216,14 @@ tickets.create ──> ticket (open) ──close──> ticket (closed) ──re
 - `tickets` carries: `question`, optional free-text `description`,
   `tags`, `closesAt` (display label) + `closesAtMs` (numeric),
   `yesPrice`, `volume`, `liquidity`, `openInterest`, `status`,
-  optional `resolution`, **`subjectUserId`** (the user the ticket is
-  about), **`creatorId`** (the user who published it).
+  optional `resolution`, **`subjectUserId`** (optional — the linked
+  user the ticket is about) **or `subjectName`** (optional — free-text
+  name when the subject isn't on the platform; exactly one must be
+  set), **`creatorId`** (the user who published it).
   Indexes: `by_slug`, `by_status`, `by_subject`, `by_creator`.
+  Free-text-subject tickets don't appear in `tickets.bySubject` lookups
+  (no user to attach them to) and the trade gate naturally never fires
+  for them.
 - Child tables (`positions`, `trades`, `comments`, `priceTicks`,
   `ticketReports`) reference tickets via `ticketId: v.id("tickets")`
   with a `by_ticket` index.
