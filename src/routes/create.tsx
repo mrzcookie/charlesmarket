@@ -4,8 +4,9 @@ import {
 	AuthLoading,
 	Unauthenticated,
 	useMutation,
+	useQuery,
 } from "convex/react";
-import { ArrowRight, Lightbulb, Send } from "lucide-react";
+import { Check, Search, Send, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
@@ -14,60 +15,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { CURRENCY_SYMBOL, categories } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { CURRENCY_SYMBOL } from "@/lib/tickets";
+import { cn } from "@/lib/utils";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 
-export const Route = createFileRoute("/propose")({
-	component: ProposePage,
+export const Route = createFileRoute("/create")({
+	component: CreatePage,
 	head: () =>
 		pageHead({
-			title: "Propose a ticket",
+			title: "Create a ticket",
 			description:
-				"Pitch a Yes/No prediction ticket about Charles. If an admin approves it, the rest of us can trade it.",
-			path: "/propose",
+				"Pick a person, write a Yes/No question about them, and the ticket goes live immediately. They can't trade their own. Neither can you.",
+			path: "/create",
 		}),
 });
-
-type Example = {
-	question: string;
-	description: string;
-	category: string;
-	tags: string;
-};
-
-const EXAMPLES: Example[] = [
-	{
-		question: "Will Charles return the rental car without a new dent?",
-		description:
-			"Resolves YES if the Hertz inspection report shows no new damage versus pickup.",
-		category: "Mishaps",
-		tags: "travel, chaos",
-	},
-	{
-		question: "Will Charles finish 'Annihilation' before our book club?",
-		description:
-			"Resolves YES if Charles can answer 3 spoiler questions at the June 10 meetup.",
-		category: "Antics",
-		tags: "reading, book-club",
-	},
-	{
-		question: "Will Charles RSVP to the wedding within 7 days?",
-		description:
-			"Resolves YES if the wedding website shows Charles's RSVP submitted within 7 days of the invite.",
-		category: "Relationships",
-		tags: "wedding, deadline",
-	},
-];
 
 const DAY = 86_400_000;
 
@@ -125,18 +90,18 @@ function formatCloseLabel(ms: number): string {
 	});
 }
 
-function ProposePage() {
+function CreatePage() {
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 sm:py-12">
 			<header>
-				<Kicker>PROPOSE</Kicker>
+				<Kicker>CREATE</Kicker>
 				<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
-					Pitch the next ticket
+					New ticket
 				</h1>
 				<p className="mt-3 max-w-2xl text-bone-2 text-sm sm:text-base">
-					Submit a question, set the closing date, and the admins will approve,
-					reject, or send notes. Approved tickets go live with your starting Yes
-					price.
+					Pick a person, write a Yes/No question about them, set when it closes.
+					It goes live the second you publish. You and the subject can't trade
+					it; everyone else can.
 				</p>
 			</header>
 
@@ -153,13 +118,21 @@ function ProposePage() {
 	);
 }
 
+type Pick = {
+	_id: Id<"users">;
+	handle: string;
+	name: string | null;
+	image: string | null;
+};
+
 function AuthedBody() {
-	const submit = useMutation(api.proposals.submit);
+	const me = useQuery(api.users.me, {});
+	const create = useMutation(api.tickets.create);
 	const navigate = useNavigate();
 
+	const [subject, setSubject] = useState<Pick | null>(null);
 	const [question, setQuestion] = useState("");
 	const [description, setDescription] = useState("");
-	const [category, setCategory] = useState<string>("Antics");
 	const [tagInput, setTagInput] = useState("");
 	const [preset, setPreset] = useState<Preset>("1w");
 	const [customAt, setCustomAt] = useState<string>(
@@ -202,41 +175,36 @@ function AuthedBody() {
 		Number.isFinite(closesAtMs) && closesAtMs > Date.now() + 5 * 60_000;
 	const yesOk = yesPrice > 0.01 && yesPrice < 0.99;
 	const liqOk = liquidity >= 100 && liquidity <= 50_000;
-	const formValid = questionOk && descriptionOk && futureOk && yesOk && liqOk;
+	const subjectOk = !!subject && subject._id !== me?._id;
+	const formValid =
+		questionOk && descriptionOk && futureOk && yesOk && liqOk && subjectOk;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!formValid || submitting) return;
+		if (!formValid || submitting || !subject) return;
 		setSubmitting(true);
 		try {
-			await submit({
+			const { slug } = await create({
+				subjectUserId: subject._id,
 				question: questionTrim,
 				description: descriptionTrim,
-				category,
 				tags,
 				closesAt: closesAtLabel,
 				closesAtMs,
 				initialYesPrice: yesPrice,
 				initialLiquidity: liquidity,
 			});
-			toast.success("Proposal submitted", {
-				description: "Admins will review it shortly.",
+			toast.success("Ticket live", {
+				description: "Anyone but you and the subject can trade it now.",
 			});
-			navigate({ to: "/portfolio" });
+			navigate({ to: "/ticket/$id", params: { id: slug } });
 		} catch (err) {
-			toast.error("Couldn't submit proposal", {
+			toast.error("Couldn't create ticket", {
 				description: err instanceof Error ? err.message : String(err),
 			});
 		} finally {
 			setSubmitting(false);
 		}
-	};
-
-	const fillExample = (ex: Example) => {
-		setQuestion(ex.question);
-		setDescription(ex.description);
-		setCategory(ex.category);
-		setTagInput(ex.tags);
 	};
 
 	return (
@@ -245,16 +213,62 @@ function AuthedBody() {
 				<div className="border-rule border-b pb-3">
 					<Kicker>TICKET DETAILS</Kicker>
 					<p className="mt-2 text-bone-2 text-sm">
-						Be specific. Vague questions get rejected, the question itself
-						should make the YES/NO call unambiguous.
+						Be specific. Vague questions resolve in arguments. Pick a clear,
+						observable outcome.
 					</p>
 				</div>
 				<form className="mt-6 space-y-6" onSubmit={handleSubmit}>
 					<div className="space-y-2">
+						<Label>Subject</Label>
+						{subject ? (
+							<div className="flex items-center justify-between border border-brand/40 bg-brand-wash p-3">
+								<div className="flex items-center gap-3">
+									{subject.image ? (
+										<img
+											src={subject.image}
+											alt=""
+											className="size-9 border border-rule object-cover"
+										/>
+									) : (
+										<div className="grid size-9 place-items-center border border-rule bg-ink text-bone-2 text-xs">
+											{(subject.name ?? subject.handle).slice(0, 2)}
+										</div>
+									)}
+									<div className="min-w-0">
+										<div className="truncate font-display font-semibold">
+											{subject.name ?? subject.handle}
+										</div>
+										<div className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+											{subject.handle}
+										</div>
+									</div>
+								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									onClick={() => setSubject(null)}
+								>
+									<X /> Change
+								</Button>
+							</div>
+						) : (
+							<UserPicker meId={me?._id} onPick={setSubject} />
+						)}
+						<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.1em]">
+							The person this ticket is about. They can't trade it.
+						</p>
+					</div>
+
+					<div className="space-y-2">
 						<Label htmlFor="question">Question</Label>
 						<Input
 							id="question"
-							placeholder="Will Charles…?"
+							placeholder={
+								subject
+									? `Will ${subject.name ?? subject.handle}…?`
+									: "Will they…?"
+							}
 							value={question}
 							onChange={(e) => setQuestion(e.target.value)}
 							maxLength={140}
@@ -281,22 +295,6 @@ function AuthedBody() {
 							<span>Up to 1,000 characters.</span>
 							<span className="tabular-nums">{description.length}/1000</span>
 						</div>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor="category">Category</Label>
-						<Select value={category} onValueChange={setCategory}>
-							<SelectTrigger id="category">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{categories.map((c) => (
-									<SelectItem key={c} value={c}>
-										{c}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
 					</div>
 
 					<div className="space-y-2">
@@ -413,10 +411,10 @@ function AuthedBody() {
 						</Button>
 						<Button type="submit" disabled={!formValid || submitting}>
 							{submitting ? (
-								"SUBMITTING…"
+								"PUBLISHING…"
 							) : (
 								<>
-									<Send /> Submit for review
+									<Send /> Publish ticket
 								</>
 							)}
 						</Button>
@@ -427,54 +425,115 @@ function AuthedBody() {
 			<aside className="space-y-6">
 				<section className="border border-rule bg-ink-2 p-5">
 					<div className="flex items-center gap-2 border-rule border-b pb-3">
-						<Lightbulb className="size-4 text-brand" />
-						<Kicker>SHIPPING RULES</Kicker>
+						<Check className="size-4 text-brand" />
+						<Kicker>HOUSE RULES</Kicker>
 					</div>
 					<div className="mt-3 space-y-3 text-bone-2 text-sm leading-relaxed">
 						<p>
-							<strong className="text-bone">Be specific.</strong> "Will Charles
-							flake?" is too vague. "Will Charles cancel Friday's hang less than
-							6h before?" is testable.
+							<strong className="text-bone">Be specific.</strong> "Will they
+							flake?" is vague. "Will they cancel Friday's dinner less than 6h
+							before?" resolves cleanly.
 						</p>
 						<p>
-							<strong className="text-bone">Pick a source.</strong> Group chat
-							receipts, Venmo, photo evidence. Without a source, traders argue
-							forever.
+							<strong className="text-bone">Pick a source.</strong> Group chat,
+							Venmo, photo, scoreboard. Without one, traders argue forever.
 						</p>
 						<p>
-							<strong className="text-bone">Set a deadline.</strong> Open ended
-							markets never settle.
+							<strong className="text-bone">Subjects can't trade.</strong>{" "}
+							Neither can the creator. The ticket settles by what the rest of
+							the room thinks.
 						</p>
-					</div>
-				</section>
-
-				<section className="border border-rule bg-ink-2 p-5">
-					<div className="border-rule border-b pb-3">
-						<Kicker>EXAMPLES</Kicker>
-						<p className="mt-2 text-bone-3 text-xs">Click to autofill.</p>
-					</div>
-					<div className="mt-3 space-y-2">
-						{EXAMPLES.map((ex) => (
-							<button
-								key={ex.question}
-								type="button"
-								onClick={() => fillExample(ex)}
-								className="group block w-full border border-rule bg-ink p-3 text-left text-sm transition hover:border-brand hover:bg-brand-wash"
-							>
-								<div className="flex items-start justify-between gap-2">
-									<span className="font-display font-semibold text-bone group-hover:text-brand">
-										{ex.question}
-									</span>
-									<ArrowRight className="mt-0.5 size-3.5 shrink-0 text-bone-3 group-hover:text-brand" />
-								</div>
-								<div className="mt-1 font-mono text-[10px] text-bone-3 uppercase tracking-[0.14em]">
-									{ex.category}
-								</div>
-							</button>
-						))}
 					</div>
 				</section>
 			</aside>
+		</div>
+	);
+}
+
+function UserPicker({
+	meId,
+	onPick,
+}: {
+	meId: Id<"users"> | undefined;
+	onPick: (user: Pick) => void;
+}) {
+	const [q, setQ] = useState("");
+	const trimmed = q.trim();
+	const results = useQuery(
+		api.users.search,
+		trimmed.length >= 1 ? { q: trimmed, limit: 8 } : "skip"
+	);
+
+	return (
+		<div className="space-y-2">
+			<div className="relative">
+				<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
+				<Input
+					placeholder="Search by name or @handle"
+					value={q}
+					onChange={(e) => setQ(e.target.value)}
+					className="pl-9"
+				/>
+			</div>
+			{trimmed.length >= 1 && (
+				<div className="border border-rule bg-ink">
+					{results === undefined ? (
+						<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+							Searching…
+						</div>
+					) : results.length === 0 ? (
+						<div className="px-3 py-2 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
+							No matches.
+						</div>
+					) : (
+						<ul>
+							{results.map((u) => {
+								const isMe = meId === u._id;
+								return (
+									<li key={u._id}>
+										<button
+											type="button"
+											disabled={isMe}
+											onClick={() => onPick(u)}
+											className={cn(
+												"flex w-full items-center gap-3 border-rule border-b px-3 py-2 text-left transition last:border-b-0",
+												isMe
+													? "cursor-not-allowed opacity-50"
+													: "hover:bg-brand-wash"
+											)}
+										>
+											{u.image ? (
+												<img
+													src={u.image}
+													alt=""
+													className="size-8 border border-rule object-cover"
+												/>
+											) : (
+												<div className="grid size-8 place-items-center border border-rule bg-ink-2 text-bone-2 text-xs">
+													{(u.name ?? u.handle).slice(0, 2)}
+												</div>
+											)}
+											<div className="min-w-0 flex-1">
+												<div className="truncate font-display font-semibold text-sm">
+													{u.name ?? u.handle}
+												</div>
+												<div className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+													{u.handle}
+												</div>
+											</div>
+											{isMe ? (
+												<span className="font-mono text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+													You
+												</span>
+											) : null}
+										</button>
+									</li>
+								);
+							})}
+						</ul>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -484,11 +543,11 @@ function SignInPanel() {
 		<div className="mt-12 border border-rule bg-ink-2 px-6 py-16 text-center">
 			<Kicker>SIGNED OUT</Kicker>
 			<h2 className="display-headline mt-3 text-2xl">
-				Sign in to propose a ticket
+				Sign in to create a ticket
 			</h2>
 			<p className="mx-auto mt-3 max-w-md text-bone-2 text-sm">
-				You need an account to submit a proposal. It's free and your first
-				{CURRENCY_SYMBOL}1,000 in play-money shekels are on us.
+				You need an account to publish a ticket. It's free and your first{" "}
+				{CURRENCY_SYMBOL}2,000 in play-money shekels are on us.
 			</p>
 			<SignInButton size="lg" className="mt-6" label="Sign in with Google" />
 		</div>

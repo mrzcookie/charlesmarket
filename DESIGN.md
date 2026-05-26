@@ -95,7 +95,7 @@ A clean instrument-panel light theme. Same lime, deeper for legibility on bone.
 Use exclusively for:
 - Money (`₪78`, `₪1,200`)
 - Odds, ratios, percentages
-- Ticket IDs (`M-007`)
+- Ticket IDs (`T-007`)
 - Timestamps (`THU 21:00`)
 - Trade tape rows
 - Tab labels (`YES / NO / VOL / LIQ`)
@@ -161,13 +161,14 @@ These are the moves that make CHARLES.MARKET *look like CHARLES.MARKET*. Use the
 
 1. **The console wordmark.** `CHARLES.MARKET` set in Funnel Display 800 with a `[ LIVE ]` lime bracket-chip next to it. The dot in the middle is rendered in `--brand`.
 2. **Bracket chips.** Status badges use `[ LABEL ]` square brackets in mono — `[ LIVE ]`, `[ CLOSED ]`, `[ RESOLVED YES ]`. The brackets are part of the type, not a UI element.
-3. **Numbered tickets.** Every ticket gets a `M-007` style ID prefix (left-padded zeros). Reads as a stock ticker / trade ID.
+3. **Numbered tickets.** Every ticket gets a `T-007` style ID prefix (left-padded zeros). Reads as a stock ticker / trade ID.
 4. **Hand-stamped price slabs.** Yes/No display as bordered ink slabs: top-line UPPER-CASE mono label, bottom-line big mono price. Lime on Yes when active, magenta on No when active.
 5. **Hairline ledger rows.** Ticket lists are 1px-separated rows with tabular numerals. No cards.
 6. **Tabloid headlines.** Section headers are oversized Display with a `// SECTION` mono kicker above. The `//` is a literal character used as a marker.
 7. **Mini sparklines.** Every ticket in a list shows a 24-point mono sparkline (just `<path>` strokes, no fill, lime if up, magenta if down). Animates `stroke-dashoffset` once on first paint.
 8. **Sticky mobile buy bar.** On `/ticket/$id` below `lg`, a sticky-bottom strip hosts full-width lime Yes / magenta No buttons that open the same `QuickBuyDialog` used by the ticket grid.
-9. **Bell badge.** Admin sidebar surfaces pending proposals as a lime `[N]` badge next to "Tickets"; `/admin/tickets` carries the same count on its header bell. Click the bell to open a sheet split into "Proposals · awaiting review" and "Tickets · awaiting resolution" with inline approve / reject / resolve actions.
+9. **Bell badge.** Admin sidebar surfaces ended-but-unresolved tickets plus pending insider-trading reports as a lime `[N]` badge next to "Tickets"; `/admin/tickets` carries the same count on its header bell. Click the bell to open a right-side sheet split into "Tickets · awaiting resolution" and "Insider trading reports" with inline resolve / validate / dismiss actions.
+10. **Rotating-name hero.** The home headline reads "The prediction console for [name]." with the name swiping vertically through ten friends, decelerating into a settle on Charles. Framer-motion `<AnimatePresence mode="wait">`, asymmetric easing (ease-out enter, ease-in exit), spring landing. Respects `prefers-reduced-motion`.
 
 ---
 
@@ -195,13 +196,13 @@ Body buttons default to mono uppercase. Long-form actions like "Post comment" ov
 
 Cards are rare. When used, they are `--ink-2` with a 1px `--rule` border, no shadow, sharp 4px corners. Most "card-like" surfaces are actually `<article>` blocks separated by hairline rules.
 
-### MarketCard
+### TicketCard
 
 A horizontal trade-ticket layout, dense:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ M-007 · ANTICS                            CLOSES THU 21:00      ▲ +6%    │
+│ T-007 · ABOUT @charles                  CLOSES THU 21:00      ▲ +6%      │
 │                                                                           │
 │ Will Charles show up more than 30 minutes late on Friday?      ────────╮ │
 │                                                                ── sparkline │
@@ -211,21 +212,29 @@ A horizontal trade-ticket layout, dense:
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-Three variants in `src/components/market-card.tsx`:
+Three variants in `src/components/ticket-card.tsx`:
 
-- `default` (tile) — the shape above. Used on the home grid and the ticket index.
-- `featured` — doubles in size, uses Display L for the question, fits a 140px-tall sparkline. Used as the home "big ticket" hero.
-- `compact` — single-line `M-### · question · sparkline · ₪yes / ₪no` row. Reserved for dense lists when a route needs to show many tickets at once.
+- `default` (tile). The shape above. Used on the home grid and the ticket index.
+- `featured`. Doubles in size, uses Display L for the question, fits a 140px-tall sparkline. Used as the home "big ticket" hero.
+- `compact`. Single-line `T-### · question · sparkline · ₪yes / ₪no` row. Reserved for dense lists when a route needs to show many tickets at once.
 
-`MarketCard` also opens `QuickBuyDialog` (exported from the same file) when a price slab is tapped.
+`TicketCard` also opens `QuickBuyDialog` (exported from the same file) when a price slab is tapped. Closed/resolved/cancelled tickets render with reduced opacity and replace the price slabs with a `ClosedBanner` that shows the resolution (`RESOLVED YES`, `RESOLVED NO`, `CANCELLED · REFUNDED`, or `CLOSED · AWAITING RESOLUTION`).
 
 ### Order ticket (ticket detail sidebar)
 
-Mono header `ORDER · M-007`, Yes/No slab selectors, amount field with the ₪ glyph as a mono prefix, single lime stamp button at the bottom. On `lg` it sticks at `top-20`; below `lg` it's hidden and replaced by a sticky bottom buy bar that opens `QuickBuyDialog`.
+Mono header `ORDER · T-007`, Yes/No slab selectors, amount field with the ₪ glyph as a mono prefix, single lime stamp button at the bottom. On `lg` it sticks at `top-20`; below `lg` it's hidden and replaced by a sticky bottom buy bar that opens `QuickBuyDialog`.
 
 ### NotificationsSheet (admin)
 
-Right-side sheet on `/admin/tickets`. Bell badge counts pending proposals + ended tickets. Sheet body is two sections (`PROPOSALS · AWAITING REVIEW`, `TICKETS · AWAITING RESOLUTION`). Each row is a `border border-rule bg-ink-2` card with inline approve / reject / resolve buttons + an "Open" / "Edit" ghost that routes to the per-ticket drawer. Empty state is a single `ALL CLEAR` panel — no per-section emptiness when nothing's pending.
+Right-side sheet on `/admin/tickets`. Bell badge counts ended-but-unresolved tickets plus pending insider-trading reports. Sheet body is two sections (`TICKETS · AWAITING RESOLUTION`, `INSIDER TRADING REPORTS`). Each row is a `border border-rule bg-ink-2` card with inline resolve / validate / dismiss buttons plus an "Open" ghost that routes to the per-ticket drawer. Empty state is a single `ALL CLEAR` panel, no per-section emptiness when nothing's pending.
+
+### Admin stats strip
+
+Both `/admin/tickets` and `/admin/users` open with a 4-tile hairline-divided strip across the top: `border-rule border-y` outer + `divide-x divide-rule` cells. Each tile is `flex flex-col gap-1.5 px-4 py-3 sm:px-5 sm:py-4` with a mono UPPER label, a `text-2xl sm:text-3xl` mono numeral, and a tiny subline. Tickets: `Tickets · Volume · Open interest · Attention`. Users: `Users · Cash on table · Admins · New this week`. The "Attention" tile turns lime (`tone="brand"`) when something needs the admin.
+
+### Admin trade tape
+
+Inside the per-ticket drawer, the transactions panel renders as a hairline-bounded tape: each row is `time · name + side · "shares @ price" · cost · refund icon`, all in mono tabular. The refund icon is a `RotateCcw` `icon-sm` ghost button that hovers to magenta wash. Confirm dialog includes a one-line summary of the trade before executing.
 
 ---
 

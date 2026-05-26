@@ -9,8 +9,8 @@ import { AlertTriangle, LogIn } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth-controls";
-import { BracketChip, marketId } from "@/components/console";
-import { PriceBar, QuickBuyDialog, TrendBadge } from "@/components/market-card";
+import { BracketChip, ticketId } from "@/components/console";
+import { PriceBar, QuickBuyDialog, TrendBadge } from "@/components/ticket-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,53 +37,54 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { crumbForPath, getPreviousPath } from "@/lib/route-history";
+import { pageHead } from "@/lib/seo";
+import { useDynamicHead } from "@/lib/seo-client";
 import {
 	CURRENCY_SYMBOL,
 	cents,
 	money,
-	toUIMarket,
+	toUITicket,
 	trail,
-	type UIMarket,
-} from "@/lib/markets";
-import { pageHead } from "@/lib/seo";
-import { useDynamicHead } from "@/lib/seo-client";
+	type UITicket,
+} from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import { useBalance } from "@/lib/wallet";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/ticket/$id")({
-	component: MarketDetail,
+	component: TicketDetail,
 	head: ({ params }) =>
 		pageHead({
 			title: "Ticket",
 			description:
-				"Trade Yes/No on Charles in shekels. Live prices, order book, and resolution status.",
+				"Trade Yes/No tickets in shekels. Live prices, order book, and resolution status.",
 			path: `/ticket/${params.id}`,
 		}),
 });
 
-function MarketDetail() {
+function TicketDetail() {
 	const { id } = useParams({ from: "/ticket/$id" });
-	const doc = useQuery(api.markets.getBySlug, { slug: id });
+	const doc = useQuery(api.tickets.getBySlug, { slug: id });
 	const [quickBuyOpen, setQuickBuyOpen] = useState(false);
 	const [quickBuySide, setQuickBuySide] = useState<"Yes" | "No">("Yes");
 
 	const yesPct = doc ? Math.round(doc.yesPrice * 100) : null;
-	const dynamicTitle = doc ? `${doc.question} — ${yesPct}% Yes` : "Ticket";
+	const dynamicTitle = doc ? `${doc.question} · ${yesPct}% Yes` : "Ticket";
 	const dynamicDescription = doc
-		? `${doc.question} Trade Yes/No on Charles in shekels. Current Yes price ${yesPct}₪.`
-		: "A prediction ticket on Charles.";
+		? `${doc.question} Trade Yes/No in shekels. Current Yes price ${yesPct}₪.`
+		: "A prediction ticket on Charles.market.";
 	useDynamicHead({
 		title: dynamicTitle,
 		description: dynamicDescription,
 		path: `/ticket/${id}`,
 	});
 
-	if (doc === undefined) return <MarketDetailSkeleton />;
-	if (doc === null) return <MarketNotFound id={id} />;
+	if (doc === undefined) return <TicketDetailSkeleton />;
+	if (doc === null) return <TicketNotFound id={id} />;
 
-	const market = toUIMarket(doc);
+	const ticket = toUITicket(doc);
 	const isClosed = doc.status !== "open";
 
 	const openQuick = (side: "Yes" | "No") => {
@@ -94,18 +95,18 @@ function MarketDetail() {
 	return (
 		<>
 			<main className="mx-auto w-full max-w-[1280px] px-4 py-8 pb-28 sm:px-6 sm:py-12 lg:pb-12">
-				<Breadcrumbs market={market} />
+				<Breadcrumbs ticket={ticket} />
 				<div className="mt-5 grid grid-cols-1 gap-6 sm:mt-6 lg:grid-cols-[1.7fr_380px] lg:gap-10">
-					<MarketHeader market={market} isOpen={!isClosed} />
+					<TicketHeader ticket={ticket} isOpen={!isClosed} />
 					<aside className="hidden space-y-4 lg:sticky lg:top-20 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
-						<OrderTicket market={market} />
-						<Stats market={market} />
+						<OrderTicket ticket={ticket} />
+						<Stats ticket={ticket} />
 					</aside>
-					<PriceChartCard market={market} />
+					<PriceChartCard ticket={ticket} />
 					<div className="lg:hidden">
-						<Stats market={market} />
+						<Stats ticket={ticket} />
 					</div>
-					<MarketTabs market={market} />
+					<TicketTabs ticket={ticket} />
 				</div>
 			</main>
 
@@ -121,7 +122,7 @@ function MarketDetail() {
 								Buy Yes
 							</span>
 							<span className="font-bold font-mono text-base tabular-nums">
-								{cents(market.yesPrice)}
+								{cents(ticket.yesPrice)}
 							</span>
 						</button>
 						<button
@@ -133,7 +134,7 @@ function MarketDetail() {
 								Buy No
 							</span>
 							<span className="font-bold font-mono text-base tabular-nums">
-								{cents(1 - market.yesPrice)}
+								{cents(1 - ticket.yesPrice)}
 							</span>
 						</button>
 					</div>
@@ -141,7 +142,7 @@ function MarketDetail() {
 			) : null}
 
 			<QuickBuyDialog
-				market={market}
+				ticket={ticket}
 				open={quickBuyOpen}
 				onOpenChange={setQuickBuyOpen}
 				initialSide={quickBuySide}
@@ -150,43 +151,43 @@ function MarketDetail() {
 	);
 }
 
-function Breadcrumbs({ market }: { market: UIMarket }) {
+function Breadcrumbs({ ticket }: { ticket: UITicket }) {
+	const referrer = useMemo(() => {
+		const prev = getPreviousPath();
+		// If they came from another ticket detail page, that's noise — default to
+		// Tickets list. Profile referrer is more useful since they likely clicked
+		// the subject's name from the previous ticket.
+		if (prev?.startsWith("/ticket/")) {
+			return { label: "Tickets", to: "/tickets" };
+		}
+		return crumbForPath(prev ?? "/tickets");
+	}, []);
 	return (
 		<nav className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
-			<Link to="/tickets" className="shrink-0 hover:text-brand">
-				Tickets
+			<Link to={referrer.to} className="shrink-0 hover:text-brand">
+				{referrer.label}
 			</Link>
 			<span aria-hidden="true">/</span>
-			<Link
-				to="/tickets"
-				search={{ category: market.category }}
-				className="shrink-0 hover:text-brand"
-			>
-				{market.category}
-			</Link>
-			<span aria-hidden="true">/</span>
-			<span className="text-bone">{marketId(market.slug)}</span>
+			<span className="text-bone">{ticketId(ticket.slug)}</span>
 		</nav>
 	);
 }
 
-function MarketHeader({
-	market,
+function TicketHeader({
+	ticket,
 	isOpen,
 }: {
-	market: UIMarket;
+	ticket: UITicket;
 	isOpen: boolean;
 }) {
 	return (
 		<div>
 			<div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
-				<span className="font-bold text-bone">{marketId(market.slug)}</span>
-				<span className="text-bone-3">·</span>
-				<span className="text-bone-2">{market.category}</span>
-				{market.tags.length > 0 ? (
+				<span className="font-bold text-bone">{ticketId(ticket.slug)}</span>
+				{ticket.tags.length > 0 ? (
 					<>
 						<span className="text-bone-3">·</span>
-						{market.tags.map((t) => (
+						{ticket.tags.map((t) => (
 							<span key={t} className="text-bone-3">
 								#{t}
 							</span>
@@ -198,24 +199,36 @@ function MarketHeader({
 				</BracketChip>
 			</div>
 			<h1 className="display-headline mt-4 text-3xl leading-[0.98] sm:text-4xl md:text-[3.25rem]">
-				{market.question}
+				{ticket.question}
 			</h1>
+			{ticket.subject ? (
+				<div className="mt-3 font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
+					ABOUT{" "}
+					<Link
+						to="/profile/$username"
+						params={{ username: ticket.subject.handle.replace(/^@/, "") }}
+						className="font-bold text-bone normal-case tracking-normal hover:text-brand"
+					>
+						{ticket.subject.name ?? ticket.subject.handle}
+					</Link>
+				</div>
+			) : null}
 			<div className="mt-6 flex items-end justify-between">
 				<div>
 					<div className="label">Yes price</div>
 					<div className="mt-1 font-bold font-mono text-4xl text-brand tabular-nums leading-none sm:text-5xl">
-						{cents(market.yesPrice)}
+						{cents(ticket.yesPrice)}
 					</div>
 				</div>
-				<TrendBadge trend={market.trend} delta={market.delta} />
+				<TrendBadge trend={ticket.trend} delta={ticket.delta} />
 			</div>
 			<div className="mt-5 max-w-xl">
-				<PriceBar yes={market.yesPrice} no={1 - market.yesPrice} />
+				<PriceBar yes={ticket.yesPrice} no={1 - ticket.yesPrice} />
 			</div>
 			{isOpen ? (
 				<Authenticated>
 					<div className="mt-4">
-						<ReportDialog marketId={market._id as Id<"markets">} />
+						<ReportDialog ticketId={ticket._id as Id<"tickets">} />
 					</div>
 				</Authenticated>
 			) : null}
@@ -223,7 +236,7 @@ function MarketHeader({
 	);
 }
 
-function ReportDialog({ marketId: mId }: { marketId: Id<"markets"> }) {
+function ReportDialog({ ticketId: mId }: { ticketId: Id<"tickets"> }) {
 	const submit = useMutation(api.reports.submit);
 	const [open, setOpen] = useState(false);
 	const [description, setDescription] = useState("");
@@ -233,7 +246,7 @@ function ReportDialog({ marketId: mId }: { marketId: Id<"markets"> }) {
 		e.preventDefault();
 		setSubmitting(true);
 		try {
-			await submit({ marketId: mId, description });
+			await submit({ ticketId: mId, description });
 			toast.success("Report submitted", {
 				description: "An admin will review your report.",
 			});
@@ -298,18 +311,18 @@ function ReportDialog({ marketId: mId }: { marketId: Id<"markets"> }) {
 	);
 }
 
-function PriceChartCard({ market }: { market: UIMarket }) {
+function PriceChartCard({ ticket }: { ticket: UITicket }) {
 	const [range, setRange] = useState<"1H" | "6H" | "1D" | "1W" | "ALL">("ALL");
-	const liveHistory = useQuery(api.markets.history, {
-		marketId: market._id as Id<"markets">,
+	const liveHistory = useQuery(api.tickets.history, {
+		ticketId: ticket._id as Id<"tickets">,
 		limit: 100,
 	});
 	const points = useMemo(() => {
 		if (liveHistory && liveHistory.length >= 2) {
 			return liveHistory.map((t, i) => ({ t: i, yes: t.yesPrice }));
 		}
-		return trail(market.yesPrice);
-	}, [liveHistory, market.yesPrice]);
+		return trail(ticket.yesPrice);
+	}, [liveHistory, ticket.yesPrice]);
 
 	const w = 800;
 	const h = 220;
@@ -391,7 +404,7 @@ function PriceChartCard({ market }: { market: UIMarket }) {
 	);
 }
 
-function MarketTabs({ market }: { market: UIMarket }) {
+function TicketTabs({ ticket }: { ticket: UITicket }) {
 	return (
 		<div className="border border-rule bg-ink-2 p-5">
 			<Tabs defaultValue="about" className="w-full">
@@ -402,38 +415,38 @@ function MarketTabs({ market }: { market: UIMarket }) {
 					<TabsTrigger value="comments">Comments</TabsTrigger>
 				</TabsList>
 				<TabsContent value="about">
-					<AboutTab market={market} />
+					<AboutTab ticket={ticket} />
 				</TabsContent>
 				<TabsContent value="trades">
-					<TradesTab marketId={market._id as Id<"markets">} />
+					<TradesTab ticketId={ticket._id as Id<"tickets">} />
 				</TabsContent>
 				<TabsContent value="orderbook">
-					<OrderBookTab market={market} />
+					<OrderBookTab ticket={ticket} />
 				</TabsContent>
 				<TabsContent value="comments">
-					<CommentsTab marketId={market._id as Id<"markets">} />
+					<CommentsTab ticketId={ticket._id as Id<"tickets">} />
 				</TabsContent>
 			</Tabs>
 		</div>
 	);
 }
 
-function AboutTab({ market }: { market: UIMarket }) {
+function AboutTab({ ticket }: { ticket: UITicket }) {
 	return (
 		<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-			{market.description && (
+			{ticket.description && (
 				<div>
 					<div className="kicker">RESOLVES</div>
 					<p className="mt-3 whitespace-pre-line text-bone-2 text-sm leading-relaxed">
-						{market.description}
+						{ticket.description}
 					</p>
 				</div>
 			)}
 			<div className="space-y-0 font-mono text-sm">
-				<KV label="Closes" value={market.closesAt} />
-				<KV label="Open interest" value={money(market.openInterest)} />
-				<KV label="Volume" value={money(market.volume)} />
-				<KV label="Liquidity" value={money(market.liquidity)} />
+				<KV label="Closes" value={ticket.closesAt} />
+				<KV label="Open interest" value={money(ticket.openInterest)} />
+				<KV label="Volume" value={money(ticket.volume)} />
+				<KV label="Liquidity" value={money(ticket.liquidity)} />
 			</div>
 		</div>
 	);
@@ -448,8 +461,8 @@ function KV({ label, value }: { label: string; value: string }) {
 	);
 }
 
-function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
-	const trades = useQuery(api.trades.byMarket, { marketId, limit: 25 });
+function TradesTab({ ticketId }: { ticketId: Id<"tickets"> }) {
+	const trades = useQuery(api.trades.byMarket, { ticketId, limit: 25 });
 	if (trades === undefined) {
 		return (
 			<div className="space-y-2">
@@ -521,8 +534,8 @@ function TradesTab({ marketId }: { marketId: Id<"markets"> }) {
 	);
 }
 
-function OrderBookTab({ market }: { market: UIMarket }) {
-	const yes = market.yesPrice;
+function OrderBookTab({ ticket }: { ticket: UITicket }) {
+	const yes = ticket.yesPrice;
 	const asks = [0.04, 0.03, 0.02, 0.01].map((d, i) => ({
 		price: yes + d,
 		size: 200 + i * 120,
@@ -552,7 +565,7 @@ function OrderBookTab({ market }: { market: UIMarket }) {
 				</ul>
 			</div>
 			<p className="font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em] md:col-span-2">
-				Synthetic book — derived from current Yes price. Real book lands with
+				Synthetic book, derived from the current Yes price. Real book lands with
 				the matching engine.
 			</p>
 		</div>
@@ -594,8 +607,8 @@ function BookRow({
 	);
 }
 
-function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
-	const comments = useQuery(api.comments.byMarket, { marketId, limit: 50 });
+function CommentsTab({ ticketId }: { ticketId: Id<"tickets"> }) {
+	const comments = useQuery(api.comments.byMarket, { ticketId, limit: 50 });
 	const { isAuthenticated } = useConvexAuth();
 	const addComment = useMutation(api.comments.add);
 	const [body, setBody] = useState("");
@@ -606,7 +619,7 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 		if (!trimmed) return;
 		setSubmitting(true);
 		try {
-			await addComment({ marketId, body: trimmed });
+			await addComment({ ticketId, body: trimmed });
 			setBody("");
 			toast.success("Comment posted");
 		} catch (err) {
@@ -673,7 +686,7 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 						rows={3}
 						value={body}
 						onChange={(e) => setBody(e.target.value)}
-						placeholder="What's Charles really going to do?"
+						placeholder="What's your read?"
 					/>
 					<div className="flex justify-end">
 						<Button
@@ -695,21 +708,30 @@ function CommentsTab({ marketId }: { marketId: Id<"markets"> }) {
 	);
 }
 
-function OrderTicket({ market }: { market: UIMarket }) {
+function OrderTicket({ ticket }: { ticket: UITicket }) {
 	const { isAuthenticated, isLoading } = useConvexAuth();
 	const { balance, mounted } = useBalance();
+	const me = useQuery(api.users.me, isAuthenticated ? {} : "skip");
 	const placeOrder = useMutation(api.orders.place);
 
 	const [side, setSide] = useState<"Yes" | "No">("Yes");
 	const [amount, setAmount] = useState("100");
 	const [submitting, setSubmitting] = useState(false);
 
-	const price = side === "Yes" ? market.yesPrice : 1 - market.yesPrice;
+	const price = side === "Yes" ? ticket.yesPrice : 1 - ticket.yesPrice;
 	const cost = Number(amount) || 0;
 	const shares = price > 0 ? cost / price : 0;
 	const payout = shares;
 	const insufficient = isAuthenticated && cost > balance;
-	const id = marketId(market.slug);
+	const id = ticketId(ticket.slug);
+	const isSubject = !!me && ticket.subject?._id === me._id;
+	const isCreator = !!me && ticket.creator?._id === me._id;
+	const blocked = isSubject || isCreator;
+	const blockReason = isSubject
+		? "You can't trade on a ticket about you. The ticket settles by what everyone else thinks."
+		: isCreator
+			? "You can't trade on a ticket you created. The ticket settles by what everyone else thinks."
+			: null;
 
 	const submit = async () => {
 		if (cost <= 0) return;
@@ -722,7 +744,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 		setSubmitting(true);
 		try {
 			const result = await placeOrder({
-				marketId: market._id as Id<"markets">,
+				ticketId: ticket._id as Id<"tickets">,
 				side,
 				amount: cost,
 			});
@@ -754,6 +776,39 @@ function OrderTicket({ market }: { market: UIMarket }) {
 		);
 	}
 
+	if (blocked) {
+		return (
+			<div className="border border-rule bg-ink-2 p-5">
+				<div className="flex items-center justify-between">
+					<span className="kicker">ORDER · {id}</span>
+					<BracketChip tone="danger">CAN'T TRADE</BracketChip>
+				</div>
+				<h3 className="display-headline mt-3 text-lg">
+					{isSubject ? "This ticket is about you" : "You created this ticket"}
+				</h3>
+				<p className="mt-2 text-bone-2 text-sm">{blockReason}</p>
+				<div className="mt-4 grid grid-cols-2 gap-2">
+					<div className="price-slab" data-side="yes" data-active="true">
+						<span className="font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							YES
+						</span>
+						<span className="font-bold text-base text-brand">
+							{cents(ticket.yesPrice)}
+						</span>
+					</div>
+					<div className="price-slab" data-side="no" data-active="true">
+						<span className="font-semibold text-[10px] text-bone-3 uppercase tracking-[0.12em]">
+							NO
+						</span>
+						<span className="font-bold text-base text-magenta">
+							{cents(1 - ticket.yesPrice)}
+						</span>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	if (!isAuthenticated) {
 		return (
 			<div className="border border-rule bg-ink-2 p-5">
@@ -763,7 +818,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 				</div>
 				<h3 className="display-headline mt-3 text-lg">Sign in to bid</h3>
 				<p className="mt-2 text-bone-2 text-sm">
-					Trading needs an account. Everyone starts with {CURRENCY_SYMBOL}1,000
+					Trading needs an account. Everyone starts with {CURRENCY_SYMBOL}2,000
 					in play-money shekels.
 				</p>
 				<div className="mt-4 grid grid-cols-2 gap-2">
@@ -772,7 +827,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 							YES
 						</span>
 						<span className="font-bold text-base text-brand">
-							{cents(market.yesPrice)}
+							{cents(ticket.yesPrice)}
 						</span>
 					</div>
 					<div className="price-slab" data-side="no" data-active="true">
@@ -780,7 +835,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 							NO
 						</span>
 						<span className="font-bold text-base text-magenta">
-							{cents(1 - market.yesPrice)}
+							{cents(1 - ticket.yesPrice)}
 						</span>
 					</div>
 				</div>
@@ -829,7 +884,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 								side === "Yes" ? "text-brand" : "text-bone"
 							)}
 						>
-							{cents(market.yesPrice)}
+							{cents(ticket.yesPrice)}
 						</span>
 					</button>
 					<button
@@ -848,7 +903,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 								side === "No" ? "text-magenta" : "text-bone"
 							)}
 						>
-							{cents(1 - market.yesPrice)}
+							{cents(1 - ticket.yesPrice)}
 						</span>
 					</button>
 				</div>
@@ -919,7 +974,7 @@ function OrderTicket({ market }: { market: UIMarket }) {
 				</Button>
 
 				<p className="text-center font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
-					Play money · Everyone starts with {CURRENCY_SYMBOL}1,000
+					Play money · Everyone starts with {CURRENCY_SYMBOL}2,000
 				</p>
 			</div>
 		</div>
@@ -945,21 +1000,21 @@ function Row({
 	);
 }
 
-function Stats({ market }: { market: UIMarket }) {
+function Stats({ ticket }: { ticket: UITicket }) {
 	return (
 		<div className="border border-rule bg-ink-2 p-5">
 			<div className="kicker border-rule border-b pb-3">TICKET STATS</div>
 			<div className="mt-3 space-y-0 font-mono text-sm">
-				<KV label="Volume" value={money(market.volume)} />
-				<KV label="Liquidity" value={money(market.liquidity)} />
-				<KV label="Open interest" value={money(market.openInterest)} />
-				<KV label="Closes" value={market.closesAt} />
+				<KV label="Volume" value={money(ticket.volume)} />
+				<KV label="Liquidity" value={money(ticket.liquidity)} />
+				<KV label="Open interest" value={money(ticket.openInterest)} />
+				<KV label="Closes" value={ticket.closesAt} />
 			</div>
 		</div>
 	);
 }
 
-function MarketDetailSkeleton() {
+function TicketDetailSkeleton() {
 	return (
 		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
 			<Skeleton className="h-4 w-72" />
@@ -983,7 +1038,7 @@ function MarketDetailSkeleton() {
 	);
 }
 
-function MarketNotFound({ id }: { id: string }) {
+function TicketNotFound({ id }: { id: string }) {
 	return (
 		<main className="mx-auto w-full max-w-3xl px-4 py-24 text-center sm:px-6">
 			<BracketChip tone="danger">404 / NO SUCH TICKET</BracketChip>

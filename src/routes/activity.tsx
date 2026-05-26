@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { Kicker, marketId } from "@/components/console";
+import { Kicker, ticketId } from "@/components/console";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cents, money } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { cents, money } from "@/lib/tickets";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/activity")({
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/activity")({
 		pageHead({
 			title: "Live activity",
 			description:
-				"Every trade, comment, and resolution on Charles. The realtime feed, newest first.",
+				"Every trade, comment, and resolution on Charles.market. The realtime feed, newest first.",
 			path: "/activity",
 		}),
 });
@@ -37,7 +37,7 @@ function ActivityPage() {
 						Live activity
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
-						Every trade, comment, and resolution on Charles. Newest first.
+						Every trade, comment, and resolution. Newest first.
 					</p>
 				</div>
 				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
@@ -63,8 +63,12 @@ function ActivityPage() {
 					))}
 				</div>
 			) : events.length === 0 ? (
-				<div className="mt-12 border border-rule border-dashed bg-ink-2 px-6 py-12 text-center font-mono text-[12px] text-bone-3 uppercase tracking-[0.12em]">
-					Quiet right now. Trades will show up live as they hit.
+				<div className="mt-12 border-rule border-y px-6 py-16 text-center">
+					<Kicker>Quiet on the wire</Kicker>
+					<p className="mx-auto mt-3 max-w-sm text-bone-2 text-sm">
+						Trades, comments, and resolutions land here in real time. Nothing's
+						happened yet.
+					</p>
 				</div>
 			) : (
 				<ol className="mt-10 border border-rule">
@@ -86,7 +90,7 @@ function EventRow({ event }: { event: FeedEvent }) {
 		<div className="ledger-row grid grid-cols-[auto_auto_1fr_auto] items-start gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
 			<KindMark kind={event.kind} />
 			<span className="font-bold font-mono text-bone-3 text-xs tabular-nums leading-6">
-				{marketId(event.marketSlug)}
+				{ticketId(event.ticketSlug)}
 			</span>
 			<div className="min-w-0">
 				<div className="flex flex-wrap items-center gap-2 text-sm">
@@ -111,7 +115,7 @@ function EventRow({ event }: { event: FeedEvent }) {
 					<EventVerb event={event} />
 					<Link
 						to="/ticket/$id"
-						params={{ id: event.marketSlug }}
+						params={{ id: event.ticketSlug }}
 						className="font-display font-semibold text-bone hover:text-brand"
 					>
 						{event.question}

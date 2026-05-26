@@ -13,43 +13,16 @@ export default defineSchema({
 		balance: v.optional(v.number()),
 		joinedAt: v.optional(v.number()),
 		isAdmin: v.optional(v.boolean()),
+		lastDailyAt: v.optional(v.number()),
 	})
 		.index("email", ["email"])
 		.index("phone", ["phone"])
 		.index("by_handle", ["handle"]),
 
-	marketProposals: defineTable({
-		proposerId: v.id("users"),
-		question: v.string(),
-		description: v.string(),
-		category: v.string(),
-		tags: v.array(v.string()),
-		closesAt: v.string(),
-		closesAtMs: v.number(),
-		initialYesPrice: v.number(),
-		initialLiquidity: v.number(),
-		status: v.union(
-			v.literal("pending"),
-			v.literal("approved"),
-			v.literal("rejected")
-		),
-		rejectionReason: v.optional(v.string()),
-		reviewedBy: v.optional(v.id("users")),
-		reviewedAt: v.optional(v.number()),
-		approvedMarketId: v.optional(v.id("markets")),
-		// Legacy field — no longer written by submit(). Kept optional so existing
-		// rows pass schema validation; run `migrations:stripResolutionSource` once
-		// and then this can be removed entirely.
-		resolutionSource: v.optional(v.string()),
-	})
-		.index("by_status", ["status"])
-		.index("by_proposer", ["proposerId"]),
-
-	markets: defineTable({
+	tickets: defineTable({
 		slug: v.string(),
 		question: v.string(),
 		description: v.string(),
-		category: v.string(),
 		yesPrice: v.number(),
 		volume: v.number(),
 		liquidity: v.number(),
@@ -65,50 +38,51 @@ export default defineSchema({
 		),
 		resolution: v.optional(sideUnion),
 		createdAt: v.number(),
-		// Legacy field — same story as marketProposals.resolutionSource.
-		resolutionSource: v.optional(v.string()),
+		subjectUserId: v.id("users"),
+		creatorId: v.id("users"),
 	})
 		.index("by_slug", ["slug"])
-		.index("by_category", ["category"])
-		.index("by_status", ["status"]),
+		.index("by_status", ["status"])
+		.index("by_subject", ["subjectUserId"])
+		.index("by_creator", ["creatorId"]),
 
 	positions: defineTable({
 		userId: v.id("users"),
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		side: sideUnion,
 		shares: v.number(),
 		avgPrice: v.number(),
 		realizedPnl: v.number(),
 	})
 		.index("by_user", ["userId"])
-		.index("by_market", ["marketId"])
-		.index("by_user_market_side", ["userId", "marketId", "side"]),
+		.index("by_ticket", ["ticketId"])
+		.index("by_user_ticket_side", ["userId", "ticketId", "side"]),
 
 	trades: defineTable({
 		userId: v.id("users"),
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		side: sideUnion,
 		kind: v.union(v.literal("buy"), v.literal("sell")),
 		shares: v.number(),
 		price: v.number(),
 		cost: v.number(),
 	})
-		.index("by_market", ["marketId"])
+		.index("by_ticket", ["ticketId"])
 		.index("by_user", ["userId"]),
 
 	comments: defineTable({
 		userId: v.id("users"),
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		body: v.string(),
-	}).index("by_market", ["marketId"]),
+	}).index("by_ticket", ["ticketId"]),
 
 	priceTicks: defineTable({
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		yesPrice: v.number(),
-	}).index("by_market", ["marketId"]),
+	}).index("by_ticket", ["ticketId"]),
 
 	ticketReports: defineTable({
-		marketId: v.id("markets"),
+		ticketId: v.id("tickets"),
 		reporterId: v.id("users"),
 		description: v.string(),
 		status: v.union(
@@ -119,7 +93,7 @@ export default defineSchema({
 		reviewedBy: v.optional(v.id("users")),
 		reviewedAt: v.optional(v.number()),
 	})
-		.index("by_market", ["marketId"])
+		.index("by_ticket", ["ticketId"])
 		.index("by_reporter", ["reporterId"])
 		.index("by_status", ["status"]),
 });

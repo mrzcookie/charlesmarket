@@ -10,7 +10,7 @@ import {
 	Unauthenticated,
 	useQuery,
 } from "convex/react";
-import { BarChart2, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, BarChart2, ShieldCheck, Users } from "lucide-react";
 import { SignInButton } from "@/components/auth-controls";
 import { BracketChip, Kicker } from "@/components/console";
 import { Button } from "@/components/ui/button";
@@ -77,14 +77,15 @@ function AuthedAdminLayout() {
 
 function Sidebar() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname }) ?? "";
-	const pendingCount = useQuery(api.proposals.pendingCount, {});
+	const reportCount = useQuery(api.reports.pendingCount, {});
+	const me = useQuery(api.users.me, {});
 
 	const navItems = [
 		{
 			to: "/admin/tickets" as const,
 			label: "Tickets",
 			icon: BarChart2,
-			badge: pendingCount && pendingCount > 0 ? pendingCount : undefined,
+			badge: reportCount && reportCount > 0 ? reportCount : undefined,
 		},
 		{
 			to: "/admin/users" as const,
@@ -96,19 +97,25 @@ function Sidebar() {
 
 	return (
 		<aside className="shrink-0 lg:w-56">
-			<div className="flex items-center gap-3 border-rule border-b pb-4">
-				<div className="flex size-9 items-center justify-center border border-rule bg-ink-2">
-					<ShieldCheck className="size-4 text-brand" />
+			<div className="border-rule border-b pb-4">
+				<div className="flex items-center gap-2">
+					<BracketChip>ADMIN</BracketChip>
+					<ShieldCheck className="size-3.5 text-brand" />
 				</div>
-				<div>
-					<Kicker>ADMIN</Kicker>
-					<p className="mt-1 font-bold font-display text-base leading-none tracking-[-0.02em]">
-						Admin Console
+				<p className="mt-2 font-bold font-display text-lg leading-none tracking-[-0.03em]">
+					Console
+				</p>
+				{me ? (
+					<p className="mt-2 truncate font-mono text-[11px] text-bone-3 uppercase tracking-[0.14em]">
+						signed in as{" "}
+						<span className="text-bone normal-case tracking-normal">
+							{me.handle}
+						</span>
 					</p>
-				</div>
+				) : null}
 			</div>
 
-			<nav className="mt-4 hidden flex-col gap-0 lg:flex">
+			<nav className="mt-5 hidden flex-col border-rule border-y lg:flex">
 				{navItems.map(({ to, label, icon: Icon, badge }) => {
 					const isActive = pathname.startsWith(to);
 					return (
@@ -116,17 +123,17 @@ function Sidebar() {
 							key={to}
 							to={to}
 							className={cn(
-								"flex items-center gap-3 border-rule border-b px-3 py-3 font-mono font-semibold text-[12px] uppercase tracking-[0.14em] transition-colors",
+								"ledger-row flex items-center gap-3 border-rule not-last:border-b px-3 py-3 font-mono font-semibold text-[11px] uppercase tracking-[0.16em] transition-colors",
 								isActive
 									? "bg-brand-wash text-brand"
 									: "text-bone-2 hover:bg-ink-2 hover:text-bone"
 							)}
 						>
-							<Icon className="size-4 shrink-0" />
+							<Icon className="size-3.5 shrink-0" />
 							<span className="flex-1">{label}</span>
 							{badge ? (
-								<span className="grid h-5 min-w-5 place-items-center rounded-[2px] bg-brand px-1 font-bold font-mono text-[10px] text-brand-foreground tabular-nums">
-									{badge > 99 ? "99" : badge}
+								<span className="font-bold font-mono text-[11px] text-brand tabular-nums">
+									[{badge > 99 ? "99" : badge}]
 								</span>
 							) : null}
 						</Link>
@@ -151,14 +158,24 @@ function Sidebar() {
 							<Icon className="size-3.5" />
 							{label}
 							{badge ? (
-								<span className="grid h-4 min-w-4 place-items-center rounded-[2px] bg-brand px-1 font-bold font-mono text-[10px] text-brand-foreground tabular-nums">
-									{badge > 99 ? "99" : badge}
+								<span className="font-bold font-mono text-[11px] text-brand tabular-nums">
+									[{badge > 99 ? "99" : badge}]
 								</span>
 							) : null}
 						</Link>
 					);
 				})}
 			</nav>
+
+			<div className="mt-6 hidden border-rule border-t pt-4 lg:block">
+				<Link
+					to="/"
+					className="flex items-center gap-2 font-mono font-semibold text-[11px] text-bone-3 uppercase tracking-[0.14em] transition-colors hover:text-bone"
+				>
+					<ArrowLeft className="size-3.5" />
+					Back to site
+				</Link>
+			</div>
 		</aside>
 	);
 }

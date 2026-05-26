@@ -9,8 +9,8 @@ export function Footer() {
 						CHARLES<span className="text-brand">.</span>MARKET
 					</div>
 					<p className="mt-4 max-w-xs text-bone-2 text-sm leading-relaxed">
-						The prediction console for one chaotic friend. Play-money shekels,
-						real consequences for his reputation.
+						Bet on the people you know. Play-money shekels, real consequences
+						for the group chat.
 					</p>
 					<div className="mt-5 inline-flex items-center gap-2 border border-rule px-3 py-1.5">
 						<span className="label leading-none">Session</span>
@@ -27,7 +27,7 @@ export function Footer() {
 						{ label: "Tickets", to: "/tickets" },
 						{ label: "Activity", to: "/activity" },
 						{ label: "Leaderboard", to: "/leaderboard" },
-						{ label: "Propose", to: "/propose" },
+						{ label: "Create", to: "/create" },
 					]}
 				/>
 				<FooterCol

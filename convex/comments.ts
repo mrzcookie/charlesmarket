@@ -3,11 +3,11 @@ import { mutation, query } from "./_generated/server";
 import { requireUser } from "./users";
 
 export const byMarket = query({
-	args: { marketId: v.id("markets"), limit: v.optional(v.number()) },
-	handler: async (ctx, { marketId, limit = 50 }) => {
+	args: { ticketId: v.id("tickets"), limit: v.optional(v.number()) },
+	handler: async (ctx, { ticketId, limit = 50 }) => {
 		const comments = await ctx.db
 			.query("comments")
-			.withIndex("by_market", (q) => q.eq("marketId", marketId))
+			.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
 			.order("desc")
 			.take(limit);
 		const userIds = Array.from(new Set(comments.map((c) => c.userId)));
@@ -27,17 +27,17 @@ export const byMarket = query({
 });
 
 export const add = mutation({
-	args: { marketId: v.id("markets"), body: v.string() },
-	handler: async (ctx, { marketId, body }) => {
+	args: { ticketId: v.id("tickets"), body: v.string() },
+	handler: async (ctx, { ticketId, body }) => {
 		const trimmed = body.trim();
 		if (!trimmed) throw new Error("Comment cannot be empty");
 		if (trimmed.length > 1000) throw new Error("Comment too long");
 		const user = await requireUser(ctx);
-		const market = await ctx.db.get(marketId);
-		if (!market) throw new Error("Market not found");
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
 		return await ctx.db.insert("comments", {
 			userId: user._id,
-			marketId,
+			ticketId,
 			body: trimmed,
 		});
 	},

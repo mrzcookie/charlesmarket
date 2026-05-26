@@ -3,7 +3,7 @@ import { useQuery } from "convex/react";
 import { Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Kicker } from "@/components/console";
-import { MarketCard } from "@/components/market-card";
+import { TicketCard } from "@/components/ticket-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,38 +15,31 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { type Category, categories, toUIMarket } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { toUITicket } from "@/lib/tickets";
 import { api } from "../../convex/_generated/api";
 
 type Sort = "volume" | "closing" | "trending" | "new";
 type View = "tiles" | "board";
 
 type SearchParams = {
-	category?: Category | "All";
 	sort?: Sort;
 	q?: string;
 };
 
 export const Route = createFileRoute("/tickets")({
-	component: MarketsPage,
+	component: TicketsPage,
 	head: () =>
 		pageHead({
 			title: "All tickets",
 			description:
-				"Browse every open prediction ticket on Charles. Filter by category, sort by volume, trend, or closing soonest.",
+				"Browse every prediction ticket on Charles.market. Sort by volume, trend, or closing soonest. Live tickets show first; closed ones drop to the bottom.",
 			path: "/tickets",
 		}),
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
-		const cat = search.category;
 		const sort = search.sort;
 		const q = search.q;
 		return {
-			category:
-				typeof cat === "string" &&
-				(cat === "All" || (categories as readonly string[]).includes(cat))
-					? (cat as Category | "All")
-					: undefined,
 			sort:
 				sort === "volume" ||
 				sort === "closing" ||
@@ -59,9 +52,18 @@ export const Route = createFileRoute("/tickets")({
 	},
 });
 
-function MarketsPage() {
+const STATUS_ORDER: Record<
+	"open" | "closed" | "resolved" | "cancelled",
+	number
+> = {
+	open: 0,
+	closed: 1,
+	resolved: 2,
+	cancelled: 3,
+};
+
+function TicketsPage() {
 	const search = Route.useSearch();
-	const category = search.category ?? "All";
 	const sort: Sort = search.sort ?? "volume";
 	const navigate = Route.useNavigate();
 	const [query, setQuery] = useState(search.q ?? "");
@@ -71,21 +73,21 @@ function MarketsPage() {
 		setQuery(search.q ?? "");
 	}, [search.q]);
 
-	const docs = useQuery(api.markets.list, {
-		category: category === "All" ? undefined : category,
-	});
+	const docs = useQuery(api.tickets.list, {});
 	const isLoading = docs === undefined;
-	const markets = useMemo(() => (docs ?? []).map((d) => toUIMarket(d)), [docs]);
+	const tickets = useMemo(() => (docs ?? []).map((d) => toUITicket(d)), [docs]);
 
 	const filtered = useMemo(() => {
 		const q = (search.q ?? query).trim().toLowerCase();
 		const list = q
-			? markets.filter(
+			? tickets.filter(
 					(m) =>
 						m.question.toLowerCase().includes(q) ||
-						m.tags.some((t) => t.toLowerCase().includes(q))
+						m.tags.some((t) => t.toLowerCase().includes(q)) ||
+						(m.subject?.handle ?? "").toLowerCase().includes(q) ||
+						(m.subject?.name ?? "").toLowerCase().includes(q)
 				)
-			: markets;
+			: tickets;
 		const sorted = [...list];
 		if (sort === "volume") sorted.sort((a, b) => b.volume - a.volume);
 		if (sort === "trending")
@@ -95,8 +97,10 @@ function MarketsPage() {
 				(a, b) => parseClosesIn(a.closesIn) - parseClosesIn(b.closesIn)
 			);
 		if (sort === "new") sorted.sort((a, b) => a.slug.localeCompare(b.slug));
+		// Always float live tickets above closed/resolved/cancelled regardless of sort.
+		sorted.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 		return sorted;
-	}, [markets, search.q, query, sort]);
+	}, [tickets, search.q, query, sort]);
 
 	return (
 		<main className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 sm:py-12">
@@ -104,63 +108,39 @@ function MarketsPage() {
 				<div>
 					<Kicker>TICKETS</Kicker>
 					<h1 className="display-headline mt-2 text-4xl sm:text-5xl">
-						Every ticket on Charles
+						Every ticket
 					</h1>
 					<p className="mt-3 max-w-xl text-bone-2 text-sm sm:text-base">
 						{isLoading
 							? "Loading tickets…"
-							: `${filtered.length} of ${markets.length} open for trading. Sorted by ${sortLabel(sort)}.`}
+							: `${filtered.length} ${filtered.length === 1 ? "ticket" : "tickets"}. Live first, sorted by ${sortLabel(sort)}.`}
 					</p>
 				</div>
 				<Button asChild>
-					<Link to="/propose">
-						<Plus /> Propose ticket
+					<Link to="/create">
+						<Plus /> New ticket
 					</Link>
 				</Button>
 			</header>
 
 			<div className="z-10 -mx-4 mt-8 flex flex-col gap-3 border-rule border-b bg-ink/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-[56px] md:flex-row md:items-center md:justify-between md:py-4">
-				<div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
-					<ToggleGroup
-						type="single"
-						value={category}
-						onValueChange={(v) =>
-							v &&
-							navigate({
-								search: {
-									category: v as Category | "All",
-									sort,
-									q: search.q,
-								},
-							})
-						}
-						className="w-max md:w-auto md:flex-wrap md:justify-start"
-					>
-						<ToggleGroupItem value="All">All</ToggleGroupItem>
-						{categories.map((c) => (
-							<ToggleGroupItem key={c} value={c}>
-								{c}
-							</ToggleGroupItem>
-						))}
-					</ToggleGroup>
-				</div>
 				<form
-					className="flex items-center gap-2"
+					className="flex flex-1 items-center gap-2"
 					onSubmit={(e) => {
 						e.preventDefault();
 						const q = query.trim();
 						navigate({
-							search: { category, sort, q: q || undefined },
+							search: { sort, q: q || undefined },
 						});
 					}}
 				>
-					<div className="relative min-w-0 flex-1 md:max-w-xs">
+					<div className="relative min-w-0 flex-1 md:max-w-md">
 						<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-bone-3" />
 						<Input
 							type="search"
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
-							placeholder="Find a ticket…"
+							placeholder="Find a ticket or person…"
 							className="pl-9"
 						/>
 					</div>
@@ -168,7 +148,7 @@ function MarketsPage() {
 						value={sort}
 						onValueChange={(v) =>
 							navigate({
-								search: { category, sort: v as Sort, q: search.q },
+								search: { sort: v as Sort, q: search.q },
 							})
 						}
 					>
@@ -201,29 +181,38 @@ function MarketsPage() {
 					))}
 				</div>
 			) : filtered.length === 0 ? (
-				<div className="mt-12 border border-rule border-dashed bg-ink-2 px-6 py-16 text-center">
-					<Kicker>EMPTY</Kicker>
+				<div className="mt-12 border-rule border-y px-6 py-16 text-center">
+					<Kicker>
+						{tickets.length === 0 ? "Nothing trading" : "No matches"}
+					</Kicker>
 					<h3 className="display-headline mt-3 text-2xl">
-						{markets.length === 0
-							? "No tickets yet."
+						{tickets.length === 0
+							? "Be the first."
 							: "Nothing matches that filter."}
 					</h3>
-					<Button asChild size="sm" className="mt-6">
-						<Link to="/propose">
-							<Plus /> Propose a ticket
-						</Link>
-					</Button>
+					<p className="mx-auto mt-2 max-w-sm text-bone-2 text-sm">
+						{tickets.length === 0
+							? "Pick someone, write a Yes/No question, let the room price it."
+							: "Try a different sort, or clear the search."}
+					</p>
+					{tickets.length === 0 ? (
+						<Button asChild size="sm" className="mt-6">
+							<Link to="/create">
+								<Plus /> New ticket
+							</Link>
+						</Button>
+					) : null}
 				</div>
 			) : view === "tiles" ? (
 				<div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{filtered.map((m) => (
-						<MarketCard key={m._id} market={m} />
+						<TicketCard key={m._id} ticket={m} />
 					))}
 				</div>
 			) : (
 				<div className="mt-8 border border-rule">
 					{filtered.map((m) => (
-						<MarketCard key={m._id} market={m} variant="compact" />
+						<TicketCard key={m._id} ticket={m} variant="compact" />
 					))}
 				</div>
 			)}

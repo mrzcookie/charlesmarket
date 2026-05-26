@@ -90,7 +90,7 @@ export function UserMenu() {
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<Link to="/propose">
+					<Link to="/create">
 						<Plus /> Propose a ticket
 					</Link>
 				</DropdownMenuItem>

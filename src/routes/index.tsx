@@ -1,33 +1,141 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { BracketChip, Kicker, Stat } from "@/components/console";
-import { MarketCard } from "@/components/market-card";
+import { TicketCard } from "@/components/ticket-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENCY_SYMBOL, categories, money, toUIMarket } from "@/lib/markets";
 import { pageHead } from "@/lib/seo";
+import { CURRENCY_SYMBOL, money, toUITicket } from "@/lib/tickets";
 import { api } from "../../convex/_generated/api";
+
+const ROTATING_NAMES = [
+	"Charles",
+	"Beckett",
+	"Cookie",
+	"Danny",
+	"Chris",
+	"Derk",
+	"Carson",
+	"Lucas",
+	"Issac",
+	"Landry",
+] as const;
+
+// ~2s between scrolls, very gently decelerating into the final Charles.
+const BEAT_DELAYS_MS = [
+	1900, 1950, 2000, 2000, 2050, 2100, 2150, 2200, 2300, 2500,
+];
+const INITIAL_HOLD_MS = 800;
+
+const ENTER_DURATION = 0.36;
+const EXIT_DURATION = 0.24;
+
+// Smoother easing — quart-style ease-out on enter, gentler ease-in on exit.
+const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const EASE_IN = [0.5, 0, 0.75, 0] as const;
+
+function RotatingName() {
+	const reduced = useReducedMotion();
+	const [idx, setIdx] = useState(0);
+	const [done, setDone] = useState(false);
+	const widest = ROTATING_NAMES.reduce((a, b) =>
+		a.length >= b.length ? a : b
+	);
+
+	useEffect(() => {
+		if (reduced) {
+			setDone(true);
+			return;
+		}
+
+		let cancelled = false;
+		let beat = 0;
+		let timeoutId = window.setTimeout(function tick() {
+			if (cancelled) return;
+			setIdx((i) => (i + 1) % ROTATING_NAMES.length);
+			beat += 1;
+			if (beat >= BEAT_DELAYS_MS.length) {
+				setDone(true);
+				return;
+			}
+			timeoutId = window.setTimeout(tick, BEAT_DELAYS_MS[beat]);
+		}, INITIAL_HOLD_MS);
+
+		return () => {
+			cancelled = true;
+			clearTimeout(timeoutId);
+		};
+	}, [reduced]);
+
+	// Landing on Charles after the full cycle — softer settle (spring) for the
+	// final motion. Mid-cycle beats use snappy tweens.
+	const isSettle = done && idx === 0;
+
+	return (
+		<span
+			className="relative inline-block align-baseline text-brand"
+			style={{ paddingBottom: "0.18em" }}
+		>
+			<span
+				aria-hidden="true"
+				className="pointer-events-none invisible whitespace-nowrap"
+			>
+				{widest}
+			</span>
+			<span aria-live="polite" className="absolute inset-0 overflow-hidden">
+				<AnimatePresence initial={false} mode="wait">
+					<motion.span
+						key={idx}
+						initial={{ y: "-110%" }}
+						animate={{ y: 0 }}
+						exit={{
+							y: "110%",
+							transition: { duration: EXIT_DURATION, ease: EASE_IN },
+						}}
+						transition={
+							isSettle
+								? { type: "spring", stiffness: 180, damping: 19, mass: 1 }
+								: { duration: ENTER_DURATION, ease: EASE_OUT }
+						}
+						style={{
+							position: "absolute",
+							left: 0,
+							right: 0,
+							bottom: "0.18em",
+							whiteSpace: "nowrap",
+							willChange: "transform",
+						}}
+					>
+						{ROTATING_NAMES[idx]}
+					</motion.span>
+				</AnimatePresence>
+			</span>
+		</span>
+	);
+}
 
 export const Route = createFileRoute("/")({
 	component: Home,
 	head: () =>
 		pageHead({
-			title: "Bet on Charles",
+			title: "Bet on the people you know",
 			description:
-				"A play-money prediction console for one chaotic friend. Trade Yes/No tickets in shekels on Charles's next mishap, milestone, or antic.",
+				"Play-money prediction console for the friends you know. Anyone publishes a Yes/No ticket about another user; the room sets the line in shekels.",
 			path: "/",
 		}),
 });
 
 function Home() {
-	const docs = useQuery(api.markets.list, {});
+	const docs = useQuery(api.tickets.list, {});
 	const leaders = useQuery(api.leaderboard.top, { limit: 1 });
 	const isLoading = docs === undefined;
-	const markets = (docs ?? []).map((d) => toUIMarket(d));
+	const tickets = (docs ?? []).map((d) => toUITicket(d));
 
-	const totalVolume = markets.reduce((acc, m) => acc + m.volume, 0);
-	const totalLiquidity = markets.reduce((acc, m) => acc + m.liquidity, 0);
+	const totalVolume = tickets.reduce((acc, m) => acc + m.volume, 0);
+	const totalLiquidity = tickets.reduce((acc, m) => acc + m.liquidity, 0);
 	const resolved = (docs ?? []).filter((m) => m.status === "resolved");
 	const yesResolved = resolved.filter((m) => m.resolution === "Yes").length;
 	const hitRate =
@@ -41,17 +149,22 @@ function Home() {
 	const topTraderPnl =
 		leaders && leaders.length > 0 ? money(leaders[0].pnl) : "";
 
-	const sortedByVolume = [...markets].sort((a, b) => b.volume - a.volume);
-	const featured = sortedByVolume[0];
-	const trending = sortedByVolume.slice(1, 4);
-	const rest = sortedByVolume.slice(4);
+	const openTickets = tickets
+		.filter((m) => m.status === "open")
+		.sort((a, b) => b.volume - a.volume);
+	const settled = tickets
+		.filter((m) => m.status !== "open")
+		.sort((a, b) => b.volume - a.volume);
+	const featured = openTickets[0];
+	const trending = openTickets.slice(1, 4);
+	const rest = openTickets.slice(4);
 
 	return (
 		<main className="flex-1">
 			<Hero
 				totalVolume={totalVolume}
 				totalLiquidity={totalLiquidity}
-				marketCount={markets.length}
+				ticketCount={tickets.length}
 				hitRate={hitRate}
 				topTrader={topTrader}
 				topTraderPnl={topTraderPnl}
@@ -69,9 +182,9 @@ function Home() {
 						{isLoading ? (
 							<FeaturedSkeleton />
 						) : featured ? (
-							<MarketCard market={featured} variant="featured" />
+							<TicketCard ticket={featured} variant="featured" />
 						) : (
-							<EmptyMarkets />
+							<EmptyTickets />
 						)}
 					</div>
 				</section>
@@ -85,7 +198,7 @@ function Home() {
 						/>
 						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
 							{trending.map((m) => (
-								<MarketCard key={m._id} market={m} />
+								<TicketCard key={m._id} ticket={m} />
 							))}
 						</div>
 					</section>
@@ -112,15 +225,15 @@ function Home() {
 					) : (
 						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{rest.map((m) => (
-								<MarketCard key={m._id} market={m} />
+								<TicketCard key={m._id} ticket={m} />
 							))}
 						</div>
 					)}
-					{!isLoading && markets.length > 0 ? (
+					{!isLoading && openTickets.length > 0 ? (
 						<div className="mt-8 flex justify-center">
 							<Button asChild variant="outline">
 								<Link to="/tickets">
-									Browse all {markets.length} tickets
+									Browse all {tickets.length} tickets
 									<ArrowRight />
 								</Link>
 							</Button>
@@ -128,22 +241,20 @@ function Home() {
 					) : null}
 				</section>
 
-				<section className="border-rule border-t py-12 sm:py-16">
-					<SectionHead kicker="FILTER" title="By category" />
-					<div className="mt-6 flex flex-wrap gap-2">
-						{categories.map((c) => (
-							<Link
-								key={c}
-								to="/tickets"
-								search={{ category: c }}
-								className="flex items-center gap-2 border border-rule px-3 py-2 font-mono font-semibold text-[11px] text-bone-2 uppercase tracking-[0.14em] transition-colors hover:border-brand hover:text-brand"
-							>
-								<span className="text-bone-3">▸</span>
-								{c}
-							</Link>
-						))}
-					</div>
-				</section>
+				{!isLoading && settled.length > 0 ? (
+					<section className="border-rule border-t py-12 sm:py-16">
+						<SectionHead
+							kicker="SETTLED"
+							title="Resolved & closed"
+							href="/tickets"
+						/>
+						<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{settled.slice(0, 6).map((m) => (
+								<TicketCard key={m._id} ticket={m} />
+							))}
+						</div>
+					</section>
+				) : null}
 			</div>
 		</main>
 	);
@@ -152,7 +263,7 @@ function Home() {
 function Hero({
 	totalVolume,
 	totalLiquidity,
-	marketCount,
+	ticketCount,
 	hitRate,
 	topTrader,
 	topTraderPnl,
@@ -160,7 +271,7 @@ function Hero({
 }: {
 	totalVolume: number;
 	totalLiquidity: number;
-	marketCount: number;
+	ticketCount: number;
 	hitRate: string;
 	topTrader: string;
 	topTraderPnl: string;
@@ -172,16 +283,19 @@ function Hero({
 			<div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-10 px-4 pt-10 pb-14 sm:px-6 sm:pt-14 sm:pb-20 lg:grid-cols-[1.6fr_1fr] lg:gap-16 lg:pt-20 lg:pb-24">
 				<div>
 					<BracketChip pulse>
-						LIVE · {loading ? "—" : marketCount} TICKETS
+						LIVE · {loading ? "—" : ticketCount} TICKETS
 					</BracketChip>
 					<h1 className="display-headline mt-5 text-[clamp(2.25rem,7vw,5.5rem)] sm:mt-6">
-						The prediction console for{" "}
-						<span className="text-brand">Charles</span>.
+						The prediction
+						<br />
+						console
+						<br />
+						for <RotatingName />
 					</h1>
 					<p className="mt-5 max-w-xl text-base text-bone-2 leading-relaxed sm:mt-6 sm:text-lg">
-						Will he show up on time. Get the job. Lock himself out again. Trade
-						Yes / No tickets in shekels and let the friend group price the
-						outcome.
+						Will Charles crack. Will Cookie get the job. Will Landry lock
+						himself out again. Trade Yes/No in shekels, let the rest of the room
+						price it.
 					</p>
 					<div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
 						<Button asChild size="lg" className="w-full sm:w-auto">
@@ -193,7 +307,7 @@ function Hero({
 							size="lg"
 							className="w-full sm:w-auto"
 						>
-							<Link to="/propose">+ Propose a ticket</Link>
+							<Link to="/create">+ New ticket</Link>
 						</Button>
 					</div>
 				</div>
@@ -238,7 +352,7 @@ function Hero({
 					<div className="col-span-2 flex flex-wrap items-center gap-2 border-rule border-t pt-4 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
 						<span>Starting cash</span>
 						<span className="font-bold text-brand tabular-nums">
-							{CURRENCY_SYMBOL}1,000
+							{CURRENCY_SYMBOL}2,000
 						</span>
 						<span aria-hidden="true">·</span>
 						<span>Play money, real consequences for his reputation</span>
@@ -342,17 +456,17 @@ function TileSkeleton() {
 	);
 }
 
-function EmptyMarkets() {
+function EmptyTickets() {
 	return (
 		<div className="border border-rule border-dashed bg-ink-2 px-6 py-16 text-center">
 			<Kicker>NOTHING OPEN</Kicker>
 			<h3 className="display-headline mt-3 text-2xl">No tickets yet.</h3>
 			<p className="mx-auto mt-2 max-w-md text-bone-2 text-sm">
-				Pitch the first one. Frame a question Charles could fail at, set the
-				close time, let the friend group price it.
+				Pitch the first one. Frame something a friend could fail at, set the
+				close, let the room price it.
 			</p>
 			<Button asChild className="mt-6">
-				<Link to="/propose">+ Propose the first ticket</Link>
+				<Link to="/create">+ Create the first ticket</Link>
 			</Button>
 		</div>
 	);
