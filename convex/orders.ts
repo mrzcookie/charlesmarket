@@ -45,7 +45,7 @@ export const place = mutation({
 			.withIndex("by_user_ticket_side", (q) =>
 				q.eq("userId", user._id).eq("ticketId", ticketId).eq("side", side)
 			)
-			.unique();
+			.first();
 
 		if (existing) {
 			const newShares = existing.shares + shares;
@@ -120,7 +120,7 @@ export const sell = mutation({
 			.withIndex("by_user_ticket_side", (q) =>
 				q.eq("userId", user._id).eq("ticketId", ticketId).eq("side", side)
 			)
-			.unique();
+			.first();
 		if (!position || position.shares < shares) {
 			throw new Error("Not enough shares to sell");
 		}

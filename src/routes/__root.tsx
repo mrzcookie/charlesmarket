@@ -206,7 +206,7 @@ export const Route = createRootRoute({
 			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
 			{ rel: "alternate icon", href: "/favicon.svg" },
 			{ rel: "mask-icon", href: "/favicon.svg", color: "#bcf03d" },
-			{ rel: "apple-touch-icon", href: "/favicon.svg" },
+			{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 			{ rel: "manifest", href: "/site.webmanifest" },
 			{ rel: "canonical", href: `${SITE_URL}/` },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },

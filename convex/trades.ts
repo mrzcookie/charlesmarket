@@ -47,6 +47,8 @@ export const positions = query({
 			.map((p, i) => {
 				const m = tickets[i];
 				if (!m) return null;
+				if (p.shares <= 1e-9) return null; // zeroed by resolution/cancellation
+				if (m.status !== "open") return null; // only show active positions
 				const current = p.side === "Yes" ? m.yesPrice : 1 - m.yesPrice;
 				const cost = p.shares * p.avgPrice;
 				const value = p.shares * current;
