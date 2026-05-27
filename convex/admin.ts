@@ -751,3 +751,25 @@ export const adjustBalance = mutation({
 		return next;
 	},
 });
+
+/**
+ * One-shot: credit ₪100 to every user as compensation for the daily-bonus bug.
+ * Run once via: npx convex run admin:grantCompensation
+ * Safe to re-run — skips users who already have compensationV1 set.
+ */
+export const grantCompensation = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const users = await ctx.db.query("users").collect();
+		let credited = 0;
+		for (const user of users) {
+			if (user.compensationV1) continue;
+			await ctx.db.patch(user._id, {
+				balance: (user.balance ?? 0) + 100,
+				compensationV1: true,
+			});
+			credited += 1;
+		}
+		return { credited, total: users.length };
+	},
+});
