@@ -153,11 +153,16 @@ function Home() {
 	// Featured: highest volume.
 	const byVolume = [...openTickets].sort((a, b) => b.volume - a.volume);
 	const featured = byVolume[0];
-	// Trending: highest price movement (delta), excluding featured.
-	const byDelta = [...openTickets]
+	// Activity score: bets (weight 3) + comments (weight 2) + recency bonus (decays over 7 days).
+	const activityScore = (m: (typeof openTickets)[0]) => {
+		const daysSince = (Date.now() - m.createdAt) / 86_400_000;
+		const recency = 10 * Math.exp(-daysSince / 7);
+		return m.tradeCount * 3 + m.commentCount * 2 + recency;
+	};
+	const byActivity = [...openTickets]
 		.filter((m) => m._id !== featured?._id)
-		.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-	const trending = byDelta.slice(0, 3);
+		.sort((a, b) => activityScore(b) - activityScore(a));
+	const trending = byActivity.slice(0, 3);
 	const trendingIds = new Set([featured?._id, ...trending.map((m) => m._id)]);
 	// Rest: newest first (most recently created), excluding featured + trending.
 	const rest = [...openTickets]

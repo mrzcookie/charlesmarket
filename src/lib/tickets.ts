@@ -34,6 +34,8 @@ export type Ticket = {
 	closesAt: string;
 	closesIn: string;
 	createdAt: number;
+	tradeCount: number;
+	commentCount: number;
 	trend: "up" | "down" | "flat";
 	delta: number;
 	tags: string[];
@@ -112,6 +114,8 @@ export type ConvexTicket = {
 	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
 	createdAt: number;
+	tradeCount?: number;
+	commentCount?: number;
 	subject?: SubjectRef | null;
 	creator?: UserMini | null;
 };
@@ -140,6 +144,8 @@ export function toUITicket(
 		closesAt: doc.closesAt,
 		closesIn: formatClosesIn(doc.closesAtMs),
 		createdAt: doc.createdAt,
+		tradeCount: doc.tradeCount ?? 0,
+		commentCount: doc.commentCount ?? 0,
 		trend,
 		delta,
 		tags: doc.tags,

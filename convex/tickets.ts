@@ -73,11 +73,13 @@ async function subjectRef(
 }
 
 async function enrichMarket(ctx: QueryCtx, m: Doc<"tickets">) {
-	const [subject, creator] = await Promise.all([
+	const [subject, creator, trades, comments] = await Promise.all([
 		subjectRef(ctx, m),
 		userMini(ctx, m.creatorId),
+		ctx.db.query("trades").withIndex("by_ticket", (q) => q.eq("ticketId", m._id)).collect(),
+		ctx.db.query("comments").withIndex("by_ticket", (q) => q.eq("ticketId", m._id)).collect(),
 	]);
-	return { ...m, subject, creator };
+	return { ...m, subject, creator, tradeCount: trades.length, commentCount: comments.length };
 }
 
 export const list = query({
