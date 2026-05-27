@@ -303,9 +303,10 @@ function useDailyBonus() {
 	useEffect(() => {
 		if (isLoading || !isAuthenticated) return;
 		if (typeof window === "undefined") return;
-		const flag = "daily-bonus-checked-v1";
-		if (sessionStorage.getItem(flag)) return;
-		sessionStorage.setItem(flag, "1");
+		const today = new Date().toISOString().slice(0, 10);
+		const flag = `daily-bonus-${today}`;
+		if (localStorage.getItem(flag)) return;
+		localStorage.setItem(flag, "1");
 		claim({})
 			.then((r) => {
 				if (r.granted) {
@@ -315,8 +316,8 @@ function useDailyBonus() {
 				}
 			})
 			.catch(() => {
-				// Silent — non-critical. Will retry on next session.
-				sessionStorage.removeItem(flag);
+				// Silent — non-critical. Will retry on next page load.
+				localStorage.removeItem(flag);
 			});
 	}, [isAuthenticated, isLoading, claim]);
 }
