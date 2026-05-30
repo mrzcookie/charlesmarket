@@ -99,10 +99,7 @@ function PortfolioBody() {
 					value={`${totalPnl >= 0 ? "+" : "−"}${CURRENCY_SYMBOL}${Math.round(Math.abs(totalPnl)).toLocaleString()}`}
 					tone={totalPnl >= 0 ? "brand" : "magenta"}
 				/>
-				<Stat
-					label="Open positions"
-					value={String(positions.length)}
-				/>
+				<Stat label="Open positions" value={String(positions.length)} />
 			</section>
 
 			<section className="mt-12">
@@ -339,7 +336,10 @@ function PendingRefunds({ offers }: { offers: RefundOffer[] }) {
 								{o.ticketQuestion}
 							</div>
 							<div className="mt-0.5 font-mono text-[11px] text-bone-3 uppercase tracking-[0.12em]">
-								<Badge variant={o.side === "Yes" ? "yes" : "no"} className="mr-1.5">
+								<Badge
+									variant={o.side === "Yes" ? "yes" : "no"}
+									className="mr-1.5"
+								>
 									{o.side}
 								</Badge>
 								{o.shares.toFixed(2)} shares · {CURRENCY_SYMBOL}

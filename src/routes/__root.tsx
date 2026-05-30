@@ -7,19 +7,11 @@ import {
 	Scripts,
 	useRouterState,
 } from "@tanstack/react-router";
-import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
+import { lazy, type ReactNode, Suspense, useEffect } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { TableRegistryProvider } from "@/components/table-devtools";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { convex } from "@/lib/convex";
 import { trackPath } from "@/lib/route-history";
@@ -264,7 +256,6 @@ function RootDocument({ children }: { children: ReactNode }) {
 						</div>
 						<Footer />
 						<Toaster richColors closeButton position="bottom-right" />
-						<CompensationBanner />
 					</ConvexAuthProvider>
 					{Devtools && (
 						<Suspense fallback={null}>
@@ -275,46 +266,6 @@ function RootDocument({ children }: { children: ReactNode }) {
 				<Scripts />
 			</body>
 		</html>
-	);
-}
-
-const COMP_KEY = "cm-comp-v1-seen";
-
-function CompensationBanner() {
-	const [open, setOpen] = useState(false);
-
-	useEffect(() => {
-		try {
-			if (!localStorage.getItem(COMP_KEY)) setOpen(true);
-		} catch {
-			// localStorage unavailable — don't show
-		}
-	}, []);
-
-	const dismiss = () => {
-		try {
-			localStorage.setItem(COMP_KEY, "1");
-		} catch {}
-		setOpen(false);
-	};
-
-	return (
-		<Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
-			<DialogContent showCloseButton={false} className="max-w-md">
-				<DialogHeader>
-					<DialogTitle>Pardon Our Dust!</DialogTitle>
-					<DialogDescription className="mt-2 leading-relaxed">
-						Daily bonus glitch — fixed. A bug prevented some users from
-						receiving their daily ₪50 stipend. We've patched it and added ₪100
-						to every account to make up for lost time. Your daily bonus will
-						resume automatically from now on.
-					</DialogDescription>
-				</DialogHeader>
-				<DialogFooter>
-					<Button onClick={dismiss}>Got it</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
 	);
 }
 

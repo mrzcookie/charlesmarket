@@ -197,7 +197,7 @@ function AuthedBody() {
 		if (!formValid || submitting || !subject) return;
 		setSubmitting(true);
 		try {
-			const { slug } = await create({
+			const result = await create({
 				subjectUserId: subject.kind === "user" ? subject.user._id : undefined,
 				subjectName: subject.kind === "name" ? subject.name.trim() : undefined,
 				question: questionTrim,
@@ -211,7 +211,15 @@ function AuthedBody() {
 			toast.success("Ticket live", {
 				description: "Anyone but you and the subject can trade it now.",
 			});
-			navigate({ to: "/ticket/$id", params: { id: slug } });
+			if (result.rewardGranted) {
+				toast.success(
+					`Creator reward · +${CURRENCY_SYMBOL}${result.rewardAmount}`,
+					{
+						description: "Another reward unlocks 3 hours after this one.",
+					}
+				);
+			}
+			navigate({ to: "/ticket/$id", params: { id: result.slug } });
 		} catch (err) {
 			toast.error("Couldn't create ticket", {
 				description: err instanceof Error ? err.message : String(err),

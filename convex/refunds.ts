@@ -36,7 +36,8 @@ export const acceptRefund = mutation({
 		const offer = await ctx.db.get(offerId);
 		if (!offer) throw new Error("Offer not found");
 		if (offer.userId !== user._id) throw new Error("Not your offer");
-		if (offer.status !== "pending") throw new Error("Offer is no longer pending");
+		if (offer.status !== "pending")
+			throw new Error("Offer is no longer pending");
 
 		const trade = await ctx.db.get(offer.tradeId);
 		if (!trade) throw new Error("Original trade no longer exists");
@@ -107,7 +108,8 @@ export const rejectRefund = mutation({
 		const offer = await ctx.db.get(offerId);
 		if (!offer) throw new Error("Offer not found");
 		if (offer.userId !== user._id) throw new Error("Not your offer");
-		if (offer.status !== "pending") throw new Error("Offer is no longer pending");
+		if (offer.status !== "pending")
+			throw new Error("Offer is no longer pending");
 		await ctx.db.patch(offerId, { status: "rejected" });
 		return { ok: true };
 	},

@@ -14,6 +14,7 @@ export default defineSchema({
 		joinedAt: v.optional(v.number()),
 		isAdmin: v.optional(v.boolean()),
 		lastDailyAt: v.optional(v.number()),
+		lastTicketRewardAt: v.optional(v.number()),
 		compensationV1: v.optional(v.boolean()),
 	})
 		.index("email", ["email"])

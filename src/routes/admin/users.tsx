@@ -1021,7 +1021,12 @@ function TradeRefundRow({
 						</Button>
 					</div>
 				) : (
-					<Button variant="outline" size="sm" className="h-6 px-2" onClick={onOffer}>
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-6 px-2"
+						onClick={onOffer}
+					>
 						Offer refund
 					</Button>
 				)}

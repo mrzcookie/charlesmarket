@@ -188,6 +188,10 @@ type against `UITicket`, not the raw Convex `Doc<"tickets">`.
 - **Daily bonus**: `api.wallet.claimDailyIfDue` (idempotent, 24h cooldown)
   grants ₪50 per day. Called from `useDailyBonus()` in the Header on app
   load; sessionStorage dedupes per tab so the toast doesn't spam.
+- **Ticket creation reward**: `api.tickets.create` grants ₪300 once per
+  3-hour window, tracked via `users.lastTicketRewardAt`. The mutation
+  returns `{ rewardGranted, rewardAmount, nextRewardAt }` so `/create`
+  can toast on success.
 - **Balance adjustments**: `api.admin.adjustBalance({ userId, setTo?, delta? })`
   is the admin-only way to change a user's cash. Surfaced in the
   `/admin/users` drawer. No public top-up.

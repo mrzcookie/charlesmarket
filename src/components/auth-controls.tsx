@@ -1,7 +1,15 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Link } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
-import { LogIn, LogOut, Plus, ShieldCheck, User, Wallet } from "lucide-react";
+import {
+	LogIn,
+	LogOut,
+	Plus,
+	ShieldCheck,
+	Shirt,
+	User,
+	Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -93,6 +101,15 @@ export function UserMenu() {
 					<Link to="/create">
 						<Plus /> Propose a ticket
 					</Link>
+				</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<a
+						href="https://charlesmarket.creator-spring.com"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<Shirt /> Merch store
+					</a>
 				</DropdownMenuItem>
 				{me?.isAdmin && (
 					<DropdownMenuItem asChild>

@@ -137,7 +137,9 @@ function Home() {
 	const totalVolume = tickets.reduce((acc, m) => acc + m.volume, 0);
 	const totalLiquidity = tickets.reduce((acc, m) => acc + m.liquidity, 0);
 	const resolvedTickets = (docs ?? []).filter((m) => m.status === "resolved");
-	const yesResolved = resolvedTickets.filter((m) => m.resolution === "Yes").length;
+	const yesResolved = resolvedTickets.filter(
+		(m) => m.resolution === "Yes"
+	).length;
 	const hitRate =
 		resolvedTickets.length > 0
 			? `${Math.round((yesResolved / resolvedTickets.length) * 100)}%`

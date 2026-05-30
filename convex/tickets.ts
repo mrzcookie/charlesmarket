@@ -8,6 +8,9 @@ const MAX_QUESTION = 140;
 const MIN_LIQUIDITY = 100;
 const MAX_LIQUIDITY = 50_000;
 
+export const TICKET_REWARD = 300;
+export const TICKET_REWARD_COOLDOWN_MS = 3 * 60 * 60 * 1000;
+
 function slugify(input: string): string {
 	const base = input
 		.toLowerCase()
@@ -76,10 +79,22 @@ async function enrichMarket(ctx: QueryCtx, m: Doc<"tickets">) {
 	const [subject, creator, trades, comments] = await Promise.all([
 		subjectRef(ctx, m),
 		userMini(ctx, m.creatorId),
-		ctx.db.query("trades").withIndex("by_ticket", (q) => q.eq("ticketId", m._id)).collect(),
-		ctx.db.query("comments").withIndex("by_ticket", (q) => q.eq("ticketId", m._id)).collect(),
+		ctx.db
+			.query("trades")
+			.withIndex("by_ticket", (q) => q.eq("ticketId", m._id))
+			.collect(),
+		ctx.db
+			.query("comments")
+			.withIndex("by_ticket", (q) => q.eq("ticketId", m._id))
+			.collect(),
 	]);
-	return { ...m, subject, creator, tradeCount: trades.length, commentCount: comments.length };
+	return {
+		...m,
+		subject,
+		creator,
+		tradeCount: trades.length,
+		commentCount: comments.length,
+	};
 }
 
 export const list = query({
@@ -239,7 +254,26 @@ export const create = mutation({
 			ticketId,
 			yesPrice: args.initialYesPrice,
 		});
-		return { ticketId, slug };
+
+		const lastReward = user.lastTicketRewardAt ?? 0;
+		let rewardGranted = false;
+		if (now - lastReward >= TICKET_REWARD_COOLDOWN_MS) {
+			await ctx.db.patch(user._id, {
+				balance: (user.balance ?? 0) + TICKET_REWARD,
+				lastTicketRewardAt: now,
+			});
+			rewardGranted = true;
+		}
+
+		return {
+			ticketId,
+			slug,
+			rewardGranted,
+			rewardAmount: rewardGranted ? TICKET_REWARD : 0,
+			nextRewardAt: rewardGranted
+				? now + TICKET_REWARD_COOLDOWN_MS
+				: lastReward + TICKET_REWARD_COOLDOWN_MS,
+		};
 	},
 });
 
