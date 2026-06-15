@@ -269,6 +269,8 @@ export const resolveTicket = mutation({
 		if (ticket.status === "resolved") throw new Error("Already resolved");
 		if (ticket.status === "cancelled") throw new Error("Already cancelled");
 
+		// Record pre-resolution state so rollbackTicket can undo this
+		const resolvedAt = Date.now();
 		await settlePositions(ctx, ticketId, resolution);
 
 		const finalYes = resolution === "Yes" ? 1 : 0;
@@ -277,9 +279,160 @@ export const resolveTicket = mutation({
 			resolution,
 			yesPrice: finalYes,
 			openInterest: 0,
+			resolvedAt,
+			preResolutionYesPrice: ticket.yesPrice,
+			preResolutionOpenInterest: ticket.openInterest,
 		});
 		await ctx.db.insert("priceTicks", { ticketId, yesPrice: finalYes });
 		return { ok: true };
+	},
+});
+
+export const rollbackTicket = mutation({
+	args: {
+		ticketId: v.id("tickets"),
+		// force: true uses the price-heuristic fallback for tickets resolved before
+		// rollback support was added (no resolvedAt on record).
+		force: v.optional(v.boolean()),
+	},
+	handler: async (ctx, { ticketId, force }) => {
+		await requireAdmin(ctx);
+		const ticket = await ctx.db.get(ticketId);
+		if (!ticket) throw new Error("Ticket not found");
+		if (ticket.status !== "resolved") throw new Error("Ticket is not resolved");
+		if (!ticket.resolvedAt && !force) {
+			throw new Error(
+				"No resolution timestamp on record — this ticket was resolved before rollback support was added. Use force rollback from the admin console to proceed."
+			);
+		}
+
+		let settlementTrades: Array<Doc<"trades">>;
+		let restoredYesPrice: number;
+		let restoredOpenInterest: number;
+
+		if (ticket.resolvedAt) {
+			// Precise path: find trades created during the resolution transaction
+			settlementTrades = await ctx.db
+				.query("trades")
+				.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
+				.filter((q) => q.gte(q.field("_creationTime"), ticket.resolvedAt!))
+				.collect();
+
+			// Delete the resolution priceTick
+			const resolutionTicks = await ctx.db
+				.query("priceTicks")
+				.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
+				.filter((q) => q.gte(q.field("_creationTime"), ticket.resolvedAt!))
+				.collect();
+			for (const tick of resolutionTicks) {
+				await ctx.db.delete(tick._id);
+			}
+
+			restoredYesPrice = ticket.preResolutionYesPrice ?? ticket.yesPrice;
+			restoredOpenInterest = ticket.preResolutionOpenInterest ?? 0;
+		} else {
+			// Legacy path: settlement trades are always kind="sell" at price exactly 0 or 1
+			settlementTrades = await ctx.db
+				.query("trades")
+				.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
+				.filter((q) =>
+					q.and(
+						q.eq(q.field("kind"), "sell"),
+						q.or(
+							q.eq(q.field("price"), 0),
+							q.eq(q.field("price"), 1)
+						)
+					)
+				)
+				.collect();
+
+			// Delete the most recent priceTick at 0 or 1 (the settlement tick)
+			const allTicks = await ctx.db
+				.query("priceTicks")
+				.withIndex("by_ticket", (q) => q.eq("ticketId", ticketId))
+				.order("desc")
+				.collect();
+			const settlementTickIdx = allTicks.findIndex(
+				(t) => t.yesPrice === 0 || t.yesPrice === 1
+			);
+			if (settlementTickIdx !== -1) {
+				await ctx.db.delete(allTicks[settlementTickIdx]._id);
+				// The tick just after the deleted one (in desc order) is the pre-resolution price
+				const prevTick = allTicks[settlementTickIdx + 1];
+				restoredYesPrice = prevTick?.yesPrice ?? ticket.yesPrice;
+			} else {
+				restoredYesPrice = ticket.yesPrice;
+			}
+
+			// Recompute openInterest from the settlement trades (shares * avgPrice per position)
+			let oi = 0;
+			for (const trade of settlementTrades) {
+				if (trade.shares > 0) {
+					const position = await ctx.db
+						.query("positions")
+						.withIndex("by_user_ticket_side", (q) =>
+							q
+								.eq("userId", trade.userId)
+								.eq("ticketId", ticketId)
+								.eq("side", trade.side)
+						)
+						.unique();
+					if (position) {
+						oi += trade.shares * position.avgPrice;
+					}
+				}
+			}
+			restoredOpenInterest = oi;
+		}
+
+		// Reverse payouts and restore positions
+		for (const trade of settlementTrades) {
+			const payout = -trade.cost;
+
+			if (payout > 0) {
+				const user = await ctx.db.get(trade.userId);
+				if (user) {
+					await ctx.db.patch(user._id, {
+						balance: Math.max(0, (user.balance ?? 0) - payout),
+					});
+				}
+			}
+
+			if (trade.shares > 0) {
+				const position = await ctx.db
+					.query("positions")
+					.withIndex("by_user_ticket_side", (q) =>
+						q
+							.eq("userId", trade.userId)
+							.eq("ticketId", ticketId)
+							.eq("side", trade.side)
+					)
+					.unique();
+
+				if (position) {
+					const costBasis = trade.shares * position.avgPrice;
+					const pnl = payout - costBasis;
+					await ctx.db.patch(position._id, {
+						shares: trade.shares,
+						realizedPnl: position.realizedPnl - pnl,
+					});
+				}
+			}
+
+			await ctx.db.delete(trade._id);
+		}
+
+		await ctx.db.patch(ticketId, {
+			status: "closed",
+			resolution: undefined,
+			yesPrice: restoredYesPrice,
+			openInterest: restoredOpenInterest,
+			resolvedAt: undefined,
+			preResolutionYesPrice: undefined,
+			preResolutionOpenInterest: undefined,
+		});
+
+		return { ok: true, settlementTradesReversed: settlementTrades.length };
 	},
 });
 

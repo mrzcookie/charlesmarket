@@ -40,6 +40,10 @@ export default defineSchema({
 		),
 		resolution: v.optional(sideUnion),
 		createdAt: v.number(),
+		// Set at resolution time; used by rollbackTicket to identify settlement trades
+		resolvedAt: v.optional(v.number()),
+		preResolutionYesPrice: v.optional(v.number()),
+		preResolutionOpenInterest: v.optional(v.number()),
 		// Subject is either a linked user (subjectUserId) OR a free-text name
 		// (subjectName). Exactly one is set; enforced at mutation time.
 		subjectUserId: v.optional(v.id("users")),

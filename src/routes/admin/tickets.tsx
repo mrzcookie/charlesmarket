@@ -66,6 +66,7 @@ type Row = {
 	tags: string[];
 	status: "open" | "closed" | "resolved" | "cancelled";
 	resolution?: "Yes" | "No";
+	resolvedAt?: number;
 	yesPrice: number;
 	volume: number;
 	liquidity: number;
@@ -108,6 +109,7 @@ function TicketsPage() {
 				tags: m.tags,
 				status: m.status,
 				resolution: m.resolution,
+				resolvedAt: m.resolvedAt,
 				yesPrice: m.yesPrice,
 				volume: m.volume,
 				liquidity: m.liquidity,
@@ -897,6 +899,7 @@ function TicketActionButtons({
 	const closeTicket = useMutation(api.admin.closeTicket);
 	const reopenTicket = useMutation(api.admin.reopenTicket);
 	const resolveTicket = useMutation(api.admin.resolveTicket);
+	const rollbackTicket = useMutation(api.admin.rollbackTicket);
 	const cancelTicket = useMutation(api.admin.cancelTicket);
 	const deleteTicket = useMutation(api.admin.deleteTicket);
 	const [busy, setBusy] = useState(false);
@@ -920,6 +923,36 @@ function TicketActionButtons({
 
 	return (
 		<div className="mt-3 grid grid-cols-2 gap-2">
+			{row.status === "resolved" ? (
+				<Button
+					variant="secondary"
+					className="col-span-2"
+					disabled={busy}
+					onClick={() => {
+						const isLegacy = !row.resolvedAt;
+						const warning = isLegacy
+							? `⚠️ LEGACY ROLLBACK\n\nThis ticket was resolved before rollback support was added. The rollback will use a best-effort heuristic (identifying settlement trades by price = 0 or 1) instead of an exact timestamp.\n\n`
+							: "";
+						if (
+							!confirm(
+								`${warning}Roll back resolution for:\n\n"${row.question}"\n\nAll settlement payouts will be reversed and positions restored to their pre-resolution state. The ticket will return to Closed so you can re-resolve correctly.\n\nThis cannot be undone.`
+							)
+						)
+							return;
+						run(
+							() =>
+								rollbackTicket({
+									ticketId: row.id,
+									force: isLegacy ? true : undefined,
+								}),
+							"Rolled back · positions restored · ticket is now Closed"
+						);
+					}}
+				>
+					<RotateCcw />{" "}
+					{row.resolvedAt ? "Roll back resolution" : "Force roll back (legacy)"}
+				</Button>
+			) : null}
 			{row.status === "open" ? (
 				<Button
 					variant="secondary"
